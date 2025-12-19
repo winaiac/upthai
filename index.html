@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vinai Innovation Portal - Super App เพื่อคนไทย</title>
+
+    <!-- 1. นำเข้า Tailwind CSS (ตกแต่งหน้าตา) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- 2. นำเข้า React และ ReactDOM (ตัวเขียนแอพ) -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+
+    <!-- 3. นำเข้า Babel (แปลงโค้ดให้ Browser เข้าใจ) -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- 4. นำเข้า Supabase (ฐานข้อมูล) -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+
+    <!-- 5. นำเข้า FontAwesome (ไอคอนสวยๆ) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- ปรับฟอนต์ภาษาไทย -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;700&display=swap');
+
+        body {
+            font-family: 'Sarabun', sans-serif;
+        }
+
+        .animate-fade-in-up {
+            animation: fadeInUp 0.5s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50 text-gray-800">
+
+    <div id="root"></div>
+
+    <script type="text/babel">
+        // ดึงฟังก์ชันที่ต้องใช้มาจาก React
+        const { useState, useEffect } = React;
+
+        // --- ⚙️ ตั้งค่า SUPABASE ---
+        const SUPABASE_URL = "https://ldsysxczitmkxmukmwri.supabase.co";
+        const SUPABASE_ANON_KEY = "sb_publishable_I2HEPgG2BbzK2gBtG3i0NQ_YFlzJfVo";
+
+        // สร้างตัวเชื่อมต่อฐานข้อมูล
+        // หมายเหตุ: ถ้ายังไม่ได้สร้าง Table ใน Supabase อาจจะ Error ได้ แต่แอพจะยังทำงานด้วยข้อมูลจำลอง
+        let supabase = null;
+        try {
+            supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        } catch (e) {
+            console.warn("Supabase not initialized (script might be blocked or key invalid)");
+        }
+
+        // --- MOCK DATA (ข้อมูลจำลอง) ---
+        const MOCK_AGRICULTURE = [
+            { id: 1, name: "ข้าวหอมมะลิ", category: "plant", type: "ข้าว", marketCap: 100000, currentSupply: 85000, price: 15, unit: "กก.", yield: 600, cost: 4500, costDetails: { "ค่าเมล็ดพันธุ์": 800, "ค่าปุ๋ย/ยา": 1500, "ค่าแรง": 1500, "อื่นๆ": 700 }, demand: "High", demandDesc: "ส่งออกได้ตลอดปี" },
+            { id: 5, name: "ทุเรียนหมอนทอง", category: "plant", type: "ผลไม้", marketCap: 50000, currentSupply: 45000, price: 140, unit: "กก.", yield: 1500, cost: 35000, costDetails: { "ดูแล": 8000, "ปุ๋ย": 12000, "น้ำ": 5000, "เก็บเกี่ยว": 10000 }, demand: "Very High", demandDesc: "จีนต้องการไม่อั้น" },
+            { id: 31, name: "ปลานิล (บ่อดิน)", category: "fish", type: "ประมง", marketCap: 150000, currentSupply: 140000, price: 60, unit: "กก.", yield: 1500, cost: 40000, costDetails: { "ลูกปลา": 3000, "อาหาร": 25000, "ไฟ": 5000, "แรงงาน": 7000 }, demand: "Very High", demandDesc: "ปลาเศรษฐกิจอันดับ 1" },
+            { id: 21, name: "โคขุน (เลี้ยงขุน)", category: "animal", type: "ปศุสัตว์", marketCap: 20000, currentSupply: 12000, price: 95, unit: "กก.(ตัว)", yield: 400, cost: 25000, costDetails: { "พันธุ์": 15000, "อาหาร": 8000, "ยา": 1000, "แรงงาน": 1000 }, demand: "High", demandDesc: "เนื้อคุณภาพขาดตลาด" }
+        ];
+
+        const MOCK_BUSINESSES = [
+            { id: 101, name: "ร้านสลัดโรล", tier: "หลักหมื่น", investment: 15000, profitMonth: 8000, trend: "Up", history: [{ y: 22, p: 70000 }, { y: 23, p: 85000 }, { y: 24, p: 96000 }], costBreakdown: { "วัตถุดิบ": 5000, "อุปกรณ์": 3000, "ค่าที่": 2000 }, risk: "Low", desc: "เทรนด์สุขภาพ" },
+            { id: 201, name: "คาเฟ่ Slow Bar", tier: "หลักแสน", investment: 150000, profitMonth: 30000, trend: "Up", history: [{ y: 22, p: 250000 }, { y: 23, p: 300000 }, { y: 24, p: 360000 }], costBreakdown: { "เครื่องชง": 50000, "ตกแต่ง": 50000, "ค่าเช่า": 30000 }, risk: "Medium", desc: "เจาะกลุ่มคนทำงาน" },
+            { id: 306, name: "ฟาร์มโซลาร์เซลล์", tier: "หลักล้าน", investment: 3500000, profitMonth: 100000, trend: "Very High", history: [{ y: 22, p: 800000 }, { y: 23, p: 1000000 }, { y: 24, p: 1200000 }], costBreakdown: { "แผง": 2500000, "ติดตั้ง": 1000000 }, risk: "Low", desc: "ขายไฟคืนรัฐ" },
+        ];
+
+        // --- Helper Component: Footer Credit ---
+        const AppFooter = () => (
+            <div className="mt-12 mb-20 text-center opacity-80">
+                <div className="inline-block bg-white rounded-full px-4 py-1 mb-2 border border-gray-200 shadow-sm">
+                    <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Super App ไทย เพื่อคนไทย 🇹🇭</span>
+                </div>
+                <p className="text-xs text-gray-400">
+                    พัฒนาด้วย <i className="fa-solid fa-heart text-red-400"></i> โดย <span className="font-bold text-gray-500">วินัย ผันอากาศ</span>
+                </p>
+            </div>
+        );
+
+        // --- MAIN APP COMPONENT ---
+        const VinaiInnovationPortal = () => {
+            const [currentPage, setCurrentPage] = useState('home');
+            const [user, setUser] = useState(null);
+            const [loginModalOpen, setLoginModalOpen] = useState(false);
+
+            // Data States
+            const [agricultureData, setAgricultureData] = useState(MOCK_AGRICULTURE);
+            const [businessData, setBusinessData] = useState(MOCK_BUSINESSES);
+            const [marketPosts, setMarketPosts] = useState([
+                { id: 1, user: "ลุงศักดิ์", type: "ขาย", item: "ข้าวหอมมะลิ 105", desc: "ข้าวใหม่ หอมมาก", price: "250 บ./ถัง", contact: { tel: "081-111-2222" }, likes: 5, comments: [], rating: 4.5 },
+                { id: 2, user: "เจ๊แดง", type: "รับซื้อ", item: "กล้วยน้ำว้า", desc: "รับไม่อั้น จ่ายสด", price: "ตามตลาด", contact: { tel: "089-999-8888" }, likes: 2, comments: [], rating: 0 }
+            ]);
+            const [loading, setLoading] = useState(false);
+
+            // Fetch Data
+            useEffect(() => {
+                const fetchData = async () => {
+                    if (!supabase) return;
+                    setLoading(true);
+                    try {
+                        const { data: agri } = await supabase.from('agriculture_products').select('*');
+                        if (agri && agri.length > 0) setAgricultureData(agri);
+
+                        const { data: biz } = await supabase.from('sandbox_businesses').select('*');
+                        if (biz && biz.length > 0) setBusinessData(biz);
+
+                        const { data: posts } = await supabase.from('market_posts').select('*').order('created_at', { ascending: false });
+                        if (posts && posts.length > 0) setMarketPosts(posts);
+                    } catch (error) {
+                        console.log("Using Mock Data (DB not ready)");
+                    } finally {
+                        setLoading(false);
+                    }
+                };
+                fetchData();
+            }, []);
+
+            // Handlers
+            const handleGlobalLogin = () => {
+                setUser({ name: "นักล่าฝัน แห่งทุ่งกุลา", id: "U009", province: "ร้อยเอ็ด", role: "Member" });
+                setLoginModalOpen(false);
+            };
+
+            const handlePostAd = async (newPost) => {
+                if (!user) { setLoginModalOpen(true); return; }
+
+                const postObj = {
+                    id: Date.now(),
+                    user: user.name,
+                    ...newPost,
+                    likes: 0, comments: [], rating: 0,
+                    contact: { tel: newPost.tel, line: newPost.line, facebook: newPost.facebook },
+                    created_at: new Date().toISOString()
+                };
+                setMarketPosts([postObj, ...marketPosts]);
+
+                if (supabase) {
+                    await supabase.from('market_posts').insert([{
+                        user_name: user.name, type: newPost.type, item_name: newPost.item, description: newPost.desc, price: newPost.price,
+                        contact_info: { tel: newPost.tel, line: newPost.line, facebook: newPost.facebook }, likes: 0
+                    }]);
+                }
+            };
+
+            // --- PAGE 1: HOME ---
+            const HomePage = () => (
+                <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900 text-white p-6 pb-24">
+                    <div className="max-w-4xl w-full text-center space-y-8 animate-fade-in-up">
+                        <div className="bg-white/10 backdrop-blur-md p-8 rounded-3xl border border-white/20 shadow-2xl relative transition-all hover:bg-white/15">
+                            {user && <div className="absolute top-4 right-4 bg-green-500 text-white text-xs px-2 py-1 rounded-full flex items-center gap-1"><i className="fa-solid fa-user"></i> {user.name}</div>}
+                            <div className="flex flex-col items-center">
+                                <div className="w-32 h-32 bg-gradient-to-r from-blue-400 to-emerald-400 rounded-full flex items-center justify-center mb-6 shadow-lg border-4 border-white overflow-hidden relative group">
+                                    {user ? <span className="text-5xl">🧑‍🌾</span> : <i className="fa-solid fa-seedling text-5xl text-white"></i>}
+                                </div>
+
+                                {user ? (
+                                    <>
+                                        <h1 className="text-3xl md:text-5xl font-bold mb-3 text-white">สวัสดี, คุณ{user.name}</h1>
+                                        <p className="text-lg text-emerald-200 mb-6 font-light">"ขอให้วันนี้เป็นวันที่ดี พืชผลงอกงาม การค้าขายร่ำรวย"</p>
+                                    </>
+                                ) : (
+                                    <>
+                                        <h1 className="text-3xl md:text-5xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-yellow-200 to-emerald-200 leading-tight">
+                                            "นวัตกรรมเปลี่ยนชีวิต<br />เพื่อความสุขคนไทย"
+                                        </h1>
+                                        <p className="text-lg md:text-xl text-gray-200 mb-8 max-w-2xl font-light leading-relaxed">
+                                            แอปพลิเคชันอัจฉริยะที่จะช่วยให้พี่น้องชาวไทย <span className="text-yellow-300 font-bold">ลดต้นทุน เพิ่มรายได้</span><br class="hidden md:block" />
+                                            เพื่อให้ทุกคนมีกิน มีใช้ และมีชีวิตที่ <span className="font-bold text-white border-b-2 border-yellow-400">สุขสบาย</span> อย่างยั่งยืน
+                                        </p>
+                                    </>
+                                )}
+
+                                {!user && (
+                                    <button onClick={() => setLoginModalOpen(true)} className="bg-orange-500 hover:bg-orange-600 text-white px-8 py-3 rounded-full font-bold shadow-lg animate-bounce transition-all transform hover:scale-105 flex items-center gap-2">
+                                        <i className="fa-solid fa-right-to-bracket"></i> เข้าสู่ระบบสมาชิก
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="grid md:grid-cols-3 gap-6 mt-12">
+                            <button onClick={() => setCurrentPage('kaset')} className="group relative overflow-hidden bg-gradient-to-br from-emerald-800 to-green-900 p-8 rounded-2xl hover:scale-105 transition-all duration-300 border border-emerald-500/30 shadow-xl text-left">
+                                <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20"><i className="fa-solid fa-seedling text-9xl"></i></div>
+                                <div className="relative z-10">
+                                    <div className="bg-emerald-500/20 w-16 h-16 rounded-xl flex items-center justify-center mb-4"><i className="fa-solid fa-brain text-2xl text-emerald-300"></i></div>
+                                    <h2 className="text-2xl font-bold text-white mb-2">Kaset Cloud</h2>
+                                    <p className="text-gray-300 text-sm">วิเคราะห์พืช/สัตว์ที่เหมาะสม คำนวณต้นทุน/กำไรแม่นยำ</p>
+                                </div>
+                            </button>
+                            <button onClick={() => setCurrentPage('market')} className="group relative overflow-hidden bg-gradient-to-br from-orange-800 to-red-900 p-8 rounded-2xl hover:scale-105 transition-all duration-300 border border-orange-500/30 shadow-xl text-left">
+                                <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20"><i className="fa-solid fa-bullhorn text-9xl"></i></div>
+                                <div className="relative z-10">
+                                    <div className="bg-orange-500/20 w-16 h-16 rounded-xl flex items-center justify-center mb-4"><i className="fa-solid fa-arrow-trend-up text-2xl text-orange-300"></i></div>
+                                    <h2 className="text-2xl font-bold text-white mb-2">ตลาด & ชุมชน</h2>
+                                    <p className="text-gray-300 text-sm">เช็คดีมานด์ตลาด ลงโฆษณาซื้อขาย เตือนภัยมิจฉาชีพ</p>
+                                </div>
+                            </button>
+                            <button onClick={() => setCurrentPage('sandbox')} className="group relative overflow-hidden bg-gradient-to-br from-indigo-800 to-blue-900 p-8 rounded-2xl hover:scale-105 transition-all duration-300 border border-indigo-500/30 shadow-xl text-left">
+                                <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20"><i className="fa-solid fa-gamepad text-9xl"></i></div>
+                                <div className="relative z-10">
+                                    <div className="bg-indigo-500/20 w-16 h-16 rounded-xl flex items-center justify-center mb-4"><i className="fa-solid fa-chart-line text-2xl text-indigo-300"></i></div>
+                                    <h2 className="text-2xl font-bold text-white mb-2">Sandbox</h2>
+                                    <p className="text-gray-300 text-sm">เกมจำลองธุรกิจเกษตร ฝึกให้เจ๊งในนี้ก่อนไปเจ๊งจริง</p>
+                                </div>
+                            </button>
+                        </div>
+                        <AppFooter />
+                    </div>
+                </div>
+            );
+
+            // --- PAGE 2: KASET CLOUD ---
+            const KasetCloudApp = () => {
+                const allProvinces = ["กรุงเทพมหานคร", "ขอนแก่น", "เชียงใหม่", "นครราชสีมา", "ภูเก็ต", "สงขลา", "ระยอง"];
+                const [area, setArea] = useState(10);
+                const [analyzing, setAnalyzing] = useState(false);
+                const [rankedResults, setRankedResults] = useState(null);
+
+                const analyzeData = () => {
+                    setAnalyzing(true);
+                    setTimeout(() => {
+                        let results = agricultureData.map(item => ({
+                            ...item, profit: (item.price * item.yield * area) - (item.cost * area), score: Math.random() * 100
+                        }));
+                        results.sort((a, b) => b.profit - a.profit);
+                        setRankedResults(results.slice(0, 5));
+                        setAnalyzing(false);
+                    }, 1000);
+                };
+
+                return (
+                    <div className="min-h-screen bg-green-50 text-gray-800 p-4 pb-20">
+                        <div className="bg-white rounded-2xl p-6 shadow-md border-t-4 border-emerald-500 mb-6">
+                            <h2 className="text-xl font-bold text-gray-700 mb-4 flex items-center gap-2"><i className="fa-solid fa-calculator text-emerald-600"></i> คำนวณ (Kaset Cloud)</h2>
+                            <div className="grid md:grid-cols-2 gap-4">
+                                <select className="w-full p-2 border rounded-lg">
+                                    <option>เลือกจังหวัด</option>
+                                    {allProvinces.map(p => <option key={p}>{p}</option>)}
+                                </select>
+                                <input type="number" value={area} onChange={(e) => setArea(e.target.value)} className="w-full p-2 border rounded-lg" placeholder="จำนวนไร่" />
+                            </div>
+                            <button onClick={analyzeData} className="w-full mt-4 bg-emerald-600 text-white py-3 rounded-xl font-bold flex justify-center items-center gap-2">
+                                {analyzing ? "กำลังดึงข้อมูล..." : "วิเคราะห์"}
+                            </button>
+                        </div>
+                        {rankedResults && (
+                            <div className="space-y-3">
+                                {rankedResults.map((item, idx) => (
+                                    <div key={idx} className="bg-white p-4 rounded-xl shadow border-l-4 border-green-500 flex justify-between items-center">
+                                        <div>
+                                            <h4 className="font-bold text-lg">{item.name}</h4>
+                                            <p className="text-sm text-gray-500">กำไรคาดการณ์: <span className="text-green-600 font-bold">{item.profit.toLocaleString()} ฿</span></p>
+                                        </div>
+                                        <div className="text-right">
+                                            <span className="text-xs bg-gray-100 px-2 py-1 rounded">{item.demandDesc}</span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                        <AppFooter />
+                    </div>
+                );
+            };
+
+            // --- PAGE 3: SANDBOX ---
+            const VirtualSandboxApp = () => {
+                const [tierFilter, setTierFilter] = useState("All");
+                const [expandedBiz, setExpandedBiz] = useState(null);
+                const filteredBiz = tierFilter === "All" ? businessData : businessData.filter(b => b.tier === tierFilter);
+
+                return (
+                    <div className="min-h-screen bg-slate-900 text-white p-4 pb-20">
+                        <div className="flex gap-2 mb-6 overflow-x-auto">
+                            {["All", "หลักหมื่น", "หลักแสน", "หลักล้าน"].map(tier => (
+                                <button key={tier} onClick={() => setTierFilter(tier)} className={`px-4 py-2 rounded-full font-bold text-sm whitespace-nowrap ${tierFilter === tier ? 'bg-indigo-500' : 'bg-slate-800'}`}>{tier}</button>
+                            ))}
+                        </div>
+                        <div className="grid md:grid-cols-2 gap-4">
+                            {filteredBiz.map((biz) => (
+                                <div key={biz.id} className="bg-slate-800 rounded-xl p-5 border border-slate-700 hover:border-indigo-500 cursor-pointer" onClick={() => setExpandedBiz(biz === expandedBiz ? null : biz)}>
+                                    <div className="flex justify-between mb-3">
+                                        <h3 className="font-bold text-lg text-indigo-300">{biz.name}</h3>
+                                        <span className="text-green-400 font-bold">{biz.profitMonth.toLocaleString()}/ด.</span>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-2 text-xs text-gray-400 mb-2">
+                                        <p>ลงทุน: {biz.investment.toLocaleString()}</p>
+                                        <p>ความเสี่ยง: {biz.risk}</p>
+                                    </div>
+                                    {expandedBiz === biz && (
+                                        <div className="mt-3 pt-3 border-t border-slate-700 animate-fade-in-up">
+                                            <p className="text-xs text-gray-300 mb-2">ต้นทุน: {JSON.stringify(biz.costBreakdown)}</p>
+                                            {user && <button className="w-full bg-indigo-600 py-2 rounded font-bold text-xs mt-2">เริ่มจำลองธุรกิจนี้</button>}
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                        <AppFooter />
+                    </div>
+                );
+            };
+
+            // --- PAGE 4: MARKET ---
+            const MarketCommunityPage = () => {
+                const [postModalOpen, setPostModalOpen] = useState(false);
+                const [newPost, setNewPost] = useState({ type: 'ขาย', item: '', desc: '', price: '', tel: '', line: '', facebook: '' });
+
+                return (
+                    <div className="min-h-screen bg-gray-50 text-gray-800 p-4 pb-20">
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="font-bold text-gray-700">ประกาศล่าสุด ({marketPosts.length})</h3>
+                            <button onClick={() => user ? setPostModalOpen(true) : setLoginModalOpen(true)} className="bg-orange-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow flex items-center gap-2"><i className="fa-solid fa-bullhorn"></i> ลงประกาศ</button>
+                        </div>
+                        <div className="space-y-4">
+                            {marketPosts.map((post, idx) => (
+                                <div key={idx} className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
+                                    <div className="flex justify-between mb-2">
+                                        <span className="font-bold text-gray-800">{post.item_name || post.item}</span>
+                                        <span className={`text-xs px-2 py-1 rounded-full ${post.type === 'ขาย' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>{post.type}</span>
+                                    </div>
+                                    <p className="text-sm text-gray-600 mb-2">{post.description || post.desc}</p>
+                                    <p className="text-lg font-bold text-orange-600 mb-3">{post.price}</p>
+                                    <div className="flex gap-4 text-gray-500 text-sm border-t pt-2">
+                                        <button className="flex items-center gap-1 hover:text-blue-600"><i className="fa-solid fa-thumbs-up"></i> {post.likes || 0}</button>
+                                        <button className="flex items-center gap-1 hover:text-blue-600"><i className="fa-solid fa-comment"></i> คอมเมนต์</button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                        <AppFooter />
+                        {postModalOpen && (
+                            <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+                                <div className="bg-white rounded-2xl p-6 w-full max-w-md">
+                                    <h3 className="font-bold mb-4">ลงประกาศ</h3>
+                                    <input className="border w-full p-2 mb-2 rounded" placeholder="ชื่อสินค้า" value={newPost.item} onChange={e => setNewPost({ ...newPost, item: e.target.value })} />
+                                    <input className="border w-full p-2 mb-2 rounded" placeholder="ราคา" value={newPost.price} onChange={e => setNewPost({ ...newPost, price: e.target.value })} />
+                                    <div className="flex gap-2 mt-4">
+                                        <button onClick={() => setPostModalOpen(false)} className="flex-1 border py-2 rounded">ยกเลิก</button>
+                                        <button onClick={() => { handlePostAd(newPost); setPostModalOpen(false); }} className="flex-1 bg-orange-600 text-white py-2 rounded font-bold">โพสต์</button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                );
+            };
+
+            // --- NAVIGATION ---
+            return (
+                <div className="font-sans">
+                    <nav className="fixed bottom-0 w-full bg-white border-t flex justify-around p-3 z-50 text-xs font-bold text-gray-500 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
+                        <button onClick={() => setCurrentPage('home')} className={`flex flex-col items-center gap-1 ${currentPage === 'home' ? 'text-emerald-600' : ''}`}><i className="fa-solid fa-house text-lg"></i><span>หน้าแรก</span></button>
+                        <button onClick={() => setCurrentPage('kaset')} className={`flex flex-col items-center gap-1 ${currentPage === 'kaset' ? 'text-emerald-600' : ''}`}><i className="fa-solid fa-seedling text-lg"></i><span>เกษตร</span></button>
+                        <button onClick={() => setCurrentPage('market')} className={`flex flex-col items-center gap-1 ${currentPage === 'market' ? 'text-orange-600' : ''}`}><i className="fa-solid fa-shop text-lg"></i><span>ตลาด</span></button>
+                        <button onClick={() => setCurrentPage('sandbox')} className={`flex flex-col items-center gap-1 ${currentPage === 'sandbox' ? 'text-indigo-600' : ''}`}><i className="fa-solid fa-gamepad text-lg"></i><span>Sandbox</span></button>
+                    </nav>
+
+                    {currentPage === 'home' && <HomePage />}
+                    {currentPage === 'kaset' && <KasetCloudApp />}
+                    {currentPage === 'market' && <MarketCommunityPage />}
+                    {currentPage === 'sandbox' && <VirtualSandboxApp />}
+
+                    {loginModalOpen && (
+                        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[60] p-4 backdrop-blur-sm">
+                            <div className="bg-white rounded-2xl p-8 w-full max-w-sm text-center shadow-2xl relative">
+                                <button onClick={() => setLoginModalOpen(false)} className="absolute top-4 right-4 text-gray-400 font-bold hover:text-gray-600">X</button>
+                                <h3 className="text-2xl font-bold mb-4 text-gray-800">เข้าสู่ระบบสมาชิก</h3>
+                                <button onClick={handleGlobalLogin} className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold mb-2 flex justify-center items-center gap-2 hover:bg-blue-700 transition"><i className="fa-brands fa-facebook"></i> Facebook</button>
+                                <button onClick={handleGlobalLogin} className="w-full bg-green-500 text-white py-3 rounded-xl font-bold flex justify-center items-center gap-2 hover:bg-green-600 transition"><i className="fa-brands fa-line"></i> Line</button>
+                                <div className="mt-4 text-xs text-gray-400">
+                                    <p>ระบบสมาชิกเชื่อมต่อข้อมูลการเกษตรและธุรกิจของคุณไว้ในที่เดียว</p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<VinaiInnovationPortal />);
+    </script>
+</body>
+
+</html>
