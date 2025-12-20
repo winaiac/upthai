@@ -63,7 +63,7 @@
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect } = React;
+        const { useState, useEffect, useRef } = React;
 
         // --- SUPABASE CONFIG ---
         const SUPABASE_URL = "https://ldsysxczitmkxmukmwri.supabase.co";
@@ -81,7 +81,7 @@
             }
         }
 
-        // --- MOCK DATA: PROVINCES (จำลองข้อมูล LDD & GISTDA) ---
+        // --- MOCK DATA: PROVINCES ---
         const PROVINCE_DATA = {};
         const regions = {
             "เหนือ": ["เชียงราย", "เชียงใหม่", "น่าน", "พะเยา", "แพร่", "แม่ฮ่องสอน", "ลำปาง", "ลำพูน", "อุตรดิตถ์", "สุโขทัย", "พิษณุโลก", "พิจิตร", "เพชรบูรณ์", "กำแพงเพชร", "ตาก", "นครสวรรค์", "อุทัยธานี"],
@@ -131,7 +131,49 @@
             </div>
         );
 
-        // --- PAGE: MARKET & DEMAND PLANNER (NEW FEATURE) ---
+        // --- MARKET DATA CONSTANT & SHARED LOGIC ---
+        const MARKET_STATS_DB = {
+            'ข้าวหอมมะลิ': { domestic: 60000, export: 50000, current: 85000 },
+            'ทุเรียน': { domestic: 20000, export: 40000, current: 50000 },
+            'ยางพารา': { domestic: 50000, export: 150000, current: 195000 },
+            'มันสำปะหลัง': { domestic: 100000, export: 200000, current: 250000 },
+            'ข้าวโพดเลี้ยงสัตว์': { domestic: 150000, export: 10000, current: 160000 },
+            'ผักสลัดไฮโดร': { domestic: 5000, export: 500, current: 4000 },
+            'อ้อยโรงงาน': { domestic: 500000, export: 200000, current: 600000 },
+            'ปาล์มน้ำมัน': { domestic: 100000, export: 50000, current: 120000 }
+        };
+
+        const getOtherRegisteredSupply = (cropName) => {
+            if (!cropName) return 2000;
+            let nameKey = cropName;
+            if (cropName.includes('ทุเรียน')) nameKey = 'ทุเรียน'; 
+
+            let hash = 0;
+            for (let i = 0; i < nameKey.length; i++) {
+                hash = nameKey.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            const range = 3000;
+            const min = 2000;
+            return (Math.abs(hash) % range) + min;
+        };
+
+        // --- MOCK BUYERS DATA ---
+        const BUYERS_DATABASE = [
+            { name: "บจก. ธัญญะทิพย์ ส่งออกข้าว", crops: ["ข้าวหอมมะลิ", "ข้าวโพดเลี้ยงสัตว์"], province: "กรุงเทพมหานคร", type: "ผู้ส่งออก", tel: "02-555-0101", certified: "GMP/HACCP" },
+            { name: "ล้งเจ๊พร ค้าข้าว", crops: ["ข้าวหอมมะลิ"], province: "เชียงราย", type: "ล้งในพื้นที่", tel: "089-123-4567", certified: "GAP" },
+            { name: "สหกรณ์การเกษตรทุ่งกุลา", crops: ["ข้าวหอมมะลิ"], province: "ร้อยเอ็ด", type: "สหกรณ์", tel: "043-555-888", certified: "Organic Thailand" },
+            { name: "Durian King Export Co.", crops: ["ทุเรียน"], province: "จันทบุรี", type: "ผู้ส่งออก", tel: "039-111-222", certified: "GMP/Chinese Standard" },
+            { name: "เฮียใช้ รับซื้อยางพารา", crops: ["ยางพารา"], province: "สงขลา", type: "ลานรับซื้อ", tel: "081-999-8888", certified: "-" },
+            { name: "Siam Cassava Starch", crops: ["มันสำปะหลัง"], province: "นครราชสีมา", type: "โรงงานแป้งมัน", tel: "044-222-333", certified: "ISO 9001" },
+            { name: "CP Feed Mill (สาขาสระบุรี)", crops: ["ข้าวโพดเลี้ยงสัตว์"], province: "สระบุรี", type: "โรงงานอาหารสัตว์", tel: "036-444-555", certified: "HACCP" },
+            { name: "ล้งทุเรียนป่าละอู", crops: ["ทุเรียน"], province: "ประจวบคีรีขันธ์", type: "ล้งในพื้นที่", tel: "082-333-4444", certified: "GAP" },
+             { name: "บจก. ส่งออกผลไม้ไทยรุ่งเรือง", crops: ["ทุเรียน", "มังคุด"], province: "กรุงเทพมหานคร", type: "ผู้ส่งออก", tel: "02-987-6543", certified: "GMP" },
+             { name: "โรงงานน้ำตาลมิตรผล", crops: ["อ้อยโรงงาน"], province: "ขอนแก่น", type: "โรงงานแปรรูป", tel: "043-123-456", certified: "Bonsucro" },
+             { name: "บจก. วิจิตรปาล์มออยล์", crops: ["ปาล์มน้ำมัน"], province: "สุราษฎร์ธานี", type: "โรงงานสกัด", tel: "077-888-999", certified: "RSPO" },
+             { name: "Green Salad Farm", crops: ["ผักสลัดไฮโดร"], province: "เชียงใหม่", type: "ผู้รับซื้อ", tel: "053-111-222", certified: "GAP" }
+        ];
+
+        // --- PAGE: MARKET & DEMAND PLANNER ---
         const MarketPage = ({ setPage }) => {
             const [formData, setFormData] = useState({
                 crop: 'ข้าวหอมมะลิ',
@@ -142,21 +184,51 @@
             const [analysisResult, setAnalysisResult] = useState(null);
             const [isSubmitting, setIsSubmitting] = useState(false);
             const [errorMsg, setErrorMsg] = useState("");
+            const [matchedBuyers, setMatchedBuyers] = useState([]);
+            const [isSearchingBuyers, setIsSearchingBuyers] = useState(false);
+            const chartRef = useRef(null);
 
-            // Mock Demand Data (ข้อมูลสมมติ: ความต้องการตลาด vs ปริมาณที่มีอยู่)
-            // หน่วย: ตัน (Tons)
+            // Market Data Details (Merged with Stats)
             const marketData = {
-                'ข้าวหอมมะลิ': { demand: 100000, currentSupply: 85000, unitPrice: 15000, trend: 'up' },
-                'ทุเรียน': { demand: 50000, currentSupply: 60000, unitPrice: 120000, trend: 'down' },
-                'ยางพารา': { demand: 200000, currentSupply: 195000, unitPrice: 50, trend: 'stable' },
-                'มันสำปะหลัง': { demand: 300000, currentSupply: 250000, unitPrice: 3000, trend: 'up' },
-                'ข้าวโพดเลี้ยงสัตว์': { demand: 150000, currentSupply: 160000, unitPrice: 8500, trend: 'down' }
+                'ข้าวหอมมะลิ': { 
+                    ...MARKET_STATS_DB['ข้าวหอมมะลิ'], unitPrice: 15000, trend: 'up',
+                    exportDest: "สหรัฐอเมริกา, ฮ่องกง, สิงคโปร์", std: "GAP, Organic Thailand", exportTips: "ตลาดพรีเมียมต้องการข้าวอินทรีย์ แพ็คเกจจิ้งต้องสวยงาม"
+                },
+                'ทุเรียน': { 
+                     ...MARKET_STATS_DB['ทุเรียน'], unitPrice: 120000, trend: 'down',
+                    exportDest: "จีน (90%), เวียดนาม", std: "GAP (บังคับ), GMP (โรงคัดบรรจุ)", exportTips: "ต้องระวังเรื่องหนอนเจาะเมล็ด และเปอร์เซ็นต์แป้งต้องได้มาตรฐาน"
+                },
+                'ยางพารา': { 
+                     ...MARKET_STATS_DB['ยางพารา'], unitPrice: 50, trend: 'stable',
+                    exportDest: "จีน, มาเลเซีย, ญี่ปุ่น", std: "FSC (ป่าไม้จัดการยั่งยืน)", exportTips: "แปรรูปเป็นยางเครปหรือน้ำยางข้น จะได้ราคาสูงกว่าขายเศษยาง"
+                },
+                'มันสำปะหลัง': { 
+                     ...MARKET_STATS_DB['มันสำปะหลัง'], unitPrice: 3000, trend: 'up',
+                    exportDest: "จีน (เอทานอล/อาหารสัตว์)", std: "GAP, มาตรฐานลานมัน", exportTips: "ตลาดจีนต้องการมันเส้นสะอาด ไม่ปนเปื้อนดินทราย"
+                },
+                'ข้าวโพดเลี้ยงสัตว์': { 
+                     ...MARKET_STATS_DB['ข้าวโพดเลี้ยงสัตว์'], unitPrice: 8500, trend: 'down',
+                    exportDest: "เพื่อนบ้าน (CLMV)", std: "GAP (ปลอดการเผา)", exportTips: "โรงงานอาหารสัตว์ในไทยต้องการสูง แต่ต้องแข่งกับข้าวโพดนำเข้า"
+                },
+                'ผักสลัดไฮโดร': { 
+                     ...MARKET_STATS_DB['ผักสลัดไฮโดร'], unitPrice: 80000, trend: 'up',
+                    exportDest: "สิงคโปร์, ญี่ปุ่น", std: "GAP, GMP", exportTips: "เน้นความสดสะอาด ปลอดสารพิษ แพ็คเกจต้องรักษาความสด"
+                },
+                'อ้อยโรงงาน': { 
+                     ...MARKET_STATS_DB['อ้อยโรงงาน'], unitPrice: 1100, trend: 'stable',
+                    exportDest: "ตลาดโลก (น้ำตาลทราย)", std: "ตัดอ้อยสด ลดการเผา", exportTips: "ค่าความหวาน (CCS) ต้องสูง เพื่อให้ได้ราคาดี"
+                },
+                'ปาล์มน้ำมัน': { 
+                     ...MARKET_STATS_DB['ปาล์มน้ำมัน'], unitPrice: 6000, trend: 'up',
+                    exportDest: "อินเดีย, ยุโรป", std: "RSPO", exportTips: "เปอร์เซ็นต์น้ำมันต้องได้มาตรฐาน ตัดสุก ไม่ตัดดิบ"
+                }
             };
 
             const handleInputChange = (e) => {
                 const { name, value } = e.target;
                 setFormData(prev => ({ ...prev, [name]: value }));
                 setAnalysisResult(null);
+                setMatchedBuyers([]);
                 setErrorMsg("");
             };
 
@@ -167,65 +239,140 @@
                 }
                 setIsSubmitting(true);
 
-                // Simulate processing
                 setTimeout(() => {
-                    const selectedMarket = marketData[formData.crop] || { demand: 1000, currentSupply: 500, unitPrice: 100, trend: 'stable' };
+                    const selectedMarket = marketData[formData.crop] || { domestic: 1000, export: 500, current: 500, unitPrice: 100, trend: 'stable' };
                     
-                    // สมมติผลผลิตต่อไร่ (Yield)
-                    let yieldPerRai = 800; // kg
+                    // 1. Yield Calculation
+                    let yieldPerRai = 800; // kg default
                     if (formData.crop === 'ทุเรียน') yieldPerRai = 2000;
                     if (formData.crop === 'ยางพารา') yieldPerRai = 250;
                     if (formData.crop === 'มันสำปะหลัง') yieldPerRai = 3500;
+                    if (formData.crop === 'ผักสลัดไฮโดร') yieldPerRai = 2000;
+                    if (formData.crop === 'อ้อยโรงงาน') yieldPerRai = 12000;
+                    if (formData.crop === 'ปาล์มน้ำมัน') yieldPerRai = 3000;
 
-                    const estimatedOutput = (parseFloat(formData.area) * yieldPerRai) / 1000; // Convert kg to Tons
-                    const newTotalSupply = selectedMarket.currentSupply + estimatedOutput;
-                    const supplyDemandRatio = (newTotalSupply / selectedMarket.demand) * 100;
+                    const estimatedOutput = (parseFloat(formData.area) * yieldPerRai) / 1000; // Tons
 
-                    let advice = "";
-                    let statusColor = "";
-                    let statusText = "";
+                    // 2. Aggregate Supply Simulation (Using Consistent Function)
+                    const otherRegisteredSupply = getOtherRegisteredSupply(formData.crop);
+                    
+                    const totalDomesticSupply = selectedMarket.current;
+                    const totalProjectedSupply = totalDomesticSupply + otherRegisteredSupply + estimatedOutput;
+                    const totalDemand = selectedMarket.domestic + selectedMarket.export;
+                    
+                    const domesticRatio = (totalProjectedSupply / selectedMarket.domestic) * 100;
+                    const totalRatio = (totalProjectedSupply / totalDemand) * 100;
 
-                    if (supplyDemandRatio > 110) {
-                        statusText = "เสี่ยงล้นตลาด (Oversupply)";
+                    let advice = "", statusColor = "", statusText = "", exportOpportunity = false;
+
+                    if (totalRatio > 110) {
+                        statusText = "วิกฤตล้นตลาด (Severe Oversupply)";
                         statusColor = "red";
-                        advice = "⚠️ ตลาดมีความเสี่ยงราคาทรุดตัว! ปริมาณผลผลิตเกินความต้องการ \n\nข้อแนะนำ:\n1. พิจารณาทำเกษตรพันธสัญญา (Contract Farming) ก่อนปลูก\n2. วางแผนแปรรูปเพื่อเพิ่มมูลค่าแทนการขายสด\n3. ชะลอการเก็บเกี่ยวหากทำได้";
-                    } else if (supplyDemandRatio < 90) {
-                        statusText = "โอกาสทอง (Undersupply)";
+                        advice = "❌ **คำเตือนรุนแรง:** ผลผลิตรวมคาดการณ์เกินความต้องการรวมทั้งโลก \n\n**แผนสำรองด่วน:**\n1. แปรรูปเก็บรักษา\n2. ชะลอการเก็บเกี่ยว\n3. หาตลาดเฉพาะกลุ่ม";
+                    } else if (domesticRatio > 110 && totalRatio <= 100) {
+                        statusText = "ส่งออกด่วน (Export Opportunity)";
+                        statusColor = "blue";
+                        exportOpportunity = true;
+                        advice = `🚢 **โอกาสทอง:** ตลาดในประเทศล้น แต่ตลาดโลกยังขาดแคลน!\n\n**สิ่งที่ต้องทำทันที:**\n1. ติดต่อล้ง/ผู้ส่งออกเพื่อจองโควต้าส่งไปยัง **${selectedMarket.exportDest}**\n2. ตรวจสอบมาตรฐาน **${selectedMarket.std}**\n3. คัดเกรดพรีเมียมเพื่อทำราคา`;
+                    } else if (totalRatio < 90) {
+                        statusText = "ตลาดต้องการสูง (High Demand)";
                         statusColor = "green";
-                        advice = "✅ ตลาดต้องการสูง! คาดการณ์ราคาดี \n\nข้อแนะนำ:\n1. บำรุงรักษาให้ได้คุณภาพเกรด A (Premium)\n2. ติดต่อล้ง/โรงงานล่วงหน้าเพื่อจองราคา\n3. ระวังโรคระบาดที่อาจทำให้ผลผลิตเสียหาย";
+                        advice = "✅ **ลุยได้เต็มที่:** ผลผลิตไม่พอต่อความต้องการ\n\n**ข้อแนะนำ:**\n1. บำรุงรักษาให้ได้ผลผลิตสูงสุด\n2. มีอำนาจต่อรองราคา อย่ารีบขาย\n3. ทำสัญญาล่วงหน้า (Contract Farming)";
                     } else {
                         statusText = "สมดุล (Balanced)";
-                        statusColor = "blue";
-                        advice = "ℹ️ ตลาดปกติ ราคาเป็นไปตามกลไกตลาด \n\nข้อแนะนำ:\n1. ติดตามข่าวสารราคาตลาดไท/ตลาดสี่มุมเมืองรายวัน\n2. รวมกลุ่มเกษตรกรเพื่อต่อรองราคาปุ๋ย/ยา";
+                        statusColor = "yellow";
+                        advice = "ℹ️ **ราคาปกติ:** เป็นไปตามกลไกตลาด\n\n**ข้อแนะนำ:**\n1. เน้นลดต้นทุนการผลิตเพื่อเพิ่มกำไร\n2. ติดตามราคาตลาดรายวัน";
                     }
 
                     setAnalysisResult({
                         ...selectedMarket,
                         estimatedOutput,
-                        newTotalSupply,
-                        supplyDemandRatio,
+                        otherRegisteredSupply,
+                        totalProjectedSupply,
+                        totalDemand,
                         statusText,
                         statusColor,
-                        advice
+                        advice,
+                        exportOpportunity
                     });
                     setIsSubmitting(false);
                 }, 1500);
             };
 
+            const searchBuyers = () => {
+                setIsSearchingBuyers(true);
+                setTimeout(() => {
+                    const results = BUYERS_DATABASE.filter(buyer => {
+                        const hasCrop = buyer.crops.includes(formData.crop);
+                        const isArea = buyer.province === formData.province;
+                        const isExporter = buyer.type === "ผู้ส่งออก";
+                        return hasCrop && (isArea || isExporter);
+                    });
+                    setMatchedBuyers(results);
+                    setIsSearchingBuyers(false);
+                }, 1000);
+            };
+
+            // Effect to Draw/Update Chart
+            useEffect(() => {
+                if (analysisResult && document.getElementById('demandChart')) {
+                    const ctx = document.getElementById('demandChart').getContext('2d');
+                    
+                    if (chartRef.current) {
+                        chartRef.current.destroy();
+                    }
+
+                    chartRef.current = new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: ['ความต้องการรวม (Demand)', 'ผลผลิตรวม (Supply)'],
+                            datasets: [{
+                                label: 'ปริมาณ (ตัน)',
+                                data: [analysisResult.totalDemand, analysisResult.totalProjectedSupply],
+                                backgroundColor: [
+                                    'rgba(54, 162, 235, 0.7)', 
+                                    analysisResult.totalProjectedSupply > analysisResult.totalDemand ? 'rgba(239, 68, 68, 0.7)' : 'rgba(16, 185, 129, 0.7)'
+                                ],
+                                borderColor: [
+                                    'rgba(54, 162, 235, 1)',
+                                    analysisResult.totalProjectedSupply > analysisResult.totalDemand ? 'rgba(239, 68, 68, 1)' : 'rgba(16, 185, 129, 1)'
+                                ],
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: {
+                                legend: { display: false },
+                                title: {
+                                    display: true,
+                                    text: 'กราฟเปรียบเทียบ Demand vs Supply (รวมของท่านและเพื่อนเกษตรกร)',
+                                    font: { family: "'Sarabun', sans-serif", size: 14 }
+                                }
+                            },
+                            scales: {
+                                y: { beginAtZero: true }
+                            }
+                        }
+                    });
+                }
+            }, [analysisResult]);
+
             return (
                 <div className="min-h-screen bg-orange-50 p-4 pb-24">
                     {/* Header */}
                     <div className="bg-gradient-to-r from-orange-500 to-red-600 rounded-2xl p-6 text-white shadow-lg mb-6 relative overflow-hidden">
-                        <div className="absolute top-0 right-0 p-4 opacity-20"><i className="fa-solid fa-chart-pie text-9xl"></i></div>
+                        <div className="absolute top-0 right-0 p-4 opacity-20"><i className="fa-solid fa-globe text-9xl"></i></div>
                         <div className="relative z-10">
-                            <h2 className="text-2xl font-bold mb-2"><i className="fa-solid fa-scale-balanced"></i> สมาร์ทมาร์เก็ต (Smart Market)</h2>
-                            <p className="text-orange-100 text-sm">ระบบวางแผนดีมานด์-ซัพพลาย รู้ก่อนปลูก รวยก่อนขาย</p>
+                            <h2 className="text-2xl font-bold mb-2"><i className="fa-solid fa-chart-line"></i> ศูนย์กลางข้อมูลตลาด & การส่งออก</h2>
+                            <p className="text-orange-100 text-sm">รวมพลังเกษตรกรไทย กำหนดทิศทางราคาตลาดโลกด้วย Big Data</p>
                         </div>
                     </div>
 
                     {/* Registration Form */}
                     <div className="bg-white rounded-xl shadow-md p-6 border border-orange-100 mb-6">
-                        <h3 className="font-bold text-gray-700 mb-4 border-l-4 border-orange-500 pl-3">📝 ลงทะเบียนแจ้งการเพาะปลูก</h3>
+                        <h3 className="font-bold text-gray-700 mb-4 border-l-4 border-orange-500 pl-3">📝 ลงทะเบียน Supply (เพื่อคำนวณราคากลาง)</h3>
+                        <p className="text-xs text-gray-500 mb-4 bg-orange-50 p-2 rounded"><i className="fa-solid fa-circle-info"></i> ข้อมูลของท่านจะถูกนำไปรวมกับเกษตรกรทั่วประเทศเพื่อประเมินภาวะตลาดล่วงหน้าอย่างแม่นยำ</p>
                         
                         <div className="grid md:grid-cols-2 gap-4">
                             <div>
@@ -279,84 +426,133 @@
                             disabled={isSubmitting}
                             className="w-full mt-6 bg-orange-600 hover:bg-orange-700 text-white font-bold py-3 rounded-xl shadow-lg transition flex justify-center items-center gap-2"
                         >
-                            {isSubmitting ? <><i className="fa-solid fa-spinner fa-spin"></i> กำลังวิเคราะห์ข้อมูลตลาด...</> : <><i className="fa-solid fa-magnifying-glass-chart"></i> ส่งข้อมูล & วิเคราะห์ตลาด</>}
+                            {isSubmitting ? <><i className="fa-solid fa-spinner fa-spin"></i> ระบบกำลังประมวลผล Big Data...</> : <><i className="fa-solid fa-magnifying-glass-chart"></i> ส่งข้อมูล & วิเคราะห์ตลาดส่งออก</>}
                         </button>
                     </div>
 
                     {/* Analysis Result */}
                     {analysisResult && (
-                        <div className="animate-fade-in-up">
-                            <div className="bg-white rounded-xl shadow-lg border-2 overflow-hidden mb-6" style={{borderColor: analysisResult.statusColor === 'red' ? '#EF4444' : analysisResult.statusColor === 'green' ? '#10B981' : '#3B82F6'}}>
-                                <div className={`p-4 text-white font-bold flex justify-between items-center ${analysisResult.statusColor === 'red' ? 'bg-red-500' : analysisResult.statusColor === 'green' ? 'bg-green-500' : 'bg-blue-500'}`}>
-                                    <span><i className="fa-solid fa-robot"></i> ผลการวิเคราะห์ AI</span>
-                                    <span className="bg-white/20 px-3 py-1 rounded-full text-xs">ความแม่นยำ 92%</span>
+                        <div className="animate-fade-in-up space-y-6">
+                            {/* Main Status Card */}
+                            <div className="bg-white rounded-xl shadow-lg border-2 overflow-hidden" style={{borderColor: analysisResult.statusColor === 'red' ? '#EF4444' : analysisResult.statusColor === 'green' ? '#10B981' : analysisResult.statusColor === 'blue' ? '#3B82F6' : '#EAB308'}}>
+                                <div className={`p-4 text-white font-bold flex justify-between items-center ${analysisResult.statusColor === 'red' ? 'bg-red-500' : analysisResult.statusColor === 'green' ? 'bg-green-500' : analysisResult.statusColor === 'blue' ? 'bg-blue-500' : 'bg-yellow-500'}`}>
+                                    <span><i className="fa-solid fa-robot"></i> ผลวิเคราะห์ตลาด (Domestic & Export)</span>
                                 </div>
                                 <div className="p-6">
-                                    <div className="flex flex-col md:flex-row gap-6 items-center">
-                                        <div className="flex-1 w-full text-center">
-                                            <div className="relative inline-block">
-                                                <svg className="w-32 h-32 transform -rotate-90">
-                                                    <circle cx="64" cy="64" r="56" stroke="#eee" strokeWidth="12" fill="none" />
-                                                    <circle cx="64" cy="64" r="56" stroke={analysisResult.statusColor === 'red' ? '#EF4444' : analysisResult.statusColor === 'green' ? '#10B981' : '#3B82F6'} strokeWidth="12" fill="none" strokeDasharray="351" strokeDashoffset={351 - (351 * Math.min(analysisResult.supplyDemandRatio, 100) / 100)} className="transition-all duration-1000 ease-out" />
-                                                </svg>
-                                                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center">
-                                                    <span className={`text-2xl font-bold ${analysisResult.statusColor === 'red' ? 'text-red-500' : analysisResult.statusColor === 'green' ? 'text-green-500' : 'text-blue-500'}`}>{analysisResult.supplyDemandRatio.toFixed(0)}%</span>
-                                                    <span className="block text-[10px] text-gray-400">Supply/Demand</span>
-                                                </div>
+                                    <div className="flex flex-col md:flex-row gap-6 items-start">
+                                        <div className="flex-1 w-full">
+                                            <p className={`font-bold text-2xl mb-2 text-center md:text-left ${analysisResult.statusColor === 'red' ? 'text-red-600' : analysisResult.statusColor === 'green' ? 'text-green-600' : analysisResult.statusColor === 'blue' ? 'text-blue-600' : 'text-yellow-600'}`}>{analysisResult.statusText}</p>
+                                            
+                                            {/* Chart Canvas */}
+                                            <div className="w-full h-48 mb-4">
+                                                <canvas id="demandChart"></canvas>
                                             </div>
-                                            <p className={`font-bold mt-2 text-lg ${analysisResult.statusColor === 'red' ? 'text-red-600' : analysisResult.statusColor === 'green' ? 'text-green-600' : 'text-blue-600'}`}>{analysisResult.statusText}</p>
+
+                                            {/* Data Breakdown */}
+                                            <div className="bg-gray-50 rounded-lg p-3 text-xs space-y-2 mb-4 border border-gray-200">
+                                                <div className="flex justify-between"><span>ผลผลิตของท่าน:</span> <span className="font-bold">{analysisResult.estimatedOutput.toLocaleString()} ตัน</span></div>
+                                                <div className="flex justify-between text-gray-500"><span>+ เพื่อนเกษตรกรในระบบ:</span> <span>{analysisResult.otherRegisteredSupply.toLocaleString()} ตัน</span></div>
+                                                <div className="flex justify-between text-gray-500"><span>+ ซัพพลายเดิมในตลาด:</span> <span>{analysisResult.current.toLocaleString()} ตัน</span></div>
+                                                <div className="border-t border-gray-300 pt-1 flex justify-between font-bold text-sm"><span>= ซัพพลายรวมทั้งประเทศ:</span> <span>{analysisResult.totalProjectedSupply.toLocaleString()} ตัน</span></div>
+                                            </div>
                                         </div>
                                         
-                                        <div className="flex-[2] w-full border-l border-gray-100 pl-0 md:pl-6">
-                                            <h4 className="font-bold text-gray-800 mb-2"><i className="fa-solid fa-clipboard-check text-orange-500"></i> คำแนะนำการปฏิบัติ:</h4>
-                                            <div className="bg-gray-50 p-4 rounded-lg text-sm text-gray-700 whitespace-pre-line leading-relaxed border border-gray-200">
+                                        <div className="flex-[1.5] w-full border-l border-gray-100 pl-0 md:pl-6">
+                                            <h4 className="font-bold text-gray-800 mb-2 flex items-center gap-2"><i className="fa-solid fa-clipboard-list text-orange-500"></i> แนวทางปฏิบัติ (Action Plan):</h4>
+                                            <div className="bg-white p-4 rounded-lg text-sm text-gray-700 whitespace-pre-line leading-relaxed border border-gray-200 shadow-sm">
                                                 {analysisResult.advice}
                                             </div>
                                             
-                                            <div className="grid grid-cols-2 gap-4 mt-4 text-xs">
-                                                <div className="bg-blue-50 p-2 rounded border border-blue-100">
-                                                    <span className="block text-gray-500">ความต้องการตลาด (Demand)</span>
-                                                    <span className="font-bold text-blue-700 text-lg">{analysisResult.demand.toLocaleString()} ตัน</span>
-                                                </div>
-                                                <div className="bg-yellow-50 p-2 rounded border border-yellow-100">
-                                                    <span className="block text-gray-500">ซัพพลายปัจจุบัน (Supply)</span>
-                                                    <span className="font-bold text-yellow-700 text-lg">{analysisResult.newTotalSupply.toLocaleString()} ตัน</span>
-                                                </div>
+                                            <div className="mt-4">
+                                                <button onClick={searchBuyers} disabled={isSearchingBuyers} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded-lg shadow transition flex justify-center items-center gap-2">
+                                                    {isSearchingBuyers ? <><i className="fa-solid fa-spinner fa-spin"></i> กำลังค้นหา...</> : <><i className="fa-solid fa-handshake"></i> ค้นหาผู้รับซื้อ/ล้งส่งออกในพื้นที่</>}
+                                                </button>
                                             </div>
                                         </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            {/* Matched Buyers Result */}
+                            {matchedBuyers.length > 0 && (
+                                <div className="bg-white rounded-xl shadow-lg p-6 border border-blue-100 animate-fade-in-up">
+                                    <h3 className="font-bold text-lg text-blue-800 mb-4 flex items-center gap-2"><i className="fa-solid fa-truck-fast"></i> ผู้รับซื้อที่แนะนำ (สำหรับ {formData.crop})</h3>
+                                    <div className="grid md:grid-cols-2 gap-4">
+                                        {matchedBuyers.map((buyer, idx) => (
+                                            <div key={idx} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition bg-gray-50">
+                                                <div className="flex justify-between items-start mb-2">
+                                                    <h4 className="font-bold text-gray-800">{buyer.name}</h4>
+                                                    <span className={`text-[10px] px-2 py-0.5 rounded text-white ${buyer.type === 'ผู้ส่งออก' ? 'bg-purple-500' : 'bg-orange-500'}`}>{buyer.type}</span>
+                                                </div>
+                                                <p className="text-xs text-gray-600 mb-1"><i className="fa-solid fa-location-dot text-red-400"></i> {buyer.province}</p>
+                                                <p className="text-xs text-gray-600 mb-1"><i className="fa-solid fa-certificate text-yellow-500"></i> มาตรฐาน: {buyer.certified}</p>
+                                                <div className="mt-3 flex gap-2">
+                                                    <a href={`tel:${buyer.tel}`} className="flex-1 bg-green-500 hover:bg-green-600 text-white text-xs font-bold py-1.5 rounded text-center transition"><i className="fa-solid fa-phone"></i> โทร: {buyer.tel}</a>
+                                                    <button className="flex-1 border border-blue-500 text-blue-500 hover:bg-blue-50 text-xs font-bold py-1.5 rounded transition">ขอใบเสนอราคา</button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <p className="text-center text-xs text-gray-400 mt-4">ผลการค้นหาอ้างอิงจากฐานข้อมูลล้งที่ลงทะเบียนและผู้ส่งออกรายใหญ่</p>
+                                </div>
+                            )}
+
+                            {matchedBuyers.length === 0 && !isSearchingBuyers && analysisResult && (
+                                <div className="text-center text-gray-400 text-sm italic">
+                                    <i className="fa-solid fa-circle-question"></i> กดปุ่ม "ค้นหาผู้รับซื้อ" เพื่อดูรายชื่อ
+                                </div>
+                            )}
+
+                            {/* Export Knowledge & Connection Card */}
+                            <div className="bg-gradient-to-br from-indigo-900 to-blue-900 rounded-xl shadow-lg p-6 text-white">
+                                <h3 className="text-xl font-bold mb-4 flex items-center gap-2"><i className="fa-solid fa-ship"></i> เตรียมความพร้อมสู่การส่งออก ({formData.crop})</h3>
+                                <div className="grid md:grid-cols-2 gap-6">
+                                    <div>
+                                        <div className="mb-4">
+                                            <p className="text-indigo-200 text-xs uppercase font-bold mb-1">ตลาดเป้าหมาย (Target Markets)</p>
+                                            <div className="flex flex-wrap gap-2">
+                                                {analysisResult.exportDest.split(',').map((dest, i) => (
+                                                    <span key={i} className="bg-white/10 px-3 py-1 rounded-full text-sm border border-white/20">{dest.trim()}</span>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <p className="text-indigo-200 text-xs uppercase font-bold mb-1">มาตรฐานบังคับ (Requirements)</p>
+                                            <div className="flex items-center gap-2 bg-red-500/20 p-2 rounded border border-red-400/30">
+                                                <i className="fa-solid fa-certificate text-yellow-400"></i>
+                                                <span className="text-sm font-bold">{analysisResult.std}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="bg-white/10 p-4 rounded-lg border border-white/10">
+                                        <h4 className="font-bold text-sm mb-2 text-yellow-300"><i className="fa-solid fa-lightbulb"></i> เคล็ดลับเจาะตลาด:</h4>
+                                        <p className="text-sm font-light italic opacity-90">"{analysisResult.exportTips}"</p>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     )}
 
-                    {/* Market Price Board (Mockup) */}
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                        <h3 className="font-bold text-gray-700 mb-4 flex items-center gap-2"><i className="fa-solid fa-money-bill-trend-up text-green-600"></i> ราคากลางวันนี้ (ตลาดไท/สี่มุมเมือง)</h3>
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-sm text-left">
-                                <thead className="bg-gray-50 text-gray-500 font-medium">
-                                    <tr>
-                                        <th className="p-3 rounded-l-lg">สินค้า</th>
-                                        <th className="p-3">ราคา/หน่วย</th>
-                                        <th className="p-3 rounded-r-lg text-right">แนวโน้ม</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-100">
-                                    {Object.entries(marketData).map(([name, data]) => (
-                                        <tr key={name} className="hover:bg-gray-50 transition">
-                                            <td className="p-3 font-bold text-gray-700">{name}</td>
-                                            <td className="p-3">{data.unitPrice.toLocaleString()} บ.</td>
-                                            <td className="p-3 text-right">
-                                                {data.trend === 'up' && <span className="text-green-500"><i className="fa-solid fa-arrow-trend-up"></i> สูงขึ้น</span>}
-                                                {data.trend === 'down' && <span className="text-red-500"><i className="fa-solid fa-arrow-trend-down"></i> ลดลง</span>}
-                                                {data.trend === 'stable' && <span className="text-gray-400"><i className="fa-solid fa-minus"></i> คงที่</span>}
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
+                    {/* Knowledge Hub: Export General */}
+                    <div className="mt-8">
+                         <h3 className="font-bold text-gray-700 mb-4 flex items-center gap-2"><i className="fa-solid fa-book-open text-orange-600"></i> คลังความรู้: เส้นทางสู่การส่งออก</h3>
+                         <div className="grid md:grid-cols-3 gap-4">
+                             <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+                                 <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center mb-3"><i className="fa-solid fa-leaf text-green-600"></i></div>
+                                 <h4 className="font-bold text-sm mb-1">1. ทำ GAP/Organic</h4>
+                                 <p className="text-xs text-gray-500">ใบเบิกทางสำคัญที่สุด ติดต่อกรมวิชาการเกษตรเพื่อขอการรับรองแปลง</p>
+                             </div>
+                             <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+                                 <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mb-3"><i className="fa-solid fa-handshake text-blue-600"></i></div>
+                                 <h4 className="font-bold text-sm mb-1">2. รวมกลุ่มแปลงใหญ่</h4>
+                                 <p className="text-xs text-gray-500">ผู้ส่งออกชอบซื้อทีละมากๆ การรวมกลุ่มทำให้มีอำนาจต่อรองและจัดการง่าย</p>
+                             </div>
+                             <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+                                 <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center mb-3"><i className="fa-solid fa-box-open text-purple-600"></i></div>
+                                 <h4 className="font-bold text-sm mb-1">3. พัฒนาบรรจุภัณฑ์</h4>
+                                 <p className="text-xs text-gray-500">ผลไม้ไทยต้องดูแพง แพ็คเกจจิ้งช่วยเพิ่มมูลค่าได้ 200-300% ในตลาดจีน</p>
+                             </div>
+                         </div>
                     </div>
 
                     <button onClick={() => setPage('home')} className="mt-8 text-sm text-gray-500 hover:text-orange-500 underline w-full text-center">
@@ -412,6 +608,113 @@
             );
         };
 
+        // --- SUB-COMPONENT: Result Item with Chart (KASET CLOUD) ---
+        const ResultItemWithChart = ({ item, index }) => {
+            const chartRef = useRef(null);
+            const canvasRef = useRef(null);
+
+            useEffect(() => {
+                if (canvasRef.current) {
+                    if (chartRef.current) chartRef.current.destroy();
+
+                    const ctx = canvasRef.current.getContext('2d');
+                    const totalDemand = item.marketDemand || 10000;
+                    const totalSupply = item.marketSupply || 8000;
+
+                    chartRef.current = new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: ['Demand (ตลาด)', 'Supply (รวม)'],
+                            datasets: [{
+                                label: 'ปริมาณ (ตัน)',
+                                data: [totalDemand, totalSupply],
+                                backgroundColor: [
+                                    'rgba(54, 162, 235, 0.7)', 
+                                    totalSupply > totalDemand ? 'rgba(239, 68, 68, 0.7)' : 'rgba(16, 185, 129, 0.7)'
+                                ],
+                                borderColor: [
+                                    'rgba(54, 162, 235, 1)', 
+                                    totalSupply > totalDemand ? 'rgba(239, 68, 68, 1)' : 'rgba(16, 185, 129, 1)'
+                                ],
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            indexAxis: 'y',
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: false },
+                                tooltip: {
+                                     callbacks: {
+                                        label: function(context) {
+                                            return context.parsed.x.toLocaleString() + " ตัน";
+                                        }
+                                    }
+                                }
+                            },
+                            scales: {
+                                x: { beginAtZero: true }
+                            }
+                        }
+                    });
+                }
+                return () => {
+                    if (chartRef.current) chartRef.current.destroy();
+                };
+            }, [item]);
+
+            return (
+                <div className="bg-white p-5 rounded-2xl shadow-lg border border-gray-100 relative overflow-hidden transition hover:shadow-xl">
+                    <div className="absolute top-0 left-0 bg-gradient-to-r from-emerald-500 to-green-600 text-white text-xs px-3 py-1 rounded-br-lg font-bold shadow-sm">อันดับที่ #{index + 1}</div>
+                    
+                    <div className="mt-4 flex flex-col md:flex-row justify-between items-start">
+                        <div>
+                            <h3 className="text-xl font-bold text-gray-800">{item.name} <span className="text-sm font-normal text-gray-500">({item.category})</span></h3>
+                            <div className="flex gap-2 mt-1">
+                                <span className={`text-[10px] px-2 py-0.5 rounded text-white ${item.risk_level === 'Low' ? 'bg-green-500' : item.risk_level === 'Medium' ? 'bg-yellow-500' : 'bg-red-500'}`}>ความเสี่ยง: {item.risk_level}</span>
+                                {item.marketSupply > item.marketDemand ? 
+                                    <span className="text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded font-bold">⚠️ ล้นตลาด</span> : 
+                                    <span className="text-[10px] bg-green-100 text-green-600 px-2 py-0.5 rounded font-bold">✅ ขาดตลาด</span>
+                                }
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="flex gap-4 my-4">
+                        <div className="flex-1 bg-red-50 p-2 rounded text-center border border-red-100">
+                            <p className="text-[10px] text-red-400 font-bold uppercase">ต้นทุนรวม</p>
+                            <p className="text-lg font-bold text-red-600">{item.costTotal.toLocaleString()}</p>
+                        </div>
+                        <div className="flex-1 bg-green-50 p-2 rounded text-center border border-green-100">
+                            <p className="text-[10px] text-green-500 font-bold uppercase">กำไร/ปี (โดยประมาณ)</p>
+                            <p className="text-lg font-bold text-green-700">{item.profitTotal.toLocaleString()}</p>
+                        </div>
+                    </div>
+
+                    <div className="grid md:grid-cols-2 gap-4 text-xs text-gray-600 bg-gray-50 p-3 rounded-lg border border-gray-200">
+                        <div>
+                            <p className="font-bold mb-2 text-blue-600"><i className="fa-solid fa-list-check"></i> รายละเอียด:</p>
+                            <p>ราคาขาย: {item.price.toLocaleString()} บาท/หน่วย</p>
+                            <p>ผลผลิตต่อไร่: {item.yield.toLocaleString()} กก./ไร่</p>
+                        </div>
+                        <div>
+                            <p className="font-bold mb-2 text-orange-600"><i className="fa-solid fa-triangle-exclamation"></i> วิเคราะห์ความเสี่ยง:</p>
+                            <p className="mb-3">{item.risk_reason}</p>
+                        </div>
+                    </div>
+
+                    {/* CHART SECTION */}
+                    <div className="mt-4 border-t border-gray-200 pt-4">
+                        <p className="text-xs font-bold text-gray-500 mb-2 text-center"><i className="fa-solid fa-chart-simple"></i> สภาวะตลาดปัจจุบัน (Demand vs Supply)</p>
+                        <div className="h-32 w-full">
+                             <canvas ref={canvasRef}></canvas>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
         // --- PAGE: KASET CLOUD ---
         const KasetCloudApp = () => {
             const [province, setProvince] = useState("กรุงเทพมหานคร");
@@ -442,30 +745,39 @@
                 setAnalyzing(true);
                 // Simulate calculation delay
                 setTimeout(() => {
-                    if (data.length === 0) {
-                        // Fallback mock data if Supabase is empty or not connected
-                         const mockData = [
-                            { id: 1, name: "ข้าวหอมมะลิ", category: "พืชไร่", price: 15000, yield: 800, cost: 4500, risk_level: "Medium", demand_desc: "สูง", risk_reason: "ราคาผันผวนตามตลาดโลก" },
-                            { id: 2, name: "ผักสลัดไฮโดร", category: "ผัก", price: 80000, yield: 2000, cost: 35000, risk_level: "Low", demand_desc: "ปานกลาง", risk_reason: "ต้องดูแลระบบน้ำดีเยี่ยม" },
-                            { id: 3, name: "ทุเรียนหมอนทอง", category: "ผลไม้", price: 120000, yield: 2000, cost: 25000, risk_level: "High", demand_desc: "สูงมาก", risk_reason: "ใช้เวลานานกว่าจะคืนทุน (5 ปี+)" }
-                        ];
-                        
-                        const calculated = mockData.map(item => ({
-                            ...item,
-                            profitTotal: (item.price * (item.yield/1000) * area) - (item.cost * area), // Adjusted yield unit logic for simplification
-                            costTotal: item.cost * area
-                        }));
-                        calculated.sort((a, b) => b.profitTotal - a.profitTotal);
-                        setResults(calculated);
-                        setAnalyzing(false);
-                        return;
-                    }
+                    // FORCE USE LOCAL DATA TO ENSURE CONSISTENCY WITH MARKET PAGE
+                    // (Supabase data might have different names causing mismatches)
+                    let baseData = [
+                        { id: 1, name: "ข้าวหอมมะลิ", category: "พืชไร่", price: 15000, yield: 800, cost: 4500, risk_level: "Medium", demand_desc: "สูง", risk_reason: "ราคาผันผวนตามตลาดโลก" },
+                        { id: 2, name: "ผักสลัดไฮโดร", category: "ผัก", price: 80000, yield: 2000, cost: 35000, risk_level: "Low", demand_desc: "ปานกลาง", risk_reason: "ต้องดูแลระบบน้ำดีเยี่ยม" },
+                        { id: 3, name: "ทุเรียน", category: "ผลไม้", price: 120000, yield: 2000, cost: 25000, risk_level: "High", demand_desc: "สูงมาก", risk_reason: "ใช้เวลานานกว่าจะคืนทุน (5 ปี+)" },
+                        { id: 4, name: "ยางพารา", category: "พืชไร่", price: 50, yield: 250, cost: 1500, risk_level: "Low", demand_desc: "คงที่", risk_reason: "ราคาขึ้นอยู่กับตลาดโลกและน้ำมัน" },
+                        { id: 5, name: "มันสำปะหลัง", category: "พืชไร่", price: 3000, yield: 3500, cost: 3500, risk_level: "Low", demand_desc: "สูง", risk_reason: "ระวังโรคใบด่าง" },
+                        { id: 6, name: "ข้าวโพดเลี้ยงสัตว์", category: "พืชไร่", price: 8500, yield: 1000, cost: 4000, risk_level: "Medium", demand_desc: "ปานกลาง", risk_reason: "การแข่งขันราคากับพืชนำเข้า" },
+                        { id: 7, name: "อ้อยโรงงาน", category: "พืชไร่", price: 1100, yield: 12000, cost: 6000, risk_level: "Medium", demand_desc: "สูง", risk_reason: "ต้องส่งเข้าโรงงานตามโควต้า" },
+                        { id: 8, name: "ปาล์มน้ำมัน", category: "พืชไร่", price: 6000, yield: 3000, cost: 2000, risk_level: "Low", demand_desc: "สูงมาก", risk_reason: "ราคาผันผวนรายวัน" }
+                    ];
 
-                    const calculated = data.map(item => ({
-                        ...item,
-                        profitTotal: (item.price * item.yield * area) - (item.cost * area),
-                        costTotal: item.cost * area
-                    }));
+                    const calculated = baseData.map(item => {
+                        // Merge Market Data for Chart
+                        const marketStats = MARKET_STATS_DB[item.name] || { domestic: 10000, export: 5000, current: 8000 };
+                        const totalDemand = marketStats.domestic + marketStats.export;
+                        const myOutputTons = (item.yield * area) / 1000; // Use same unit conversion
+                        
+                        // Use consistent simulation function
+                        const otherRegisteredSupply = getOtherRegisteredSupply(item.name);
+                        
+                        const totalSupply = marketStats.current + myOutputTons + otherRegisteredSupply;
+
+                        return {
+                            ...item,
+                            profitTotal: (item.price * item.yield * area) - (item.cost * area),
+                            costTotal: item.cost * area,
+                            marketDemand: totalDemand,
+                            marketSupply: totalSupply
+                        };
+                    });
+                    
                     calculated.sort((a, b) => b.profitTotal - a.profitTotal);
                     setResults(calculated);
                     setAnalyzing(false);
@@ -504,41 +816,7 @@
                                 <i className="fa-solid fa-ranking-star"></i> ผลลัพธ์: พืช/สัตว์ที่น่าลงทุนที่สุด
                             </h3>
                             {results.map((item, idx) => (
-                                <div key={idx} className="bg-white p-5 rounded-2xl shadow-lg border border-gray-100 relative overflow-hidden transition hover:shadow-xl">
-                                    <div className="absolute top-0 left-0 bg-gradient-to-r from-emerald-500 to-green-600 text-white text-xs px-3 py-1 rounded-br-lg font-bold shadow-sm">อันดับที่ #{idx + 1}</div>
-                                    <div className="mt-4 flex flex-col md:flex-row justify-between items-start">
-                                        <div>
-                                            <h3 className="text-xl font-bold text-gray-800">{item.name} <span className="text-sm font-normal text-gray-500">({item.category})</span></h3>
-                                            <div className="flex gap-2 mt-1">
-                                                <span className={`text-[10px] px-2 py-0.5 rounded text-white ${item.risk_level === 'Low' ? 'bg-green-500' : item.risk_level === 'Medium' ? 'bg-yellow-500' : 'bg-red-500'}`}>ความเสี่ยง: {item.risk_level}</span>
-                                                <span className="text-[10px] bg-blue-100 text-blue-600 px-2 py-0.5 rounded">{item.demand_desc}</span>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex gap-4 my-4">
-                                        <div className="flex-1 bg-red-50 p-2 rounded text-center border border-red-100">
-                                            <p className="text-[10px] text-red-400 font-bold uppercase">ต้นทุนรวม</p>
-                                            <p className="text-lg font-bold text-red-600">{item.costTotal.toLocaleString()}</p>
-                                        </div>
-                                        <div className="flex-1 bg-green-50 p-2 rounded text-center border border-green-100">
-                                            <p className="text-[10px] text-green-500 font-bold uppercase">กำไร/ปี (โดยประมาณ)</p>
-                                            <p className="text-lg font-bold text-green-700">{item.profitTotal.toLocaleString()}</p>
-                                        </div>
-                                    </div>
-
-                                    <div className="grid md:grid-cols-2 gap-4 text-xs text-gray-600 bg-gray-50 p-3 rounded-lg border border-gray-200">
-                                        <div>
-                                            <p className="font-bold mb-2 text-blue-600"><i className="fa-solid fa-list-check"></i> รายละเอียด:</p>
-                                            <p>ราคาขาย: {item.price.toLocaleString()} บาท/หน่วย</p>
-                                            <p>ผลผลิตต่อไร่: {item.yield.toLocaleString()} กก./ไร่</p>
-                                        </div>
-                                        <div>
-                                            <p className="font-bold mb-2 text-orange-600"><i className="fa-solid fa-triangle-exclamation"></i> วิเคราะห์ความเสี่ยง:</p>
-                                            <p className="mb-3">{item.risk_reason}</p>
-                                        </div>
-                                    </div>
-                                </div>
+                                <ResultItemWithChart key={idx} item={item} index={idx} />
                             ))}
                         </div>
                     )}
