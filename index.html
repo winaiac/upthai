@@ -1,11 +1,10 @@
 <!DOCTYPE html>
 <html lang="th">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Vinai Innovation Portal - Super App เพื่อคนไทย</title>
-
+    
     <!-- Libraries -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
@@ -16,47 +15,19 @@
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;700&display=swap');
-
-        body {
-            font-family: 'Sarabun', sans-serif;
-        }
-
-        .animate-fade-in-up {
-            animation: fadeInUp 0.5s ease-out;
-        }
-
+        body { font-family: 'Sarabun', sans-serif; }
+        .animate-fade-in-up { animation: fadeInUp 0.5s ease-out; }
         @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
-
         /* Custom Scrollbar */
-        ::-webkit-scrollbar {
-            width: 6px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: #f1f1f1;
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: #888;
-            border-radius: 3px;
-        }
-
-        ::-webkit-scrollbar-thumb:hover {
-            background: #555;
-        }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #888; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #555; }
     </style>
 </head>
-
 <body class="bg-gray-100 text-gray-800">
 
     <div id="root"></div>
@@ -65,7 +36,7 @@
         const { useState, useEffect } = React;
 
         // --- SUPABASE CONFIG ---
-        const SUPABASE_URL = "https://ldsysxczitmkxmukmwri.supabase.co";
+        const SUPABASE_URL = "https://ldsysxczitmkxmukmwri.supabase.co"; 
         const SUPABASE_ANON_KEY = "sb_publishable_I2HEPgG2BbzK2gBtG3i0NQ_YFlzJfVo";
 
         let supabaseClient = null;
@@ -92,10 +63,10 @@
         Object.keys(regions).forEach(region => {
             regions[region].forEach(prov => {
                 let ph = 6.5, moisture = 60, soil = "ดินร่วน";
-                if (region === "อีสาน") { ph = 5.5; moisture = 40; soil = "ดินทราย (ชุดดินร้อยเอ็ด)"; }
-                if (region === "เหนือ") { ph = 6.0; moisture = 55; soil = "ดินร่วนปนทราย (ชุดดินแม่ริม)"; }
-                if (region === "กลาง") { ph = 7.0; moisture = 70; soil = "ดินเหนียว (ชุดดินราชบุรี)"; }
-                if (region === "ใต้") { ph = 5.0; moisture = 80; soil = "ดินร่วนปนดินเหนียว (ชุดดินคอหงส์)"; }
+                if(region === "อีสาน") { ph = 5.5; moisture = 40; soil = "ดินทราย (ชุดดินร้อยเอ็ด)"; }
+                if(region === "เหนือ") { ph = 6.0; moisture = 55; soil = "ดินร่วนปนทราย (ชุดดินแม่ริม)"; }
+                if(region === "กลาง") { ph = 7.0; moisture = 70; soil = "ดินเหนียว (ชุดดินราชบุรี)"; }
+                if(region === "ใต้") { ph = 5.0; moisture = 80; soil = "ดินร่วนปนดินเหนียว (ชุดดินคอหงส์)"; }
                 PROVINCE_DATA[prov] = { ph, moisture, soil, region };
             });
         });
@@ -117,7 +88,7 @@
                     <div className="w-full h-px bg-gray-300 mb-8 mx-auto w-1/2"></div>
                     <div className="flex flex-col items-center gap-3">
                         <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mb-2 overflow-hidden shadow-md">
-                            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Winai" alt="Winai" className="w-full h-full" />
+                             <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Winai" alt="Winai" className="w-full h-full" />
                         </div>
                         <p className="text-base font-bold text-gray-800">พัฒนาโดย: วินัย ผันอากาศ</p>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600 mt-2 bg-white px-6 py-4 rounded-xl shadow-sm border border-gray-200">
@@ -186,7 +157,7 @@
             // Initial Fetch
             useEffect(() => {
                 const fetchData = async () => {
-                    if (!supabaseClient) return;
+                    if(!supabaseClient) return;
                     const { data: agri } = await supabaseClient.from('agriculture_products').select('*');
                     if (agri) setData(agri);
                 };
@@ -214,11 +185,41 @@
                         profitTotal: (item.price * item.yield * area) - (item.cost * area),
                         costTotal: item.cost * area
                     }));
-                    calculated.sort((a, b) => b.profitTotal - a.profitTotal);
+                    calculated.sort((a,b) => b.profitTotal - a.profitTotal);
                     setResults(calculated);
                     setAnalyzing(false);
                 }, 1000);
             };
+
+            const renderChart = (history, currentProfit, area) => {
+                if(!history) return <div className="text-xs text-gray-400 p-2 text-center">ไม่มีข้อมูลย้อนหลัง</div>;
+                
+                return (
+                    <div className="mt-4 bg-white border border-gray-200 rounded-lg p-3">
+                        <h4 className="text-xs font-bold text-gray-600 mb-2 flex items-center gap-1"><i className="fa-solid fa-chart-simple"></i> สถิติกำไรย้อนหลัง 3 ปี (คำนวณตามพื้นที่ {area} ไร่)</h4>
+                        <table className="w-full text-xs text-center">
+                            <thead>
+                                <tr className="bg-gray-100 text-gray-500">
+                                    <th className="py-2">ปี</th>
+                                    <th className="py-2">กำไรสุทธิ (บาท)</th>
+                                    <th className="py-2 text-left pl-2">สถานการณ์</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {history.map((h, i) => (
+                                    <tr key={i} className="border-b border-gray-100 hover:bg-emerald-50 transition">
+                                        <td className="py-2 font-bold text-gray-700">{h.year}</td>
+                                        <td className={`py-2 font-medium ${h.profit > 0 ? 'text-green-600' : 'text-red-500'}`}>
+                                            {(h.profit * area).toLocaleString()}
+                                        </td>
+                                        <td className="py-2 text-left pl-2 text-gray-500">{h.note}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                );
+            }
 
             return (
                 <div className="min-h-screen bg-green-50 p-4 pb-24">
@@ -253,7 +254,7 @@
                             </h3>
                             {results.map((item, idx) => (
                                 <div key={idx} className="bg-white p-5 rounded-2xl shadow-lg border border-gray-100 relative overflow-hidden transition hover:shadow-xl">
-                                    <div className="absolute top-0 left-0 bg-gradient-to-r from-emerald-500 to-green-600 text-white text-xs px-3 py-1 rounded-br-lg font-bold shadow-sm">อันดับที่ #{idx + 1}</div>
+                                    <div className="absolute top-0 left-0 bg-gradient-to-r from-emerald-500 to-green-600 text-white text-xs px-3 py-1 rounded-br-lg font-bold shadow-sm">อันดับที่ #{idx+1}</div>
                                     <div className="mt-4 flex flex-col md:flex-row justify-between items-start">
                                         <div>
                                             <h3 className="text-xl font-bold text-gray-800">{item.name} <span className="text-sm font-normal text-gray-500">({item.category})</span></h3>
@@ -278,8 +279,8 @@
                                     <div className="grid md:grid-cols-2 gap-4 text-xs text-gray-600 bg-gray-50 p-3 rounded-lg border border-gray-200">
                                         <div>
                                             <p className="font-bold mb-2 text-blue-600"><i className="fa-solid fa-list-check"></i> รายละเอียดต้นทุน (บาท):</p>
-                                            {item.cost_details && Object.entries(item.cost_details).map(([k, v]) => (
-                                                <div key={k} className="flex justify-between border-b border-dashed border-gray-300 py-1"><span>{k}</span><span>{(v * area).toLocaleString()}</span></div>
+                                            {item.cost_details && Object.entries(item.cost_details).map(([k,v]) => (
+                                                <div key={k} className="flex justify-between border-b border-dashed border-gray-300 py-1"><span>{k}</span><span>{(v*area).toLocaleString()}</span></div>
                                             ))}
                                         </div>
                                         <div>
@@ -291,7 +292,7 @@
                                                     {item.history_stats.map((h, i) => (
                                                         <div key={i} className="flex justify-between bg-white px-2 py-1 rounded">
                                                             <span>{h.year}</span>
-                                                            <span className={h.profit > 0 ? 'text-green-600' : 'text-red-600'}>{(h.profit * area).toLocaleString()}</span>
+                                                            <span className={h.profit>0?'text-green-600':'text-red-600'}>{(h.profit * area).toLocaleString()}</span>
                                                         </div>
                                                     ))}
                                                 </div>
@@ -308,77 +309,112 @@
         };
 
         // --- PAGE: HOME (Updated) ---
-        const HomePage = ({ user, onLogin, onAdminLogin, setPage }) => (
-            <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900 text-white relative flex flex-col">
-                <div className="absolute top-4 right-4 flex items-center gap-2 text-[10px] bg-black/30 px-2 py-1 rounded-full border border-white/10">
-                    <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-                    ระบบออนไลน์ (Supabase)
-                </div>
+        const HomePage = ({ user, onLogin, onAdminLogin, setPage }) => {
+            const [showAdminAuth, setShowAdminAuth] = useState(false);
+            const [password, setPassword] = useState("");
 
-                {/* Main Content Area - Center with Flex */}
-                <div className="flex-grow flex flex-col items-center justify-center p-6">
-                    <div className="max-w-4xl w-full text-center space-y-8 animate-fade-in-up">
-                        <div className="bg-white/10 backdrop-blur-md p-8 rounded-3xl border border-white/20 shadow-2xl relative transition-all hover:bg-white/15">
-                            {user && <div className="absolute top-4 left-4 bg-green-500 text-white text-xs px-2 py-1 rounded-full flex items-center gap-1"><i className="fa-solid fa-user"></i> {user.name}</div>}
-                            <div className="flex flex-col items-center">
-                                <div className="w-32 h-32 bg-gradient-to-r from-blue-400 to-emerald-400 rounded-full flex items-center justify-center mb-6 shadow-lg border-4 border-white overflow-hidden relative group">
-                                    {user ? <span className="text-5xl">🧑‍🌾</span> : <i className="fa-solid fa-seedling text-5xl text-white"></i>}
-                                </div>
-                                {user ? (
-                                    <><h1 className="text-3xl md:text-5xl font-bold mb-3 text-white">สวัสดี, คุณ{user.name}</h1><p className="text-lg text-emerald-200 mb-6 font-light">"ขอให้วันนี้เป็นวันที่ดี พืชผลงอกงาม การค้าขายร่ำรวย"</p></>
-                                ) : (
-                                    <>
-                                        <h1 className="text-3xl md:text-5xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-yellow-200 to-emerald-200 leading-tight">"นวัตกรรมเปลี่ยนชีวิต<br />เพื่อความสุขคนไทย"</h1>
-                                        <p className="text-lg md:text-xl text-gray-200 mb-8 max-w-2xl font-light leading-relaxed">แอปพลิเคชันอัจฉริยะที่จะช่วยให้พี่น้องชาวไทย <span className="text-yellow-300 font-bold">ลดต้นทุน เพิ่มรายได้</span><br class="hidden md:block" /> เพื่อให้ทุกคนมีกิน มีใช้ และมีชีวิตที่ <span className="font-bold text-white border-b-2 border-yellow-400">สุขสบาย</span> อย่างยั่งยืน</p>
-                                    </>
-                                )}
-                                {!user && (
-                                    <div className="flex flex-col gap-3 w-full max-w-xs items-center">
-                                        <button onClick={onLogin} className="bg-orange-500 hover:bg-orange-600 text-white px-8 py-3 rounded-full font-bold shadow-lg animate-bounce transition-all flex items-center justify-center gap-2"><i className="fa-solid fa-right-to-bracket"></i> เข้าสู่ระบบสมาชิก</button>
-                                        <button onClick={onAdminLogin} className="text-gray-400 text-xs hover:text-white transition underline mt-2">เข้าสู่ระบบเจ้าหน้าที่ (Admin)</button>
+            const handleAdminLoginSubmit = () => {
+                if(password === "admin123") { // รหัสผ่านสาธิต
+                    onAdminLogin();
+                    setShowAdminAuth(false);
+                    setPassword("");
+                } else {
+                    alert("รหัสผ่านไม่ถูกต้อง (Hint: admin123)");
+                }
+            };
+
+            return (
+                <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900 text-white relative flex flex-col">
+                    <div className="absolute top-4 right-4 flex items-center gap-2 text-[10px] bg-black/30 px-2 py-1 rounded-full border border-white/10">
+                        <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                        ระบบออนไลน์ (Supabase)
+                    </div>
+
+                    <div className="flex-grow flex flex-col items-center justify-center p-6">
+                        <div className="max-w-4xl w-full text-center space-y-8 animate-fade-in-up">
+                            <div className="bg-white/10 backdrop-blur-md p-8 rounded-3xl border border-white/20 shadow-2xl relative transition-all hover:bg-white/15">
+                                {user && <div className="absolute top-4 left-4 bg-green-500 text-white text-xs px-2 py-1 rounded-full flex items-center gap-1"><i className="fa-solid fa-user"></i> {user.name}</div>}
+                                <div className="flex flex-col items-center">
+                                    <div className="w-32 h-32 bg-gradient-to-r from-blue-400 to-emerald-400 rounded-full flex items-center justify-center mb-6 shadow-lg border-4 border-white overflow-hidden relative group">
+                                        {user ? <span className="text-5xl">🧑‍🌾</span> : <i className="fa-solid fa-seedling text-5xl text-white"></i>}
                                     </div>
-                                )}
+                                    {user ? (
+                                        <><h1 className="text-3xl md:text-5xl font-bold mb-3 text-white">สวัสดี, คุณ{user.name}</h1><p className="text-lg text-emerald-200 mb-6 font-light">"ขอให้วันนี้เป็นวันที่ดี พืชผลงอกงาม การค้าขายร่ำรวย"</p></>
+                                    ) : (
+                                        <>
+                                            <h1 className="text-3xl md:text-5xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-yellow-200 to-emerald-200 leading-tight">"นวัตกรรมเปลี่ยนชีวิต<br/>เพื่อความสุขคนไทย"</h1>
+                                            <p className="text-lg md:text-xl text-gray-200 mb-8 max-w-2xl font-light leading-relaxed">แอปพลิเคชันอัจฉริยะที่จะช่วยให้พี่น้องชาวไทย <span className="text-yellow-300 font-bold">ลดต้นทุน เพิ่มรายได้</span><br class="hidden md:block"/> เพื่อให้ทุกคนมีกิน มีใช้ และมีชีวิตที่ <span className="font-bold text-white border-b-2 border-yellow-400">สุขสบาย</span> อย่างยั่งยืน</p>
+                                        </>
+                                    )}
+                                    {!user && (
+                                        <div className="flex flex-col gap-3 w-full max-w-xs items-center">
+                                            <button onClick={onLogin} className="bg-orange-500 hover:bg-orange-600 text-white px-8 py-3 rounded-full font-bold shadow-lg animate-bounce transition-all flex items-center justify-center gap-2"><i className="fa-solid fa-right-to-bracket"></i> เข้าสู่ระบบสมาชิก</button>
+                                            <button onClick={() => setShowAdminAuth(true)} className="text-gray-400 text-xs hover:text-white transition underline mt-2">เข้าสู่ระบบเจ้าหน้าที่ (Admin)</button>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                            <div className="grid md:grid-cols-3 gap-6 mt-12">
+                                <button onClick={() => setPage('kaset')} className="group bg-gradient-to-br from-emerald-800 to-green-900 p-8 rounded-2xl hover:scale-105 transition-all shadow-xl text-left relative overflow-hidden"><div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20"><i className="fa-solid fa-seedling text-9xl"></i></div><div className="relative z-10"><div className="bg-emerald-500/20 w-16 h-16 rounded-xl flex items-center justify-center mb-4"><i className="fa-solid fa-brain text-2xl text-emerald-300"></i></div><h2 className="text-2xl font-bold text-white mb-2">Kaset Cloud</h2><p className="text-gray-300 text-sm">วิเคราะห์พืช/สัตว์ที่เหมาะสม คำนวณต้นทุน/กำไรแม่นยำ</p></div></button>
+                                <button onClick={() => setPage('market')} className="group bg-gradient-to-br from-orange-800 to-red-900 p-8 rounded-2xl hover:scale-105 transition-all shadow-xl text-left relative overflow-hidden"><div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20"><i className="fa-solid fa-bullhorn text-9xl"></i></div><div className="relative z-10"><div className="bg-orange-500/20 w-16 h-16 rounded-xl flex items-center justify-center mb-4"><i className="fa-solid fa-arrow-trend-up text-2xl text-orange-300"></i></div><h2 className="text-2xl font-bold text-white mb-2">ตลาด & ชุมชน</h2><p className="text-gray-300 text-sm">เช็คดีมานด์ตลาด ลงโฆษณาซื้อขาย เตือนภัยมิจฉาชีพ</p></div></button>
+                                <button onClick={() => setPage('sandbox')} className="group bg-gradient-to-br from-indigo-800 to-blue-900 p-8 rounded-2xl hover:scale-105 transition-all shadow-xl text-left relative overflow-hidden"><div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20"><i className="fa-solid fa-gamepad text-9xl"></i></div><div className="relative z-10"><div className="bg-indigo-500/20 w-16 h-16 rounded-xl flex items-center justify-center mb-4"><i className="fa-solid fa-chart-line text-2xl text-indigo-300"></i></div><h2 className="text-2xl font-bold text-white mb-2">Sandbox</h2><p className="text-gray-300 text-sm">เกมจำลองธุรกิจเกษตร ฝึกให้เจ๊งในนี้ก่อนไปเจ๊งจริง</p></div></button>
                             </div>
                         </div>
-                        <div className="grid md:grid-cols-3 gap-6 mt-12">
-                            <button onClick={() => setPage('kaset')} className="group bg-gradient-to-br from-emerald-800 to-green-900 p-8 rounded-2xl hover:scale-105 transition-all shadow-xl text-left relative overflow-hidden"><div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20"><i className="fa-solid fa-seedling text-9xl"></i></div><div className="relative z-10"><div className="bg-emerald-500/20 w-16 h-16 rounded-xl flex items-center justify-center mb-4"><i className="fa-solid fa-brain text-2xl text-emerald-300"></i></div><h2 className="text-2xl font-bold text-white mb-2">Kaset Cloud</h2><p className="text-gray-300 text-sm">วิเคราะห์พืช/สัตว์ที่เหมาะสม คำนวณต้นทุน/กำไรแม่นยำ</p></div></button>
-                            <button onClick={() => setPage('market')} className="group bg-gradient-to-br from-orange-800 to-red-900 p-8 rounded-2xl hover:scale-105 transition-all shadow-xl text-left relative overflow-hidden"><div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20"><i className="fa-solid fa-bullhorn text-9xl"></i></div><div className="relative z-10"><div className="bg-orange-500/20 w-16 h-16 rounded-xl flex items-center justify-center mb-4"><i className="fa-solid fa-arrow-trend-up text-2xl text-orange-300"></i></div><h2 className="text-2xl font-bold text-white mb-2">ตลาด & ชุมชน</h2><p className="text-gray-300 text-sm">เช็คดีมานด์ตลาด ลงโฆษณาซื้อขาย เตือนภัยมิจฉาชีพ</p></div></button>
-                            <button onClick={() => setPage('sandbox')} className="group bg-gradient-to-br from-indigo-800 to-blue-900 p-8 rounded-2xl hover:scale-105 transition-all shadow-xl text-left relative overflow-hidden"><div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20"><i className="fa-solid fa-gamepad text-9xl"></i></div><div className="relative z-10"><div className="bg-indigo-500/20 w-16 h-16 rounded-xl flex items-center justify-center mb-4"><i className="fa-solid fa-chart-line text-2xl text-indigo-300"></i></div><h2 className="text-2xl font-bold text-white mb-2">Sandbox</h2><p className="text-gray-300 text-sm">เกมจำลองธุรกิจเกษตร ฝึกให้เจ๊งในนี้ก่อนไปเจ๊งจริง</p></div></button>
-                        </div>
                     </div>
-                </div>
+                    
+                    <div className="w-full">
+                        <AppFooter />
+                    </div>
 
-                {/* Footer outside flex-grow to sit at bottom */}
-                <div className="w-full">
-                    <AppFooter />
+                    {showAdminAuth && (
+                        <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-[80] p-4 backdrop-blur-sm">
+                            <div className="bg-white rounded-2xl p-6 w-full max-w-xs text-center shadow-2xl relative text-gray-800 animate-fade-in-up">
+                                <button onClick={() => setShowAdminAuth(false)} className="absolute top-3 right-4 text-gray-400 hover:text-gray-600 font-bold text-xl">&times;</button>
+                                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                                    <i className="fa-solid fa-user-shield text-2xl text-red-500"></i>
+                                </div>
+                                <h3 className="text-xl font-bold mb-2 text-gray-800">เฉพาะเจ้าหน้าที่</h3>
+                                <p className="text-xs text-gray-500 mb-4">กรุณากรอกรหัสผ่านเพื่อเข้าสู่ระบบจัดการ</p>
+                                <input 
+                                    type="password" 
+                                    className="w-full border border-gray-300 rounded-lg p-3 mb-4 text-center focus:outline-none focus:ring-2 focus:ring-red-500"
+                                    placeholder="รหัสผ่าน"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    onKeyDown={(e) => e.key === 'Enter' && handleAdminLoginSubmit()}
+                                />
+                                <button onClick={handleAdminLoginSubmit} className="w-full bg-red-600 text-white py-2 rounded-lg font-bold hover:bg-red-700 transition">เข้าสู่ระบบ</button>
+                            </div>
+                        </div>
+                    )}
                 </div>
-            </div>
-        );
+            );
+        };
 
         // --- MAIN ---
         const VinaiInnovationPortal = () => {
             const [page, setPage] = useState('home');
             const [user, setUser] = useState(null);
-
-            const login = () => setUser({ name: "เกษตรกรตัวอย่าง", role: "user" });
-            const adminLogin = () => { setUser({ name: "Admin Officer", role: "admin" }); setPage('admin'); };
+            
+            const login = () => setUser({name: "เกษตรกรตัวอย่าง", role: "user"});
+            const adminLogin = () => { setUser({name: "Admin Officer", role: "admin"}); setPage('admin'); };
             const logout = () => { setUser(null); setPage('home'); };
 
             return (
                 <div className="font-sans text-gray-800">
                     <nav className="fixed bottom-0 w-full bg-white border-t flex justify-around p-3 z-50 text-xs font-bold text-gray-500 shadow-lg">
-                        <button onClick={() => setPage('home')} className={page === 'home' ? 'text-emerald-600' : ''}><i className="fa-solid fa-house text-xl mb-1 block"></i>หน้าแรก</button>
-                        <button onClick={() => setPage('kaset')} className={page === 'kaset' ? 'text-emerald-600' : ''}><i className="fa-solid fa-seedling text-xl mb-1 block"></i>เกษตร</button>
-                        <button onClick={() => setPage('market')} className={page === 'market' ? 'text-orange-600' : ''}><i className="fa-solid fa-shop text-xl mb-1 block"></i>ตลาด</button>
-                        <button onClick={() => setPage('sandbox')} className={page === 'sandbox' ? 'text-indigo-600' : ''}><i className="fa-solid fa-gamepad text-xl mb-1 block"></i>Sandbox</button>
+                        <button onClick={()=>setPage('home')} className={page==='home'?'text-emerald-600':''}><i className="fa-solid fa-house text-xl mb-1 block"></i>หน้าแรก</button>
+                        <button onClick={()=>setPage('kaset')} className={page==='kaset'?'text-emerald-600':''}><i className="fa-solid fa-seedling text-xl mb-1 block"></i>เกษตร</button>
+                        <button onClick={()=>setPage('market')} className={page==='market'?'text-orange-600':''}><i className="fa-solid fa-shop text-xl mb-1 block"></i>ตลาด</button>
+                        <button onClick={()=>setPage('sandbox')} className={page==='sandbox'?'text-indigo-600':''}><i className="fa-solid fa-gamepad text-xl mb-1 block"></i>Sandbox</button>
                     </nav>
 
                     {page === 'home' && <HomePage user={user} onLogin={login} onAdminLogin={adminLogin} setPage={setPage} />}
                     {page === 'kaset' && <KasetCloudApp />}
                     {page === 'admin' && <AdminPage onLogout={logout} />}
-
-                    {page === 'market' && <div className="p-10 text-center mt-20">Marketplace Component <br /><button onClick={() => setPage('home')} className="mt-4 text-blue-500">Back</button><AppFooter /></div>}
-                    {page === 'sandbox' && <div className="p-10 text-center mt-20">Sandbox Component <br /><button onClick={() => setPage('home')} className="mt-4 text-blue-500">Back</button><AppFooter /></div>}
+                    
+                    {page === 'market' && <div className="p-10 text-center mt-20">Marketplace Component <br/><button onClick={()=>setPage('home')} className="mt-4 text-blue-500">Back</button><AppFooter/></div>}
+                    {page === 'sandbox' && <div className="p-10 text-center mt-20">Sandbox Component <br/><button onClick={()=>setPage('home')} className="mt-4 text-blue-500">Back</button><AppFooter/></div>}
                 </div>
             );
         };
@@ -387,5 +423,4 @@
         root.render(<VinaiInnovationPortal />);
     </script>
 </body>
-
 </html>
