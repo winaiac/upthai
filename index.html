@@ -1,97 +1,219 @@
 <!DOCTYPE html>
 <html lang="th">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Vinai Innovation Portal - Super App เพื่อคนไทย</title>
-
-    <!-- 1. นำเข้า Tailwind CSS (ตกแต่งหน้าตา) -->
+    
+    <!-- 1. นำเข้า Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-
-    <!-- 2. นำเข้า React และ ReactDOM (ตัวเขียนแอพ) -->
+    
+    <!-- 2. นำเข้า React และ ReactDOM -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-
-    <!-- 3. นำเข้า Babel (แปลงโค้ดให้ Browser เข้าใจ) -->
+    
+    <!-- 3. นำเข้า Babel -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-    <!-- 4. นำเข้า Supabase (ฐานข้อมูล) -->
+    <!-- 4. นำเข้า Supabase (CDN) -->
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 
-    <!-- 5. นำเข้า FontAwesome (ไอคอนสวยๆ) -->
+    <!-- 5. นำเข้า FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-    <!-- ปรับฟอนต์ภาษาไทย -->
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;700&display=swap');
-
-        body {
-            font-family: 'Sarabun', sans-serif;
-        }
-
-        .animate-fade-in-up {
-            animation: fadeInUp 0.5s ease-out;
-        }
-
+        @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;700&display=swap');
+        body { font-family: 'Sarabun', sans-serif; }
+        .animate-fade-in-up { animation: fadeInUp 0.5s ease-out; }
         @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #888; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #555; }
     </style>
 </head>
-
-<body class="bg-gray-50 text-gray-800">
+<body class="bg-gray-100 text-gray-800">
 
     <div id="root"></div>
 
     <script type="text/babel">
-        // ดึงฟังก์ชันที่ต้องใช้มาจาก React
         const { useState, useEffect } = React;
 
-        // --- ⚙️ ตั้งค่า SUPABASE ---
-        const SUPABASE_URL = "https://ldsysxczitmkxmukmwri.supabase.co";
+        // --- ⚙️ การตั้งค่าการเชื่อมต่อ ---
+        const SUPABASE_URL = "https://ldsysxczitmkxmukmwri.supabase.co"; 
         const SUPABASE_ANON_KEY = "sb_publishable_I2HEPgG2BbzK2gBtG3i0NQ_YFlzJfVo";
 
-        // สร้างตัวเชื่อมต่อฐานข้อมูล
-        // หมายเหตุ: ถ้ายังไม่ได้สร้าง Table ใน Supabase อาจจะ Error ได้ แต่แอพจะยังทำงานด้วยข้อมูลจำลอง
-        let supabase = null;
-        try {
-            supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        } catch (e) {
-            console.warn("Supabase not initialized (script might be blocked or key invalid)");
+        let supabaseClient = null;
+        let isMockMode = true; 
+
+        if (typeof supabase !== 'undefined') {
+            try {
+                supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                isMockMode = false; 
+            } catch (e) {
+                console.warn("Supabase Init Failed:", e);
+                isMockMode = true;
+            }
         }
 
-        // --- MOCK DATA (ข้อมูลจำลอง) ---
+        // --- MOCK DATA (ชุดใหญ่ 12 รายการ พร้อมรายละเอียดครบถ้วน) ---
         const MOCK_AGRICULTURE = [
-            { id: 1, name: "ข้าวหอมมะลิ", category: "plant", type: "ข้าว", marketCap: 100000, currentSupply: 85000, price: 15, unit: "กก.", yield: 600, cost: 4500, costDetails: { "ค่าเมล็ดพันธุ์": 800, "ค่าปุ๋ย/ยา": 1500, "ค่าแรง": 1500, "อื่นๆ": 700 }, demand: "High", demandDesc: "ส่งออกได้ตลอดปี" },
-            { id: 5, name: "ทุเรียนหมอนทอง", category: "plant", type: "ผลไม้", marketCap: 50000, currentSupply: 45000, price: 140, unit: "กก.", yield: 1500, cost: 35000, costDetails: { "ดูแล": 8000, "ปุ๋ย": 12000, "น้ำ": 5000, "เก็บเกี่ยว": 10000 }, demand: "Very High", demandDesc: "จีนต้องการไม่อั้น" },
-            { id: 31, name: "ปลานิล (บ่อดิน)", category: "fish", type: "ประมง", marketCap: 150000, currentSupply: 140000, price: 60, unit: "กก.", yield: 1500, cost: 40000, costDetails: { "ลูกปลา": 3000, "อาหาร": 25000, "ไฟ": 5000, "แรงงาน": 7000 }, demand: "Very High", demandDesc: "ปลาเศรษฐกิจอันดับ 1" },
-            { id: 21, name: "โคขุน (เลี้ยงขุน)", category: "animal", type: "ปศุสัตว์", marketCap: 20000, currentSupply: 12000, price: 95, unit: "กก.(ตัว)", yield: 400, cost: 25000, costDetails: { "พันธุ์": 15000, "อาหาร": 8000, "ยา": 1000, "แรงงาน": 1000 }, demand: "High", demandDesc: "เนื้อคุณภาพขาดตลาด" }
+            { 
+                id: 1, name: "ข้าวหอมมะลิ 105", category: "plant", type: "ข้าว", price: 15, unit: "กก.", yield: 600, cost: 4500, 
+                costDetails: { "ค่าเมล็ดพันธุ์": 800, "ค่าเตรียมดิน/ไถ": 1000, "ค่าปุ๋ยและยา": 1500, "ค่าแรงเก็บเกี่ยว": 1200 }, 
+                demand: "High", demandDesc: "ความต้องการสูงต่อเนื่อง ส่งออกได้ราคาดี", 
+                risk: "Low", riskReason: "ความเสี่ยงต่ำเพราะเป็นพืชเศรษฐกิจหลัก รัฐมีการประกันราคา แต่ต้องระวังเรื่องภัยแล้งและเพลี้ยกระโดด", 
+                history: [{year: 2023, profit: 4000, note: "ราคาดี ฝนตกตามฤดูกาล"}, {year: 2024, profit: 3800, note: "ประสบภัยแล้งเล็กน้อย"}, {year: 2025, profit: 4500, note: "คาดการณ์ราคาสูงขึ้น"}] 
+            },
+            { 
+                id: 5, name: "ทุเรียนหมอนทอง", category: "plant", type: "ผลไม้", price: 140, unit: "กก.", yield: 1500, cost: 35000, 
+                costDetails: { "ค่าน้ำ/ระบบน้ำ": 5000, "ค่าปุ๋ย/ฮอร์โมน": 15000, "ค่าแรงดูแล/แต่งกิ่ง": 10000, "ค่าไม้ค้ำยัน": 5000 }, 
+                demand: "Very High", demandDesc: "ตลาดจีนต้องการไม่อั้น ราคารับซื้อหน้าสวนสูง", 
+                risk: "High", riskReason: "ความเสี่ยงสูงมาก ลงทุนสูง ใช้เวลานานกว่าจะคืนทุน (5 ปี+) อ่อนไหวต่อสภาพอากาศ ลมพายุ และโรครากเน่า", 
+                history: [{year: 2023, profit: 120000, note: "ผลผลิตล้นตลาดช่วงสั้นๆ"}, {year: 2024, profit: 150000, note: "ส่งออกจีนได้คล่องตัว"}, {year: 2025, profit: 175000, note: "ความต้องการพุ่งสูง"}]
+            },
+            { 
+                id: 31, name: "ปลานิล (บ่อดิน)", category: "fish", type: "ประมง", price: 60, unit: "กก.", yield: 1500, cost: 40000, 
+                costDetails: { "ค่าลูกพันธุ์ปลา": 3000, "ค่าอาหารเม็ด": 25000, "ค่าไฟฟ้า/ปั่นน้ำ": 5000, "ค่าแรงจับ/ขนส่ง": 7000 }, 
+                demand: "High", demandDesc: "ตลาดในประเทศต้องการสูง ขายง่ายตามตลาดนัด", 
+                risk: "Medium", riskReason: "ความเสี่ยงปานกลาง ต้องระวังเรื่องคุณภาพน้ำ น็อคน้ำช่วงเปลี่ยนฤดู และราคาอาหารปลาที่แพงขึ้น", 
+                history: [{year: 2023, profit: 45000, note: "ต้นทุนอาหารแพง"}, {year: 2024, profit: 48000, note: "ราคาขายขยับขึ้น"}, {year: 2025, profit: 50000, note: "ตลาดทรงตัว"}]
+            },
+            { 
+                id: 2, name: "ข้าวไรซ์เบอร์รี่", category: "plant", type: "ข้าว", price: 25, unit: "กก.", yield: 450, cost: 5000, 
+                costDetails: { "ค่าเมล็ดพันธุ์": 1200, "ค่าปุ๋ยอินทรีย์": 2000, "ค่าแรงดูแล": 1800 }, 
+                demand: "Medium", demandDesc: "กลุ่มคนรักสุขภาพ ตลาดออนไลน์", 
+                risk: "Medium", riskReason: "ตลาดเฉพาะกลุ่ม (Niche Market) หาคนรับซื้อยากกว่าข้าวทั่วไป ต้องทำแพ็คเกจจิ้งเองถึงจะได้ราคาดี", 
+                history: [{year: 2023, profit: 6000, note: "ขายออนไลน์ได้ดี"}, {year: 2024, profit: 6200, note: "คู่แข่งเริ่มเยอะ"}, {year: 2025, profit: 6250, note: "เทรนด์สุขภาพมาแรง"}]
+            },
+            { 
+                id: 4, name: "อ้อยโรงงาน", category: "plant", type: "พืชไร่", price: 1.2, unit: "กก.", yield: 12000, cost: 6000, 
+                costDetails: { "ค่าท่อนพันธุ์": 1500, "ค่าปุ๋ยเคมี": 2000, "ค่าแรงตัด/รถคีบ": 2500 }, 
+                demand: "Medium", demandDesc: "ส่งโรงงานน้ำตาล ราคาตามประกาศ", 
+                risk: "Medium", riskReason: "พึ่งพาราคาตลาดโลก ต้นทุนปุ๋ยแพง และปัญหาขาดแคลนแรงงานตัดอ้อย", 
+                history: [{year: 2023, profit: 7000, note: "ภัยแล้งผลผลิตตก"}, {year: 2024, profit: 7500, note: "ราคาน้ำตาลโลกขึ้น"}, {year: 2025, profit: 8400, note: "คาดการณ์แนวโน้มดี"}]
+            },
+            { 
+                id: 3, name: "มันสำปะหลัง", category: "plant", type: "พืชไร่", price: 3.2, unit: "กก.", yield: 3500, cost: 3500, 
+                costDetails: { "ค่าท่อนพันธุ์": 500, "ค่าปุ๋ย": 1500, "ค่าแรง/เครื่องจักร": 1500 }, 
+                demand: "High", demandDesc: "ส่งลานมัน/โรงแป้ง/เอทานอล", 
+                risk: "Low", riskReason: "ทนแล้งได้ดี แต่ระวังโรคใบด่างและเพลี้ยแป้ง ราคารับซื้อมีความผันผวนตามฤดูกาล", 
+                history: [{year: 2023, profit: 7000, note: "โรคใบด่างระบาด"}, {year: 2024, profit: 7500, note: "ความต้องการสูง"}, {year: 2025, profit: 7700, note: "ราคาดีต่อเนื่อง"}]
+            },
+            { 
+                id: 6, name: "ยางพารา", category: "plant", type: "ไม้ยืนต้น", price: 50, unit: "กก.", yield: 250, cost: 3000, 
+                costDetails: { "ค่าปุ๋ยบำรุง": 1000, "ค่าแรงกรีด/แบ่ง": 1500, "อุปกรณ์/ถ้วย": 500 }, 
+                demand: "Medium", demandDesc: "อุตสาหกรรมยางรถยนต์/ถุงมือ", 
+                risk: "Medium", riskReason: "ราคาผันผวนตามตลาดโลก (TOCOM/SICOM) และราคาน้ำมันดิบ โรคใบร่วงยางพารา", 
+                history: [{year: 2023, profit: 9000, note: "เศรษฐกิจโลกชะลอ"}, {year: 2024, profit: 9500, note: "ความต้องการจีนฟื้น"}, {year: 2025, profit: 9500, note: "ราคาเริ่มทรงตัว"}]
+            },
+            { 
+                id: 7, name: "ปาล์มน้ำมัน", category: "plant", type: "ไม้ยืนต้น", price: 6, unit: "กก.", yield: 3200, cost: 5000, 
+                costDetails: { "ค่าปุ๋ย (สำคัญมาก)": 3000, "ค่าแรงแทงปาล์ม": 1500, "ค่าขนส่ง": 500 }, 
+                demand: "High", demandDesc: "น้ำมันพืชและไบโอดีเซล", 
+                risk: "Low", riskReason: "ต้องมีน้ำเพียงพอ หากแล้งผลผลิตจะขาดคอ ราคาขึ้นอยู่กับสต็อกน้ำมันปาล์มดิบ (CPO)", 
+                history: [{year: 2023, profit: 12000, note: "อินโดฯ งดส่งออกช่วงสั้น"}, {year: 2024, profit: 13500, note: "ราคาไบโอดีเซลหนุน"}, {year: 2025, profit: 14200, note: "สต็อกลดลง ราคาดี"}]
+            },
+            { 
+                id: 21, name: "โคขุน (เลี้ยงขุน)", category: "animal", type: "ปศุสัตว์", price: 100, unit: "กก.", yield: 400, cost: 25000, 
+                costDetails: { "ค่าพันธุ์โคโครง": 18000, "ค่าอาหารข้น/หญ้า": 6000, "ค่ายา/วัคซีน": 1000 }, 
+                demand: "High", demandDesc: "ร้านอาหาร/ส่งออก", 
+                risk: "Medium", riskReason: "ต้นทุนค่าพันธุ์และอาหารสูงมาก เสี่ยงโรคระบาด (LSD, FMD) ตลาดรับซื้อต้องแน่นอน", 
+                history: [{year: 2023, profit: 12000, note: "ต้นทุนพันธุ์แพง"}, {year: 2024, profit: 14000, note: "ส่งออกเวียดนาม/จีน"}, {year: 2025, profit: 15000, note: "ความต้องการเนื้อสูง"}]
+            },
+            { 
+                id: 32, name: "กุ้งขาวแวนนาไม", category: "fish", type: "ประมง", price: 180, unit: "กก.", yield: 2000, cost: 200000, 
+                costDetails: { "ค่าลูกกุ้ง": 30000, "ค่าอาหาร": 120000, "ค่าไฟ/ตีน้ำ": 30000, "เคมีภัณฑ์/จุลินทรีย์": 20000 }, 
+                demand: "High", demandDesc: "ห้องเย็น/ส่งออก", 
+                risk: "High", riskReason: "ความเสี่ยงสูงมาก (High Risk High Return) โรคระบาดกุ้ง (EMS, ขี้ขาว) คุณภาพน้ำต้องเป๊ะ", 
+                history: [{year: 2023, profit: 150000, note: "โรคระบาดบางพื้นที่"}, {year: 2024, profit: 160000, note: "ราคากุ้งโลกปรับขึ้น"}, {year: 2025, profit: 160000, note: "ผลผลิตคงที่"}]
+            },
+            { 
+                id: 23, name: "ไก่พื้นเมือง", category: "animal", type: "ปศุสัตว์", price: 110, unit: "ตัว", yield: 500, cost: 15000, 
+                costDetails: { "ค่าลูกไก่": 5000, "ค่าอาหาร/ข้าวเปลือก": 8000, "ค่ายา/วัคซีน": 2000 }, 
+                demand: "High", demandDesc: "ตลาดสด/ร้านลาบ", 
+                risk: "Medium", riskReason: "โตช้ากว่าไก่เนื้อ เสี่ยงโรคระบาดช่วงหน้าฝน/หนาว ต้องมีพื้นที่ปล่อยเดิน", 
+                history: [{year: 2023, profit: 35000, note: "ไก่เนื้อราคาแพง คนหันมากิน"}, {year: 2024, profit: 38000, note: "เทรนด์อาหารปลอดภัย"}, {year: 2025, profit: 40000, note: "ตลาดขยายตัว"}]
+            },
+            { 
+                id: 33, name: "ปลาดุกบิ๊กอุย", category: "fish", type: "ประมง", price: 40, unit: "กก.", yield: 4000, cost: 80000, 
+                costDetails: { "ค่าลูกปลา": 5000, "ค่าอาหาร": 65000, "ค่าน้ำ/ยา": 5000, "ค่าแรง": 5000 }, 
+                demand: "Medium", demandDesc: "ตลาดล่าง/ร้านอาหารป่า", 
+                risk: "Low", riskReason: "เลี้ยงง่าย โตไว ทนโรค แต่ระวังเรื่องราคาตกต่ำช่วงปลาออกเยอะ และต้นทุนอาหาร", 
+                history: [{year: 2023, profit: 70000, note: "ปลาล้นตลาดช่วงสั้นๆ"}, {year: 2024, profit: 75000, note: "แปรรูปปลาดุกร้าช่วย"}, {year: 2025, profit: 80000, note: "ราคาอาหารทรงตัว"}]
+            }
         ];
 
         const MOCK_BUSINESSES = [
-            { id: 101, name: "ร้านสลัดโรล", tier: "หลักหมื่น", investment: 15000, profitMonth: 8000, trend: "Up", history: [{ y: 22, p: 70000 }, { y: 23, p: 85000 }, { y: 24, p: 96000 }], costBreakdown: { "วัตถุดิบ": 5000, "อุปกรณ์": 3000, "ค่าที่": 2000 }, risk: "Low", desc: "เทรนด์สุขภาพ" },
-            { id: 201, name: "คาเฟ่ Slow Bar", tier: "หลักแสน", investment: 150000, profitMonth: 30000, trend: "Up", history: [{ y: 22, p: 250000 }, { y: 23, p: 300000 }, { y: 24, p: 360000 }], costBreakdown: { "เครื่องชง": 50000, "ตกแต่ง": 50000, "ค่าเช่า": 30000 }, risk: "Medium", desc: "เจาะกลุ่มคนทำงาน" },
-            { id: 306, name: "ฟาร์มโซลาร์เซลล์", tier: "หลักล้าน", investment: 3500000, profitMonth: 100000, trend: "Very High", history: [{ y: 22, p: 800000 }, { y: 23, p: 1000000 }, { y: 24, p: 1200000 }], costBreakdown: { "แผง": 2500000, "ติดตั้ง": 1000000 }, risk: "Low", desc: "ขายไฟคืนรัฐ" },
+            { id: 101, name: "ร้านสลัดโรล", tier: "หลักหมื่น", investment: 15000, profitMonth: 8000, trend: "Up", history: [{y:22, p:70000}, {y:23, p:85000}, {y:24, p:96000}], costBreakdown: {"วัตถุดิบ (ผัก/แผ่นแป้ง)": 5000, "กล่อง/สติ๊กเกอร์": 3000, "ค่าเช่าที่": 2000, "ค่าเดินทาง": 1000}, risk: "Low", desc: "เทรนด์สุขภาพ" },
+            { id: 201, name: "คาเฟ่ Slow Bar", tier: "หลักแสน", investment: 150000, profitMonth: 30000, trend: "Up", history: [{y:22, p:250000}, {y:23, p:300000}, {y:24, p:360000}], costBreakdown: {"เครื่องชงกาแฟ": 50000, "ตกแต่งร้าน": 50000, "ค่าเช่าล่วงหน้า": 30000, "เมล็ดกาแฟ/นม": 20000}, risk: "Medium", desc: "เจาะกลุ่มคนทำงาน" },
+            { id: 306, name: "ฟาร์มโซลาร์เซลล์", tier: "หลักล้าน", investment: 3500000, profitMonth: 100000, trend: "Very High", history: [{y:22, p:800000}, {y:23, p:1000000}, {y:24, p:1200000}], costBreakdown: {"แผงโซลาร์": 2500000, "ค่าติดตั้ง/เดินสาย": 800000, "ค่าขออนุญาต": 200000}, risk: "Low", desc: "ขายไฟคืนรัฐ" },
         ];
 
-        // --- Helper Component: Footer Credit ---
+        // --- Helper Component: Footer Credit & Support ---
         const AppFooter = () => (
-            <div className="mt-12 mb-20 text-center opacity-80">
-                <div className="inline-block bg-white rounded-full px-4 py-1 mb-2 border border-gray-200 shadow-sm">
-                    <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Super App ไทย เพื่อคนไทย 🇹🇭</span>
+            <div className="mt-16 bg-white border-t border-gray-300 py-10 px-4">
+                <div className="max-w-3xl mx-auto text-center">
+                    
+                    {/* Support Section */}
+                    <div className="mb-8 p-6 bg-emerald-50 rounded-2xl border border-emerald-100 shadow-sm">
+                        <h3 className="text-emerald-800 font-bold text-lg mb-2">🤝 ร่วมสนับสนุนโครงการดีๆ เพื่อคนไทย</h3>
+                        <p className="text-gray-600 text-sm mb-4">หากแอปพลิเคชันนี้มีประโยชน์ ช่วยกันแบ่งปันให้พี่น้องเกษตรกรและคนทำมาหากินได้ใช้กันนะครับ</p>
+                        <div className="flex justify-center gap-4 text-sm font-medium">
+                            <button className="bg-white border border-emerald-200 text-emerald-600 px-4 py-2 rounded-full hover:bg-emerald-600 hover:text-white transition flex items-center gap-2 shadow-sm">
+                                <i className="fa-solid fa-share-nodes"></i> กดแชร์
+                            </button>
+                            <button className="bg-white border border-blue-200 text-blue-600 px-4 py-2 rounded-full hover:bg-blue-600 hover:text-white transition flex items-center gap-2 shadow-sm">
+                                <i className="fa-solid fa-comment-dots"></i> แสดงความคิดเห็น
+                            </button>
+                            <button className="bg-white border border-red-200 text-red-500 px-4 py-2 rounded-full hover:bg-red-500 hover:text-white transition flex items-center gap-2 shadow-sm">
+                                <i className="fa-solid fa-heart"></i> ส่งกำลังใจ
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="w-full h-px bg-gray-300 mb-8 mx-auto w-1/2"></div>
+
+                    {/* Developer Credit - Full Details */}
+                    <div className="flex flex-col items-center gap-3">
+                        <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mb-2 overflow-hidden shadow-md">
+                             <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Winai" alt="Winai" className="w-full h-full" />
+                        </div>
+                        <p className="text-base font-bold text-gray-800">พัฒนาโดย: วินัย ผันอากาศ</p>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600 mt-2 bg-white px-6 py-4 rounded-xl shadow-sm border border-gray-200">
+                            <a href="https://facebook.com/winayo1" target="_blank" className="hover:text-blue-600 flex items-center gap-2 justify-center">
+                                <i className="fa-brands fa-facebook text-xl text-blue-600"></i> 
+                                <div className="text-left">
+                                    <span className="block text-xs text-gray-400">Facebook</span>
+                                    Winai Phanarkat
+                                </div>
+                            </a>
+                            <div className="flex items-center gap-2 justify-center border-l border-r border-gray-100 px-4">
+                                <div className="text-center">
+                                    <span className="block text-xs text-gray-400 mb-1"><i className="fa-brands fa-line text-green-500"></i> / <i className="fa-solid fa-phone text-gray-600"></i> โทร</span>
+                                    <span className="font-bold text-gray-800">092-653-3228</span>
+                                </div>
+                            </div>
+                            <a href="mailto:winayo@gmail.com" className="hover:text-red-500 flex items-center gap-2 justify-center">
+                                <i className="fa-solid fa-envelope text-xl text-red-500"></i>
+                                <div className="text-left">
+                                    <span className="block text-xs text-gray-400">Email</span>
+                                    winayo@gmail.com
+                                </div>
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <div className="mt-8 text-[10px] text-gray-400">
+                        © 2025 Vinai Innovation Portal. All rights reserved. <br/>
+                        Super App ไทย เพื่อคนไทย
+                    </div>
                 </div>
-                <p className="text-xs text-gray-400">
-                    พัฒนาด้วย <i className="fa-solid fa-heart text-red-400"></i> โดย <span className="font-bold text-gray-500">วินัย ผันอากาศ</span>
-                </p>
             </div>
         );
 
@@ -100,40 +222,36 @@
             const [currentPage, setCurrentPage] = useState('home');
             const [user, setUser] = useState(null);
             const [loginModalOpen, setLoginModalOpen] = useState(false);
-
-            // Data States
+            
             const [agricultureData, setAgricultureData] = useState(MOCK_AGRICULTURE);
             const [businessData, setBusinessData] = useState(MOCK_BUSINESSES);
             const [marketPosts, setMarketPosts] = useState([
-                { id: 1, user: "ลุงศักดิ์", type: "ขาย", item: "ข้าวหอมมะลิ 105", desc: "ข้าวใหม่ หอมมาก", price: "250 บ./ถัง", contact: { tel: "081-111-2222" }, likes: 5, comments: [], rating: 4.5 },
-                { id: 2, user: "เจ๊แดง", type: "รับซื้อ", item: "กล้วยน้ำว้า", desc: "รับไม่อั้น จ่ายสด", price: "ตามตลาด", contact: { tel: "089-999-8888" }, likes: 2, comments: [], rating: 0 }
+                { id: 1, user: "ลุงศักดิ์", type: "ขาย", item: "ข้าวหอมมะลิ 105", desc: "ข้าวใหม่ หอมมาก", price: "250 บ./ถัง", contact: {tel: "081-111-2222"}, likes: 5, comments: [], rating: 4.5 },
+                { id: 2, user: "เจ๊แดง", type: "รับซื้อ", item: "กล้วยน้ำว้า", desc: "รับไม่อั้น จ่ายสด", price: "ตามตลาด", contact: {tel: "089-999-8888"}, likes: 2, comments: [], rating: 0 }
             ]);
-            const [loading, setLoading] = useState(false);
+            const [connectionStatus, setConnectionStatus] = useState("checking");
 
-            // Fetch Data
             useEffect(() => {
                 const fetchData = async () => {
-                    if (!supabase) return;
-                    setLoading(true);
+                    if (!supabaseClient) {
+                        setConnectionStatus("mock");
+                        return;
+                    }
                     try {
-                        const { data: agri } = await supabase.from('agriculture_products').select('*');
-                        if (agri && agri.length > 0) setAgricultureData(agri);
-
-                        const { data: biz } = await supabase.from('sandbox_businesses').select('*');
-                        if (biz && biz.length > 0) setBusinessData(biz);
-
-                        const { data: posts } = await supabase.from('market_posts').select('*').order('created_at', { ascending: false });
-                        if (posts && posts.length > 0) setMarketPosts(posts);
+                        const { data: agri, error: errAgri } = await supabaseClient.from('agriculture_products').select('*');
+                        if (!errAgri && agri && agri.length > 0) {
+                            setAgricultureData(agri);
+                            setConnectionStatus("connected");
+                        } else {
+                            setConnectionStatus("mock");
+                        }
                     } catch (error) {
-                        console.log("Using Mock Data (DB not ready)");
-                    } finally {
-                        setLoading(false);
+                        setConnectionStatus("mock");
                     }
                 };
                 fetchData();
             }, []);
 
-            // Handlers
             const handleGlobalLogin = () => {
                 setUser({ name: "นักล่าฝัน แห่งทุ่งกุลา", id: "U009", province: "ร้อยเอ็ด", role: "Member" });
                 setLoginModalOpen(false);
@@ -141,7 +259,6 @@
 
             const handlePostAd = async (newPost) => {
                 if (!user) { setLoginModalOpen(true); return; }
-
                 const postObj = {
                     id: Date.now(),
                     user: user.name,
@@ -151,21 +268,19 @@
                     created_at: new Date().toISOString()
                 };
                 setMarketPosts([postObj, ...marketPosts]);
-
-                if (supabase) {
-                    await supabase.from('market_posts').insert([{
-                        user_name: user.name, type: newPost.type, item_name: newPost.item, description: newPost.desc, price: newPost.price,
-                        contact_info: { tel: newPost.tel, line: newPost.line, facebook: newPost.facebook }, likes: 0
-                    }]);
-                }
             };
 
             // --- PAGE 1: HOME ---
             const HomePage = () => (
-                <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900 text-white p-6 pb-24">
+                <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900 text-white p-6 pb-24 relative">
+                    <div className="absolute top-4 right-4 flex items-center gap-2 text-[10px] bg-black/30 px-2 py-1 rounded-full border border-white/10">
+                        <span className={`w-2 h-2 rounded-full ${connectionStatus === 'connected' ? 'bg-green-500 animate-pulse' : 'bg-orange-500'}`}></span>
+                        {connectionStatus === 'connected' ? 'ระบบออนไลน์' : 'โหมดจำลอง'}
+                    </div>
+
                     <div className="max-w-4xl w-full text-center space-y-8 animate-fade-in-up">
                         <div className="bg-white/10 backdrop-blur-md p-8 rounded-3xl border border-white/20 shadow-2xl relative transition-all hover:bg-white/15">
-                            {user && <div className="absolute top-4 right-4 bg-green-500 text-white text-xs px-2 py-1 rounded-full flex items-center gap-1"><i className="fa-solid fa-user"></i> {user.name}</div>}
+                            {user && <div className="absolute top-4 left-4 bg-green-500 text-white text-xs px-2 py-1 rounded-full flex items-center gap-1"><i className="fa-solid fa-user"></i> {user.name}</div>}
                             <div className="flex flex-col items-center">
                                 <div className="w-32 h-32 bg-gradient-to-r from-blue-400 to-emerald-400 rounded-full flex items-center justify-center mb-6 shadow-lg border-4 border-white overflow-hidden relative group">
                                     {user ? <span className="text-5xl">🧑‍🌾</span> : <i className="fa-solid fa-seedling text-5xl text-white"></i>}
@@ -179,17 +294,17 @@
                                 ) : (
                                     <>
                                         <h1 className="text-3xl md:text-5xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-yellow-200 to-emerald-200 leading-tight">
-                                            "นวัตกรรมเปลี่ยนชีวิต<br />เพื่อความสุขคนไทย"
+                                            "นวัตกรรมเปลี่ยนชีวิต<br/>เพื่อความสุขคนไทย"
                                         </h1>
                                         <p className="text-lg md:text-xl text-gray-200 mb-8 max-w-2xl font-light leading-relaxed">
-                                            แอปพลิเคชันอัจฉริยะที่จะช่วยให้พี่น้องชาวไทย <span className="text-yellow-300 font-bold">ลดต้นทุน เพิ่มรายได้</span><br class="hidden md:block" />
+                                            แอปพลิเคชันอัจฉริยะที่จะช่วยให้พี่น้องชาวไทย <span className="text-yellow-300 font-bold">ลดต้นทุน เพิ่มรายได้</span><br class="hidden md:block"/> 
                                             เพื่อให้ทุกคนมีกิน มีใช้ และมีชีวิตที่ <span className="font-bold text-white border-b-2 border-yellow-400">สุขสบาย</span> อย่างยั่งยืน
                                         </p>
                                     </>
                                 )}
 
                                 {!user && (
-                                    <button onClick={() => setLoginModalOpen(true)} className="bg-orange-500 hover:bg-orange-600 text-white px-8 py-3 rounded-full font-bold shadow-lg animate-bounce transition-all transform hover:scale-105 flex items-center gap-2">
+                                    <button onClick={()=>setLoginModalOpen(true)} className="bg-orange-500 hover:bg-orange-600 text-white px-8 py-3 rounded-full font-bold shadow-lg animate-bounce transition-all transform hover:scale-105 flex items-center gap-2">
                                         <i className="fa-solid fa-right-to-bracket"></i> เข้าสู่ระบบสมาชิก
                                     </button>
                                 )}
@@ -222,14 +337,19 @@
                                 </div>
                             </button>
                         </div>
-                        <AppFooter />
+                    </div>
+                    
+                    <div className="w-full absolute bottom-0 left-0">
+                       <AppFooter />
                     </div>
                 </div>
             );
 
             // --- PAGE 2: KASET CLOUD ---
             const KasetCloudApp = () => {
-                const allProvinces = ["กรุงเทพมหานคร", "ขอนแก่น", "เชียงใหม่", "นครราชสีมา", "ภูเก็ต", "สงขลา", "ระยอง"];
+                const allProvinces = [
+                    "กรุงเทพมหานคร", "กระบี่", "กาญจนบุรี", "กาฬสินธุ์", "กำแพงเพชร", "ขอนแก่น", "จันทบุรี", "ฉะเชิงเทรา", "ชลบุรี", "ชัยนาท", "ชัยภูมิ", "ชุมพร", "เชียงราย", "เชียงใหม่", "ตรัง", "ตราด", "ตาก", "นครนายก", "นครปฐม", "นครพนม", "นครราชสีมา", "นครศรีธรรมราช", "นครสวรรค์", "นนทบุรี", "นราธิวาส", "น่าน", "บึงกาฬ", "บุรีรัมย์", "ปทุมธานี", "ประจวบคีรีขันธ์", "ปราจีนบุรี", "ปัตตานี", "พระนครศรีอยุธยา", "พะเยา", "พังงา", "พัทลุง", "พิจิตร", "พิษณุโลก", "เพชรบุรี", "เพชรบูรณ์", "แพร่", "ภูเก็ต", "มหาสารคาม", "มุกดาหาร", "แม่ฮ่องสอน", "ยโสธร", "ยะลา", "ร้อยเอ็ด", "ระนอง", "ระยอง", "ราชบุรี", "ลพบุรี", "ลำปาง", "ลำพูน", "เลย", "ศรีสะเกษ", "สกลนคร", "สงขลา", "สตูล", "สมุทรปราการ", "สมุทรสงคราม", "สมุทรสาคร", "สระแก้ว", "สระบุรี", "สิงห์บุรี", "สุโขทัย", "สุพรรณบุรี", "สุราษฎร์ธานี", "สุรินทร์", "หนองคาย", "หนองบัวลำภู", "อ่างทอง", "อำนาจเจริญ", "อุดรธานี", "อุตรดิตถ์", "อุทัยธานี", "อุบลราชธานี"
+                ];
                 const [area, setArea] = useState(10);
                 const [analyzing, setAnalyzing] = useState(false);
                 const [rankedResults, setRankedResults] = useState(null);
@@ -238,39 +358,139 @@
                     setAnalyzing(true);
                     setTimeout(() => {
                         let results = agricultureData.map(item => ({
-                            ...item, profit: (item.price * item.yield * area) - (item.cost * area), score: Math.random() * 100
+                            ...item, profit: (item.price * item.yield * area) - (item.cost * area), score: Math.random() * 100 
                         }));
-                        results.sort((a, b) => b.profit - a.profit);
-                        setRankedResults(results.slice(0, 5));
+                        results.sort((a,b) => b.profit - a.profit);
+                        setRankedResults(results.slice(0, 10)); // Top 10
                         setAnalyzing(false);
                     }, 1000);
                 };
 
+                const renderChart = (history, currentProfit, area) => {
+                    if(!history) return <div className="text-xs text-gray-400 p-2 text-center">ไม่มีข้อมูลย้อนหลัง</div>;
+                    
+                    return (
+                        <div className="mt-4 bg-white border border-gray-200 rounded-lg p-3">
+                            <h4 className="text-xs font-bold text-gray-600 mb-2 flex items-center gap-1"><i className="fa-solid fa-chart-simple"></i> สถิติกำไรย้อนหลัง 3 ปี (คำนวณตามพื้นที่ {area} ไร่)</h4>
+                            <table className="w-full text-xs text-center">
+                                <thead>
+                                    <tr className="bg-gray-100 text-gray-500">
+                                        <th className="py-2">ปี</th>
+                                        <th className="py-2">กำไรสุทธิ (บาท)</th>
+                                        <th className="py-2 text-left pl-2">สถานการณ์</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {history.map((h, i) => (
+                                        <tr key={i} className="border-b border-gray-100 hover:bg-emerald-50 transition">
+                                            <td className="py-2 font-bold text-gray-700">{h.year}</td>
+                                            <td className={`py-2 font-medium ${h.profit > 0 ? 'text-green-600' : 'text-red-500'}`}>
+                                                {(h.profit * area).toLocaleString()}
+                                            </td>
+                                            <td className="py-2 text-left pl-2 text-gray-500">{h.note}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    );
+                }
+
                 return (
                     <div className="min-h-screen bg-green-50 text-gray-800 p-4 pb-20">
                         <div className="bg-white rounded-2xl p-6 shadow-md border-t-4 border-emerald-500 mb-6">
-                            <h2 className="text-xl font-bold text-gray-700 mb-4 flex items-center gap-2"><i className="fa-solid fa-calculator text-emerald-600"></i> คำนวณ (Kaset Cloud)</h2>
+                            <h2 className="text-xl font-bold text-gray-700 mb-4 flex items-center gap-2"><i className="fa-solid fa-calculator text-emerald-600"></i> คำนวณความรวย (Kaset Cloud)</h2>
                             <div className="grid md:grid-cols-2 gap-4">
-                                <select className="w-full p-2 border rounded-lg">
-                                    <option>เลือกจังหวัด</option>
-                                    {allProvinces.map(p => <option key={p}>{p}</option>)}
-                                </select>
-                                <input type="number" value={area} onChange={(e) => setArea(e.target.value)} className="w-full p-2 border rounded-lg" placeholder="จำนวนไร่" />
+                                <div>
+                                    <label className="text-sm text-gray-500 mb-1 block">จังหวัด (ครบ 77 จังหวัด)</label>
+                                    <select className="w-full p-2 border rounded-lg">
+                                        <option>เลือกจังหวัด</option>
+                                        {allProvinces.sort().map(p=><option key={p}>{p}</option>)}
+                                    </select>
+                                    <div className="text-[10px] text-gray-400 mt-2 p-2 bg-gray-100 rounded border border-gray-200">
+                                        <p><i className="fa-solid fa-database text-blue-400"></i> <b>แหล่งข้อมูล:</b> กรมพัฒนาที่ดิน (LDD) - ค่า pH และชุดดิน</p>
+                                        <p><i className="fa-solid fa-satellite text-purple-400"></i> <b>แหล่งข้อมูล:</b> สำนักงานพัฒนาเทคโนโลยีอวกาศ (GISTDA) - ความชื้น</p>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="text-sm text-gray-500 mb-1 block">พื้นที่ (ไร่)</label>
+                                    <input type="number" value={area} onChange={(e)=>setArea(e.target.value)} className="w-full p-2 border rounded-lg" placeholder="จำนวนไร่"/>
+                                </div>
                             </div>
-                            <button onClick={analyzeData} className="w-full mt-4 bg-emerald-600 text-white py-3 rounded-xl font-bold flex justify-center items-center gap-2">
-                                {analyzing ? "กำลังดึงข้อมูล..." : "วิเคราะห์"}
+                            <button onClick={analyzeData} className="w-full mt-4 bg-emerald-600 text-white py-3 rounded-xl font-bold flex justify-center items-center gap-2 hover:bg-emerald-700 transition shadow">
+                                {analyzing ? <span><i className="fa-solid fa-circle-notch fa-spin"></i> กำลังประมวลผล...</span> : <span><i className="fa-solid fa-search"></i> วิเคราะห์ 10 อันดับน่าลงทุน</span>}
                             </button>
                         </div>
                         {rankedResults && (
-                            <div className="space-y-3">
+                            <div className="space-y-6">
+                                <h3 className="text-xl font-bold text-emerald-800 pl-3 border-l-4 border-orange-500 flex items-center gap-2">
+                                    <i className="fa-solid fa-ranking-star"></i> 10 อันดับพืช/สัตว์ที่น่าลงทุนที่สุด
+                                </h3>
                                 {rankedResults.map((item, idx) => (
-                                    <div key={idx} className="bg-white p-4 rounded-xl shadow border-l-4 border-green-500 flex justify-between items-center">
-                                        <div>
-                                            <h4 className="font-bold text-lg">{item.name}</h4>
-                                            <p className="text-sm text-gray-500">กำไรคาดการณ์: <span className="text-green-600 font-bold">{item.profit.toLocaleString()} ฿</span></p>
+                                    <div key={idx} className="bg-white p-5 rounded-2xl shadow-lg border border-gray-100 relative overflow-hidden transition hover:shadow-xl">
+                                        <div className="absolute top-0 left-0 bg-gradient-to-r from-emerald-500 to-green-600 text-white text-xs px-3 py-1 rounded-br-lg font-bold shadow-sm">
+                                            อันดับที่ #{idx+1}
                                         </div>
-                                        <div className="text-right">
-                                            <span className="text-xs bg-gray-100 px-2 py-1 rounded">{item.demandDesc}</span>
+                                        
+                                        <div className="flex flex-col md:flex-row justify-between items-start mb-4 pl-0 md:pl-20 pt-6 md:pt-0">
+                                            <div>
+                                                <h4 className="font-bold text-2xl text-gray-800 flex items-center gap-2">
+                                                    {item.name} 
+                                                </h4>
+                                                <p className="text-sm text-gray-500 mt-1"><i className="fa-solid fa-tag"></i> ประเภท: {item.type}</p>
+                                            </div>
+                                            <div className="mt-2 md:mt-0 text-right">
+                                                <div className={`inline-block px-3 py-1 rounded-full text-xs font-bold text-white mb-1 ${item.risk === 'Low' ? 'bg-green-500' : item.risk === 'Medium' ? 'bg-yellow-500' : 'bg-red-500'}`}>
+                                                    ความเสี่ยง: {item.risk === 'Low' ? 'ต่ำ' : item.risk === 'Medium' ? 'ปานกลาง' : 'สูง'}
+                                                </div>
+                                                <p className="text-xs text-gray-400">{item.demandDesc}</p>
+                                            </div>
+                                        </div>
+
+                                        {/* Main Stats */}
+                                        <div className="flex gap-4 mb-4">
+                                            <div className="flex-1 bg-red-50 p-3 rounded-xl text-center border border-red-100">
+                                                <p className="text-xs text-red-400 font-bold uppercase">ต้นทุนรวม</p>
+                                                <p className="text-lg font-bold text-red-600">{(item.cost * area).toLocaleString()} ฿</p>
+                                            </div>
+                                            <div className="flex-1 bg-green-50 p-3 rounded-xl text-center border border-green-100">
+                                                <p className="text-xs text-green-500 font-bold uppercase">กำไรคาดการณ์/ปี</p>
+                                                <p className="text-xl font-bold text-green-700">{item.profit.toLocaleString()} ฿</p>
+                                            </div>
+                                        </div>
+
+                                        {/* Deep Dive Details Grid */}
+                                        <div className="grid md:grid-cols-2 gap-4">
+                                            {/* Cost Breakdown */}
+                                            <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
+                                                <p className="font-bold mb-3 text-gray-600 text-sm flex items-center gap-2 border-b border-gray-300 pb-2">
+                                                    <i className="fa-solid fa-list-check text-blue-500"></i> แจกแจงรายละเอียดต้นทุน (บาท)
+                                                </p>
+                                                <div className="space-y-2 text-sm">
+                                                    {item.costDetails && Object.entries(item.costDetails).map(([key, val]) => (
+                                                        <div key={key} className="flex justify-between items-center">
+                                                            <span className="text-gray-500">{key}</span>
+                                                            <span className="font-medium text-gray-700">{(val * area).toLocaleString()}</span>
+                                                        </div>
+                                                    ))}
+                                                    <div className="flex justify-between items-center pt-2 border-t border-gray-300 mt-2 font-bold text-red-500">
+                                                        <span>รวมทั้งหมด</span>
+                                                        <span>{(item.cost * area).toLocaleString()}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Risk & History */}
+                                            <div className="flex flex-col gap-4">
+                                                {/* Risk Analysis */}
+                                                <div className="bg-orange-50 p-3 rounded-xl border border-orange-100">
+                                                    <p className="font-bold text-orange-700 text-sm mb-1"><i className="fa-solid fa-triangle-exclamation"></i> วิเคราะห์ความเสี่ยง</p>
+                                                    <p className="text-xs text-orange-800 leading-relaxed">{item.riskReason}</p>
+                                                </div>
+                                                
+                                                {/* History Table */}
+                                                {renderChart(item.history, item.profit, area)}
+                                            </div>
                                         </div>
                                     </div>
                                 ))}
@@ -281,7 +501,6 @@
                 );
             };
 
-            // --- PAGE 3: SANDBOX ---
             const VirtualSandboxApp = () => {
                 const [tierFilter, setTierFilter] = useState("All");
                 const [expandedBiz, setExpandedBiz] = useState(null);
@@ -319,7 +538,6 @@
                 );
             };
 
-            // --- PAGE 4: MARKET ---
             const MarketCommunityPage = () => {
                 const [postModalOpen, setPostModalOpen] = useState(false);
                 const [newPost, setNewPost] = useState({ type: 'ขาย', item: '', desc: '', price: '', tel: '', line: '', facebook: '' });
@@ -328,14 +546,14 @@
                     <div className="min-h-screen bg-gray-50 text-gray-800 p-4 pb-20">
                         <div className="flex justify-between items-center mb-4">
                             <h3 className="font-bold text-gray-700">ประกาศล่าสุด ({marketPosts.length})</h3>
-                            <button onClick={() => user ? setPostModalOpen(true) : setLoginModalOpen(true)} className="bg-orange-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow flex items-center gap-2"><i className="fa-solid fa-bullhorn"></i> ลงประกาศ</button>
+                            <button onClick={()=>user ? setPostModalOpen(true) : setLoginModalOpen(true)} className="bg-orange-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow flex items-center gap-2"><i className="fa-solid fa-bullhorn"></i> ลงประกาศ</button>
                         </div>
                         <div className="space-y-4">
                             {marketPosts.map((post, idx) => (
                                 <div key={idx} className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
                                     <div className="flex justify-between mb-2">
                                         <span className="font-bold text-gray-800">{post.item_name || post.item}</span>
-                                        <span className={`text-xs px-2 py-1 rounded-full ${post.type === 'ขาย' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>{post.type}</span>
+                                        <span className={`text-xs px-2 py-1 rounded-full ${post.type==='ขาย'?'bg-green-100 text-green-700':'bg-blue-100 text-blue-700'}`}>{post.type}</span>
                                     </div>
                                     <p className="text-sm text-gray-600 mb-2">{post.description || post.desc}</p>
                                     <p className="text-lg font-bold text-orange-600 mb-3">{post.price}</p>
@@ -351,11 +569,11 @@
                             <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
                                 <div className="bg-white rounded-2xl p-6 w-full max-w-md">
                                     <h3 className="font-bold mb-4">ลงประกาศ</h3>
-                                    <input className="border w-full p-2 mb-2 rounded" placeholder="ชื่อสินค้า" value={newPost.item} onChange={e => setNewPost({ ...newPost, item: e.target.value })} />
-                                    <input className="border w-full p-2 mb-2 rounded" placeholder="ราคา" value={newPost.price} onChange={e => setNewPost({ ...newPost, price: e.target.value })} />
+                                    <input className="border w-full p-2 mb-2 rounded" placeholder="ชื่อสินค้า" value={newPost.item} onChange={e=>setNewPost({...newPost, item: e.target.value})}/>
+                                    <input className="border w-full p-2 mb-2 rounded" placeholder="ราคา" value={newPost.price} onChange={e=>setNewPost({...newPost, price: e.target.value})}/>
                                     <div className="flex gap-2 mt-4">
-                                        <button onClick={() => setPostModalOpen(false)} className="flex-1 border py-2 rounded">ยกเลิก</button>
-                                        <button onClick={() => { handlePostAd(newPost); setPostModalOpen(false); }} className="flex-1 bg-orange-600 text-white py-2 rounded font-bold">โพสต์</button>
+                                        <button onClick={()=>setPostModalOpen(false)} className="flex-1 border py-2 rounded">ยกเลิก</button>
+                                        <button onClick={()=> { handlePostAd(newPost); setPostModalOpen(false); }} className="flex-1 bg-orange-600 text-white py-2 rounded font-bold">โพสต์</button>
                                     </div>
                                 </div>
                             </div>
@@ -364,14 +582,13 @@
                 );
             };
 
-            // --- NAVIGATION ---
             return (
                 <div className="font-sans">
                     <nav className="fixed bottom-0 w-full bg-white border-t flex justify-around p-3 z-50 text-xs font-bold text-gray-500 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
-                        <button onClick={() => setCurrentPage('home')} className={`flex flex-col items-center gap-1 ${currentPage === 'home' ? 'text-emerald-600' : ''}`}><i className="fa-solid fa-house text-lg"></i><span>หน้าแรก</span></button>
-                        <button onClick={() => setCurrentPage('kaset')} className={`flex flex-col items-center gap-1 ${currentPage === 'kaset' ? 'text-emerald-600' : ''}`}><i className="fa-solid fa-seedling text-lg"></i><span>เกษตร</span></button>
-                        <button onClick={() => setCurrentPage('market')} className={`flex flex-col items-center gap-1 ${currentPage === 'market' ? 'text-orange-600' : ''}`}><i className="fa-solid fa-shop text-lg"></i><span>ตลาด</span></button>
-                        <button onClick={() => setCurrentPage('sandbox')} className={`flex flex-col items-center gap-1 ${currentPage === 'sandbox' ? 'text-indigo-600' : ''}`}><i className="fa-solid fa-gamepad text-lg"></i><span>Sandbox</span></button>
+                        <button onClick={()=>setCurrentPage('home')} className={`flex flex-col items-center gap-1 ${currentPage==='home'?'text-emerald-600':''}`}><i className="fa-solid fa-house text-lg"></i><span>หน้าแรก</span></button>
+                        <button onClick={()=>setCurrentPage('kaset')} className={`flex flex-col items-center gap-1 ${currentPage==='kaset'?'text-emerald-600':''}`}><i className="fa-solid fa-seedling text-lg"></i><span>เกษตร</span></button>
+                        <button onClick={()=>setCurrentPage('market')} className={`flex flex-col items-center gap-1 ${currentPage==='market'?'text-orange-600':''}`}><i className="fa-solid fa-shop text-lg"></i><span>ตลาด</span></button>
+                        <button onClick={()=>setCurrentPage('sandbox')} className={`flex flex-col items-center gap-1 ${currentPage==='sandbox'?'text-indigo-600':''}`}><i className="fa-solid fa-gamepad text-lg"></i><span>Sandbox</span></button>
                     </nav>
 
                     {currentPage === 'home' && <HomePage />}
@@ -382,7 +599,7 @@
                     {loginModalOpen && (
                         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[60] p-4 backdrop-blur-sm">
                             <div className="bg-white rounded-2xl p-8 w-full max-w-sm text-center shadow-2xl relative">
-                                <button onClick={() => setLoginModalOpen(false)} className="absolute top-4 right-4 text-gray-400 font-bold hover:text-gray-600">X</button>
+                                <button onClick={()=>setLoginModalOpen(false)} className="absolute top-4 right-4 text-gray-400 font-bold hover:text-gray-600">X</button>
                                 <h3 className="text-2xl font-bold mb-4 text-gray-800">เข้าสู่ระบบสมาชิก</h3>
                                 <button onClick={handleGlobalLogin} className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold mb-2 flex justify-center items-center gap-2 hover:bg-blue-700 transition"><i className="fa-brands fa-facebook"></i> Facebook</button>
                                 <button onClick={handleGlobalLogin} className="w-full bg-green-500 text-white py-3 rounded-xl font-bold flex justify-center items-center gap-2 hover:bg-green-600 transition"><i className="fa-brands fa-line"></i> Line</button>
@@ -400,5 +617,4 @@
         root.render(<VinaiInnovationPortal />);
     </script>
 </body>
-
 </html>
