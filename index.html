@@ -70,12 +70,10 @@
         const SUPABASE_ANON_KEY = "sb_publishable_I2HEPgG2BbzK2gBtG3i0NQ_YFlzJfVo";
 
         let supabaseClient = null;
-        let isMockMode = true;
 
         if (typeof supabase !== 'undefined') {
             try {
                 supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-                isMockMode = false;
             } catch (e) {
                 console.warn("Supabase Init Failed");
             }
@@ -247,10 +245,20 @@
                 setErrorMsg("");
             };
 
-            // Fetch My Registrations (Mocked for local state per session)
+            // Fetch My Registrations Realtime
             useEffect(() => {
-                // In a real app with Supabase, we would fetch here
-                // if (user) fetchMySupply(user.id);
+                if (user && supabaseClient) {
+                    const fetchMySupply = async () => {
+                        const { data, error } = await supabaseClient
+                            .from('supply_registrations')
+                            .select('*')
+                            .eq('user_id', user.id)
+                            .order('created_at', { ascending: false });
+                        
+                        if (data) setMyRegistrations(data);
+                    };
+                    fetchMySupply();
+                }
             }, [user]);
 
             const calculateDemandSupply = async () => {
@@ -264,11 +272,10 @@
                 }
                 setIsSubmitting(true);
 
-                // --- SUPABASE INSERT LOGIC (Simulated execution context) ---
+                // --- SUPABASE INSERT LOGIC ---
                 if (supabaseClient) {
                     try {
-                        // This code would run if connected to real Supabase
-                        /* const { data, error } = await supabaseClient
+                        const { data, error } = await supabaseClient
                             .from('supply_registrations')
                             .insert([
                                 { 
@@ -278,26 +285,32 @@
                                     province: formData.province,
                                     harvest_date: formData.date
                                 },
-                            ]);
+                            ])
+                            .select();
+
                         if (error) throw error;
-                        */
-                       // Mock success for local UI
-                       const newReg = {
-                           id: Date.now(),
-                           crop: formData.crop,
-                           area: formData.area,
-                           province: formData.province,
-                           date: formData.date,
-                           user_id: user.id
-                       };
-                       setMyRegistrations(prev => [newReg, ...prev]);
+                        
+                        // Update local state for immediate feedback
+                        if (data && data[0]) {
+                            setMyRegistrations(prev => [data[0], ...prev]);
+                        } else {
+                             // Fallback if data return is empty
+                             setMyRegistrations(prev => [{
+                                id: Date.now(),
+                                crop: formData.crop,
+                                area: formData.area,
+                                province: formData.province,
+                                date: formData.date,
+                                user_id: user.id
+                            }, ...prev]);
+                        }
 
                     } catch (error) {
                         console.error("Error saving supply:", error);
-                        // Fallback logic handled below
+                        // Still allow simulation to run even if DB fails
                     }
                 } else {
-                    // Local state fallback
+                    // Local state fallback for mock mode
                     const newReg = {
                            id: Date.now(),
                            crop: formData.crop,
@@ -366,13 +379,15 @@
                 }, 1000);
             };
 
-            const handleDeleteRegistration = (id) => {
+            const handleDeleteRegistration = async (id) => {
                 if(confirm("คุณต้องการยกเลิกรายการนี้ใช่หรือไม่?")) {
-                    // Real Supabase Delete
-                    /* if (supabaseClient) {
-                        await supabaseClient.from('supply_registrations').delete().eq('id', id);
+                    if (supabaseClient) {
+                        const { error } = await supabaseClient.from('supply_registrations').delete().eq('id', id);
+                        if (error) {
+                            alert("เกิดข้อผิดพลาดในการลบ: " + error.message);
+                            return;
+                        }
                     }
-                    */
                     setMyRegistrations(prev => prev.filter(item => item.id !== id));
                 }
             };
@@ -405,13 +420,6 @@
                     crop: "ทั่วไป"
                 };
                 
-                // Real Supabase Insert for Forum
-                /*
-                if (supabaseClient) {
-                    await supabaseClient.from('forum_posts').insert([...]);
-                }
-                */
-
                 setPosts([newPostObj, ...posts]);
                 setNewPost("");
             };
@@ -465,7 +473,7 @@
                         }
                     });
                 }
-            }, [analysisResult, activeTab]); // Add activeTab dependency
+            }, [analysisResult, activeTab]);
 
             const filteredPosts = forumProvince === 'all' ? posts : posts.filter(p => p.province === forumProvince || p.province === "ไม่ระบุ");
 
@@ -870,30 +878,172 @@
             );
         };
 
-        // --- PAGE: HOME (Updated) ---
-        const HomePage = ({ user, onLogin, onAdminLogin, setPage }) => {
+        // --- PAGE: KASET CLOUD ---
+        const KasetCloudApp = () => {
+            const [province, setProvince] = useState("กรุงเทพมหานคร");
+            const [area, setArea] = useState(10);
+            const [data, setData] = useState([]); // Real Data
+            const [analyzing, setAnalyzing] = useState(false);
+            const [results, setResults] = useState(null);
+            const [soilInfo, setSoilInfo] = useState(PROVINCE_DATA["กรุงเทพมหานคร"]);
+
+            // Initial Fetch
+            useEffect(() => {
+                const fetchData = async () => {
+                    if (!supabaseClient) return;
+                    const { data: agri } = await supabaseClient.from('agriculture_products').select('*');
+                    if (agri) setData(agri);
+                };
+                fetchData();
+            }, []);
+
+            const handleProvinceChange = (e) => {
+                const p = e.target.value;
+                setProvince(p);
+                setSoilInfo(PROVINCE_DATA[p]);
+                setResults(null);
+            };
+
+            const analyze = () => {
+                setAnalyzing(true);
+                // Simulate calculation delay
+                setTimeout(() => {
+                    // FORCE USE LOCAL DATA TO ENSURE CONSISTENCY WITH MARKET PAGE
+                    // (Supabase data might have different names causing mismatches)
+                    let baseData = [
+                        { id: 1, name: "ข้าวหอมมะลิ", category: "พืชไร่", price: 15000, yield: 800, cost: 4500, risk_level: "Medium", demand_desc: "สูง", risk_reason: "ราคาผันผวนตามตลาดโลก" },
+                        { id: 2, name: "ผักสลัดไฮโดร", category: "ผัก", price: 80000, yield: 2000, cost: 35000, risk_level: "Low", demand_desc: "ปานกลาง", risk_reason: "ต้องดูแลระบบน้ำดีเยี่ยม" },
+                        { id: 3, name: "ทุเรียน", category: "ผลไม้", price: 120000, yield: 2000, cost: 25000, risk_level: "High", demand_desc: "สูงมาก", risk_reason: "ใช้เวลานานกว่าจะคืนทุน (5 ปี+)" },
+                        { id: 4, name: "ยางพารา", category: "พืชไร่", price: 50, yield: 250, cost: 1500, risk_level: "Low", demand_desc: "คงที่", risk_reason: "ราคาขึ้นอยู่กับตลาดโลกและน้ำมัน" },
+                        { id: 5, name: "มันสำปะหลัง", category: "พืชไร่", price: 3000, yield: 3500, cost: 3500, risk_level: "Low", demand_desc: "สูง", risk_reason: "ระวังโรคใบด่าง" },
+                        { id: 6, name: "ข้าวโพดเลี้ยงสัตว์", category: "พืชไร่", price: 8500, yield: 1000, cost: 4000, risk_level: "Medium", demand_desc: "ปานกลาง", risk_reason: "การแข่งขันราคากับพืชนำเข้า" },
+                        { id: 7, name: "อ้อยโรงงาน", category: "พืชไร่", price: 1100, yield: 12000, cost: 6000, risk_level: "Medium", demand_desc: "สูง", risk_reason: "ต้องส่งเข้าโรงงานตามโควต้า" },
+                        { id: 8, name: "ปาล์มน้ำมัน", category: "พืชไร่", price: 6000, yield: 3000, cost: 2000, risk_level: "Low", demand_desc: "สูงมาก", risk_reason: "ราคาผันผวนรายวัน" }
+                    ];
+
+                    const calculated = baseData.map(item => {
+                        // Merge Market Data for Chart
+                        const marketStats = MARKET_STATS_DB[item.name] || { domestic: 10000, export: 5000, current: 8000 };
+                        const totalDemand = marketStats.domestic + marketStats.export;
+                        const myOutputTons = (item.yield * area) / 1000; // Use same unit conversion
+                        
+                        // Use consistent simulation function
+                        const otherRegisteredSupply = getOtherRegisteredSupply(item.name);
+                        
+                        const totalSupply = marketStats.current + myOutputTons + otherRegisteredSupply;
+
+                        return {
+                            ...item,
+                            profitTotal: (item.price * item.yield * area) - (item.cost * area),
+                            costTotal: item.cost * area,
+                            marketDemand: totalDemand,
+                            marketSupply: totalSupply
+                        };
+                    });
+                    
+                    calculated.sort((a, b) => b.profitTotal - a.profitTotal);
+                    setResults(calculated);
+                    setAnalyzing(false);
+                }, 1000);
+            };
+
+            return (
+                <div className="min-h-screen bg-green-50 p-4 pb-24">
+                    <div className="bg-white rounded-2xl p-6 shadow-md border-t-4 border-emerald-500 mb-6">
+                        <h2 className="text-xl font-bold text-gray-700 mb-4 flex items-center gap-2"><i className="fa-solid fa-calculator text-emerald-600"></i> คำนวณความรวย (Kaset Cloud)</h2>
+                        <div className="grid md:grid-cols-2 gap-4">
+                            <div>
+                                <label className="text-sm font-bold text-gray-600 mb-1 block">เลือกจังหวัด (ข้อมูลสภาพดิน/อากาศ)</label>
+                                <select className="w-full p-2 border rounded-lg bg-gray-50" value={province} onChange={handleProvinceChange}>
+                                    {Object.keys(PROVINCE_DATA).sort().map(p => <option key={p} value={p}>{p}</option>)}
+                                </select>
+                                <div className="mt-2 text-xs bg-blue-50 p-2 rounded border border-blue-100 text-blue-800">
+                                    <p><i className="fa-solid fa-layer-group"></i> <b>ชุดดิน (LDD):</b> {soilInfo.soil}</p>
+                                    <p><i className="fa-solid fa-droplet"></i> <b>pH ดิน:</b> {soilInfo.ph}</p>
+                                    <p><i className="fa-solid fa-cloud-rain"></i> <b>ความชื้น (GISTDA):</b> {soilInfo.moisture}%</p>
+                                </div>
+                            </div>
+                            <div>
+                                <label className="text-sm font-bold text-gray-600 mb-1 block">พื้นที่ (ไร่)</label>
+                                <input type="number" value={area} onChange={e => setArea(e.target.value)} className="w-full p-2 border rounded-lg" />
+                            </div>
+                        </div>
+                        <button onClick={analyze} className="w-full mt-4 bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-bold shadow transition flex justify-center items-center gap-2">
+                            {analyzing ? <><i className="fa-solid fa-circle-notch fa-spin"></i> กำลังประมวลผล...</> : <><i className="fa-solid fa-search"></i> วิเคราะห์ 10 อันดับน่าลงทุน</>}
+                        </button>
+                    </div>
+
+                    {results && (
+                        <div className="space-y-6">
+                            <h3 className="text-xl font-bold text-emerald-800 pl-3 border-l-4 border-orange-500 flex items-center gap-2">
+                                <i className="fa-solid fa-ranking-star"></i> ผลลัพธ์: พืช/สัตว์ที่น่าลงทุนที่สุด
+                            </h3>
+                            {results.map((item, idx) => (
+                                <ResultItemWithChart key={idx} item={item} index={idx} />
+                            ))}
+                        </div>
+                    )}
+                    <AppFooter />
+                </div>
+            );
+        };
+
+        // --- PAGE: HOME (Updated with Real Auth) ---
+        const HomePage = ({ user, onLogin, onAdminLogin, setPage, onLogout }) => {
             const [showAdminAuth, setShowAdminAuth] = useState(false);
             const [showMemberAuth, setShowMemberAuth] = useState(false);
             const [password, setPassword] = useState("");
-            const [memberNameInput, setMemberNameInput] = useState("");
+            const [adminPassword, setAdminPassword] = useState("");
+            
+            // New Auth States
+            const [authMode, setAuthMode] = useState('login'); // 'login' or 'register'
+            const [email, setEmail] = useState("");
+            const [fullName, setFullName] = useState("");
+            const [authLoading, setAuthLoading] = useState(false);
 
             const handleAdminLoginSubmit = () => {
-                if (password === "admin123") { // รหัสผ่านสาธิต
+                if (adminPassword === "admin123") { // รหัสผ่านสาธิต
                     onAdminLogin();
                     setShowAdminAuth(false);
-                    setPassword("");
+                    setAdminPassword("");
                 } else {
                     alert("รหัสผ่านไม่ถูกต้อง (Hint: admin123)");
                 }
             };
 
-            const handleMemberLoginSubmit = () => {
-                if (memberNameInput.trim()) {
-                    onLogin(memberNameInput);
-                    setShowMemberAuth(false);
+            const handleAuthSubmit = async () => {
+                if (!email || !password) return alert("กรุณากรอกอีเมลและรหัสผ่าน");
+                setAuthLoading(true);
+
+                if (authMode === 'login') {
+                    const { data, error } = await supabaseClient.auth.signInWithPassword({
+                        email,
+                        password,
+                    });
+                    if (error) alert("เกิดข้อผิดพลาด: " + error.message);
+                    else {
+                        setShowMemberAuth(false);
+                        setEmail("");
+                        setPassword("");
+                    }
                 } else {
-                    alert("กรุณากรอกชื่อหรือเบอร์โทรศัพท์");
+                    // Register
+                    const { data, error } = await supabaseClient.auth.signUp({
+                        email,
+                        password,
+                        options: {
+                            data: {
+                                full_name: fullName,
+                            },
+                        },
+                    });
+                    if (error) alert("เกิดข้อผิดพลาด: " + error.message);
+                    else {
+                        alert("ลงทะเบียนสำเร็จ! กรุณาเข้าสู่ระบบ");
+                        setAuthMode('login');
+                    }
                 }
+                setAuthLoading(false);
             };
 
             return (
@@ -912,7 +1062,13 @@
                                         {user ? <span className="text-5xl">🧑‍🌾</span> : <i className="fa-solid fa-seedling text-5xl text-white"></i>}
                                     </div>
                                     {user ? (
-                                        <><h1 className="text-3xl md:text-5xl font-bold mb-3 text-white">สวัสดี, คุณ{user.name}</h1><p className="text-lg text-emerald-200 mb-6 font-light">"ขอให้วันนี้เป็นวันที่ดี พืชผลงอกงาม การค้าขายร่ำรวย"</p></>
+                                        <>
+                                            <h1 className="text-3xl md:text-5xl font-bold mb-3 text-white">สวัสดี, คุณ{user.name}</h1>
+                                            <p className="text-lg text-emerald-200 mb-6 font-light">"ขอให้วันนี้เป็นวันที่ดี พืชผลงอกงาม การค้าขายร่ำรวย"</p>
+                                            <button onClick={onLogout} className="bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded-full font-bold shadow-md transition text-sm">
+                                                <i className="fa-solid fa-right-from-bracket"></i> ออกจากระบบ
+                                            </button>
+                                        </>
                                     ) : (
                                         <>
                                             <h1 className="text-3xl md:text-5xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-yellow-200 to-emerald-200 leading-tight">"นวัตกรรมเปลี่ยนชีวิต<br />เพื่อความสุขคนไทย"</h1>
@@ -921,7 +1077,7 @@
                                     )}
                                     {!user && (
                                         <div className="flex flex-col gap-3 w-full max-w-xs items-center">
-                                            <button onClick={() => setShowMemberAuth(true)} className="bg-orange-500 hover:bg-orange-600 text-white px-8 py-3 rounded-full font-bold shadow-lg animate-bounce transition-all flex items-center justify-center gap-2"><i className="fa-solid fa-right-to-bracket"></i> เข้าสู่ระบบสมาชิก</button>
+                                            <button onClick={() => setShowMemberAuth(true)} className="bg-orange-500 hover:bg-orange-600 text-white px-8 py-3 rounded-full font-bold shadow-lg animate-bounce transition-all flex items-center justify-center gap-2"><i className="fa-solid fa-right-to-bracket"></i> เข้าสู่ระบบ / สมัครสมาชิก</button>
                                             <button onClick={() => setShowAdminAuth(true)} className="text-gray-400 text-xs hover:text-white transition underline mt-2">เข้าสู่ระบบเจ้าหน้าที่ (Admin)</button>
                                         </div>
                                     )}
@@ -952,8 +1108,8 @@
                                     type="password"
                                     className="w-full border border-gray-300 rounded-lg p-3 mb-4 text-center focus:outline-none focus:ring-2 focus:ring-red-500"
                                     placeholder="รหัสผ่าน"
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
+                                    value={adminPassword}
+                                    onChange={(e) => setAdminPassword(e.target.value)}
                                     onKeyDown={(e) => e.key === 'Enter' && handleAdminLoginSubmit()}
                                 />
                                 <button onClick={handleAdminLoginSubmit} className="w-full bg-red-600 text-white py-2 rounded-lg font-bold hover:bg-red-700 transition">เข้าสู่ระบบ</button>
@@ -968,17 +1124,46 @@
                                 <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
                                     <i className="fa-solid fa-user-plus text-2xl text-green-500"></i>
                                 </div>
-                                <h3 className="text-xl font-bold mb-2 text-gray-800">เข้าสู่ระบบสมาชิก</h3>
-                                <p className="text-xs text-gray-500 mb-4">กรอกชื่อหรือเบอร์โทรศัพท์เพื่อเริ่มใช้งาน</p>
-                                <input
-                                    type="text"
-                                    className="w-full border border-gray-300 rounded-lg p-3 mb-4 text-center focus:outline-none focus:ring-2 focus:ring-green-500"
-                                    placeholder="ชื่อ หรือ เบอร์โทร"
-                                    value={memberNameInput}
-                                    onChange={(e) => setMemberNameInput(e.target.value)}
-                                    onKeyDown={(e) => e.key === 'Enter' && handleMemberLoginSubmit()}
-                                />
-                                <button onClick={handleMemberLoginSubmit} className="w-full bg-green-600 text-white py-2 rounded-lg font-bold hover:bg-green-700 transition">เข้าใช้งาน</button>
+                                
+                                {/* AUTH MODE TOGGLE */}
+                                <div className="flex bg-gray-100 rounded-lg p-1 mb-4">
+                                    <button onClick={() => setAuthMode('login')} className={`flex-1 py-1 text-sm rounded font-bold transition ${authMode === 'login' ? 'bg-white shadow text-green-600' : 'text-gray-500'}`}>เข้าสู่ระบบ</button>
+                                    <button onClick={() => setAuthMode('register')} className={`flex-1 py-1 text-sm rounded font-bold transition ${authMode === 'register' ? 'bg-white shadow text-green-600' : 'text-gray-500'}`}>สมัครสมาชิก</button>
+                                </div>
+
+                                <h3 className="text-xl font-bold mb-2 text-gray-800">{authMode === 'login' ? 'ยินดีต้อนรับกลับ' : 'สมัครสมาชิกใหม่'}</h3>
+                                <p className="text-xs text-gray-500 mb-4">{authMode === 'login' ? 'เข้าสู่ระบบเพื่อใช้งานฟีเจอร์เต็มรูปแบบ' : 'สร้างบัญชีเพื่อเริ่มใช้งานฟรี'}</p>
+                                
+                                <div className="space-y-3">
+                                    {authMode === 'register' && (
+                                        <input
+                                            type="text"
+                                            className="w-full border border-gray-300 rounded-lg p-3 text-center focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+                                            placeholder="ชื่อ - นามสกุล"
+                                            value={fullName}
+                                            onChange={(e) => setFullName(e.target.value)}
+                                        />
+                                    )}
+                                    <input
+                                        type="email"
+                                        className="w-full border border-gray-300 rounded-lg p-3 text-center focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+                                        placeholder="อีเมล (Email)"
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                    />
+                                    <input
+                                        type="password"
+                                        className="w-full border border-gray-300 rounded-lg p-3 text-center focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+                                        placeholder="รหัสผ่าน (Password)"
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        onKeyDown={(e) => e.key === 'Enter' && handleAuthSubmit()}
+                                    />
+                                </div>
+
+                                <button onClick={handleAuthSubmit} disabled={authLoading} className="w-full mt-4 bg-green-600 text-white py-2 rounded-lg font-bold hover:bg-green-700 transition flex justify-center items-center gap-2">
+                                    {authLoading ? <><i className="fa-solid fa-spinner fa-spin"></i> กำลังดำเนินการ...</> : <>{authMode === 'login' ? 'เข้าสู่ระบบ' : 'สมัครสมาชิก'}</>}
+                                </button>
                             </div>
                         </div>
                     )}
@@ -991,9 +1176,48 @@
             const [page, setPage] = useState('home');
             const [user, setUser] = useState(null);
 
-            const login = (name) => setUser({ id: Date.now(), name: name, role: "user" }); // Added ID for DB
+            // Supabase Auth Listener
+            useEffect(() => {
+                if (supabaseClient) {
+                    // Check active session
+                    supabaseClient.auth.getSession().then(({ data: { session } }) => {
+                        if (session) {
+                            setUser({ 
+                                id: session.user.id, 
+                                email: session.user.email,
+                                name: session.user.user_metadata?.full_name || session.user.email.split('@')[0], 
+                                role: "user"
+                            });
+                        }
+                    });
+
+                    // Listen for changes
+                    const { data: { subscription } } = supabaseClient.auth.onAuthStateChange((event, session) => {
+                        if (session) {
+                            setUser({ 
+                                id: session.user.id, 
+                                email: session.user.email,
+                                name: session.user.user_metadata?.full_name || session.user.email.split('@')[0], 
+                                role: "user"
+                            });
+                        } else {
+                            setUser(null);
+                        }
+                    });
+                    return () => subscription.unsubscribe();
+                }
+            }, []);
+
+            const handleLogout = async () => {
+                if (supabaseClient) {
+                    await supabaseClient.auth.signOut();
+                }
+                setUser(null);
+                setPage('home');
+            };
+
+            const login = (name) => setUser({ id: Date.now(), name: name, role: "user" }); // Keep for compat if needed
             const adminLogin = () => { setUser({ id: 999, name: "Admin Officer", role: "admin" }); setPage('admin'); };
-            const logout = () => { setUser(null); setPage('home'); };
 
             return (
                 <div className="font-sans text-gray-800">
@@ -1004,11 +1228,10 @@
                         <button onClick={() => setPage('sandbox')} className={page === 'sandbox' ? 'text-indigo-600' : ''}><i className="fa-solid fa-gamepad text-xl mb-1 block"></i>Sandbox</button>
                     </nav>
 
-                    {page === 'home' && <HomePage user={user} onLogin={login} onAdminLogin={adminLogin} setPage={setPage} />}
+                    {page === 'home' && <HomePage user={user} onLogin={login} onAdminLogin={adminLogin} setPage={setPage} onLogout={handleLogout} />}
                     {page === 'kaset' && <KasetCloudApp />}
-                    {page === 'admin' && <AdminPage onLogout={logout} />}
+                    {page === 'admin' && <AdminPage onLogout={handleLogout} />}
                     
-                    {/* Updated MarketPage */}
                     {page === 'market' && <MarketPage setPage={setPage} user={user} />}
                     
                     {page === 'sandbox' && <div className="p-10 text-center mt-20">Sandbox Component <br /><button onClick={() => setPage('home')} className="mt-4 text-blue-500">Back</button><AppFooter /></div>}
