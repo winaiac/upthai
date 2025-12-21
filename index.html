@@ -120,17 +120,17 @@
                 if (region === "เหนือ") { ph = 6.0; moisture = 55; soil = "ดินร่วนปนทราย (ชุดดินแม่ริม)"; }
                 if (region === "กลาง") { ph = 7.0; moisture = 70; soil = "ดินเหนียว (ชุดดินราชบุรี)"; }
                 if (region === "ใต้") { ph = 5.0; moisture = 80; soil = "ดินร่วนปนดินเหนียว (ชุดดินคอหงส์)"; }
-
+                
                 // --- FIX: Generate distinct coordinates for ALL provinces ---
                 let lat, lng;
                 if (PROVINCE_COORDS[prov]) {
                     [lat, lng] = PROVINCE_COORDS[prov];
                 } else {
                     let hash = 0;
-                    for (let i = 0; i < prov.length; i++) hash = prov.charCodeAt(i) + ((hash << 5) - hash);
-                    const offsetLat = ((hash % 1000) / 500) - 1.0;
+                    for(let i=0; i<prov.length; i++) hash = prov.charCodeAt(i) + ((hash << 5) - hash);
+                    const offsetLat = ((hash % 1000) / 500) - 1.0; 
                     const offsetLng = (((hash >> 2) % 1000) / 500) - 1.0;
-
+                    
                     const centers = {
                         "เหนือ": [18.5, 99.5],
                         "อีสาน": [16.0, 103.5],
@@ -141,7 +141,7 @@
                     lat = center[0] + offsetLat;
                     lng = center[1] + offsetLng;
                 }
-
+                
                 PROVINCE_DATA[prov] = { ph, moisture, soil, region, lat, lng };
             });
         });
@@ -216,7 +216,7 @@
 
                     setTimeout(() => {
                         if (!canvasRef.current) return;
-
+                        
                         const ctx = canvasRef.current.getContext('2d');
                         const totalDemand = item.marketDemand || 10000;
                         const totalSupply = item.marketSupply || 8000;
@@ -385,7 +385,7 @@
             const [analyzing, setAnalyzing] = useState(false);
             const [results, setResults] = useState(null);
             const [soilInfo, setSoilInfo] = useState(PROVINCE_DATA["กรุงเทพมหานคร"]);
-
+            
             const kasetMapRef = useRef(null);
             const kasetMarkerRef = useRef(null);
 
@@ -396,7 +396,7 @@
                 setSoilInfo(info);
                 setResults(null);
             };
-
+            
             useEffect(() => {
                 if (!document.getElementById('kaset-map')) return;
 
@@ -407,16 +407,16 @@
                     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                         attribution: '&copy; OpenStreetMap contributors'
                     }).addTo(map);
-
+                    
                     const marker = L.marker([targetInfo.lat, targetInfo.lng], { draggable: true }).addTo(map);
                     marker.bindPopup(`<b>${province}</b><br>ลากหมุดเพื่อระบุตำแหน่งแปลง`).openPopup();
-
-                    marker.on('dragend', function (event) {
+                    
+                    marker.on('dragend', function(event) {
                         const marker = event.target;
                         const position = marker.getLatLng();
                         marker.setLatLng(new L.LatLng(position.lat, position.lng), { draggable: 'true' });
                         map.panTo(new L.LatLng(position.lat, position.lng));
-                        setSoilInfo(prev => ({ ...prev, lat: position.lat, lng: position.lng }));
+                        setSoilInfo(prev => ({...prev, lat: position.lat, lng: position.lng}));
                     });
 
                     kasetMapRef.current = map;
@@ -485,14 +485,14 @@
             };
 
             const getPhColor = (ph) => {
-                if (ph < 5.5) return "text-red-500";
-                if (ph > 7.5) return "text-purple-500";
+                if(ph < 5.5) return "text-red-500";
+                if(ph > 7.5) return "text-purple-500";
                 return "text-green-500";
             }
 
             const getPhText = (ph) => {
-                if (ph < 5.5) return "ดินกรด (Acid)";
-                if (ph > 7.5) return "ดินด่าง (Alkaline)";
+                if(ph < 5.5) return "ดินกรด (Acid)";
+                if(ph > 7.5) return "ดินด่าง (Alkaline)";
                 return "กลาง (Neutral)";
             }
 
@@ -507,18 +507,24 @@
                             </div>
 
                             <div>
-                                <label className="text-sm font-bold text-gray-600 mb-1 block">1. เลือกจังหวัด (ดึงข้อมูลสภาพดิน/อากาศจริง)</label>
+                                <label className="text-sm font-bold text-gray-600 mb-1 block">
+                                    <span className="inline-flex items-center justify-center w-6 h-6 bg-emerald-100 text-emerald-600 rounded-full animate-pulse mr-2 border border-emerald-200 shadow-sm">1</span>
+                                    เลือกจังหวัด (ดึงข้อมูลสภาพดิน/อากาศจริง)
+                                </label>
                                 <select className="w-full p-3 border rounded-lg bg-gray-50 focus:ring-2 focus:ring-emerald-500" value={province} onChange={handleProvinceChange}>
                                     {Object.keys(PROVINCE_DATA).sort().map(p => <option key={p} value={p}>{p}</option>)}
                                 </select>
 
-                                <label className="text-sm font-bold text-gray-600 mb-1 block mt-4">2. พื้นที่ (ไร่)</label>
+                                <label className="text-sm font-bold text-gray-600 mb-1 block mt-4">
+                                    <span className="inline-flex items-center justify-center w-6 h-6 bg-emerald-100 text-emerald-600 rounded-full animate-pulse mr-2 border border-emerald-200 shadow-sm">2</span>
+                                    พื้นที่ (ไร่)
+                                </label>
                                 <input type="number" value={area} onChange={e => setArea(e.target.value)} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-emerald-500" placeholder="ระบุจำนวนไร่" />
-
+                                
                                 <div className="mt-4 bg-blue-50 p-4 rounded-xl border border-blue-200 shadow-sm relative overflow-hidden">
-                                    <div className="absolute top-0 right-0 bg-blue-500 text-white text-[10px] px-2 py-1 rounded-bl">Live Data</div>
-                                    <h4 className="font-bold text-blue-800 mb-2 border-b border-blue-200 pb-1">🌱 ข้อมูลสภาพพื้นที่: {province}</h4>
-                                    <div className="space-y-2 text-sm">
+                                     <div className="absolute top-0 right-0 bg-blue-500 text-white text-[10px] px-2 py-1 rounded-bl">Live Data</div>
+                                     <h4 className="font-bold text-blue-800 mb-2 border-b border-blue-200 pb-1">🌱 ข้อมูลสภาพพื้นที่: {province}</h4>
+                                     <div className="space-y-2 text-sm">
                                         <div className="flex justify-between items-center">
                                             <span><i className="fa-solid fa-layer-group text-amber-600"></i> ชุดดิน (LDD):</span>
                                             <span className="font-bold">{soilInfo.soil}</span>
@@ -528,8 +534,8 @@
                                             <span className={`font-bold ${getPhColor(soilInfo.ph)}`}>{soilInfo.ph} ({getPhText(soilInfo.ph)})</span>
                                         </div>
                                         <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-200 mt-1">
-                                            <div className="bg-gradient-to-r from-red-500 via-green-500 to-purple-500 h-2.5 rounded-full" style={{ width: '100%' }}></div>
-                                            <div className="relative -top-3.5" style={{ left: `${(soilInfo.ph / 14) * 100}%` }}>
+                                            <div className="bg-gradient-to-r from-red-500 via-green-500 to-purple-500 h-2.5 rounded-full" style={{width: '100%'}}></div>
+                                            <div className="relative -top-3.5" style={{left: `${(soilInfo.ph / 14) * 100}%`}}>
                                                 <i className="fa-solid fa-caret-down text-black text-lg"></i>
                                             </div>
                                         </div>
@@ -537,19 +543,27 @@
                                             <span><i className="fa-solid fa-cloud-rain text-blue-500"></i> ความชื้น (GISTDA):</span>
                                             <span className="font-bold">{soilInfo.moisture}%</span>
                                         </div>
-                                    </div>
+                                     </div>
                                 </div>
                             </div>
                         </div>
                         <button onClick={analyze} disabled={analyzing} className="w-full mt-6 bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-bold shadow-lg transition flex justify-center items-center gap-2 transform active:scale-95">
-                            {analyzing ? <><i className="fa-solid fa-circle-notch fa-spin"></i> ระบบ AI กำลังประมวลผล...</> : <><i className="fa-solid fa-search"></i> 3. วิเคราะห์ 10 อันดับน่าลงทุนที่สุด</>}
+                            {analyzing ? (
+                                <><i className="fa-solid fa-circle-notch fa-spin"></i> ระบบ AI กำลังประมวลผล...</>
+                            ) : (
+                                <>
+                                    <span className="inline-flex items-center justify-center w-6 h-6 bg-white text-emerald-600 rounded-full animate-pulse mr-1 text-sm font-extrabold shadow-sm">3</span>
+                                    <i className="fa-solid fa-search"></i> วิเคราะห์ 10 อันดับน่าลงทุนที่สุด
+                                </>
+                            )}
                         </button>
                     </div>
 
                     {results && (
                         <div className="space-y-6 animate-fade-in-up">
                             <h3 className="text-xl font-bold text-emerald-800 pl-3 border-l-4 border-orange-500 flex items-center gap-2 bg-white p-2 rounded shadow-sm">
-                                <i className="fa-solid fa-ranking-star text-yellow-500"></i> ผลลัพธ์การวิเคราะห์ AI
+                                <i className="fa-solid fa-ranking-star text-yellow-500 animate-bounce"></i> 
+                                <span className="animate-pulse">ผลลัพธ์การวิเคราะห์ AI</span>
                             </h3>
                             {results.map((item, idx) => (
                                 <ResultItemWithChart key={idx} item={item} index={idx} />
@@ -560,7 +574,7 @@
                 </div>
             );
         };
-
+        
         // --- COMPONENTS FROM PREVIOUS CONTEXT (MarketPage, AdminPage, HomePage) ---
         // (Re-declaring simplified versions or using placeholders to keep file size manageable if needed, 
         // but for full functionality, I will include the full previous logic here)
@@ -592,29 +606,29 @@
 
             return (
                 <div className="min-h-screen bg-orange-50 p-4 pb-24">
-                    <div className="bg-white rounded-xl shadow-md p-6 border border-orange-100 mb-6">
+                     <div className="bg-white rounded-xl shadow-md p-6 border border-orange-100 mb-6">
                         <h3 className="font-bold text-gray-700 mb-4 border-l-4 border-orange-500 pl-3">📝 ลงทะเบียน Supply</h3>
                         <div className="grid md:grid-cols-2 gap-4">
-                            <select name="crop" value={formData.crop} onChange={e => setFormData({ ...formData, crop: e.target.value })} className="w-full p-2 border rounded">{Object.keys(MARKET_STATS_DB).map(k => <option key={k} value={k}>{k}</option>)}</select>
-                            <input type="number" placeholder="พื้นที่ (ไร่)" value={formData.area} onChange={e => setFormData({ ...formData, area: e.target.value })} className="w-full p-2 border rounded" />
+                            <select name="crop" value={formData.crop} onChange={e => setFormData({...formData, crop: e.target.value})} className="w-full p-2 border rounded">{Object.keys(MARKET_STATS_DB).map(k => <option key={k} value={k}>{k}</option>)}</select>
+                            <input type="number" placeholder="พื้นที่ (ไร่)" value={formData.area} onChange={e => setFormData({...formData, area: e.target.value})} className="w-full p-2 border rounded"/>
                         </div>
                         <button onClick={calculateDemandSupply} className="w-full mt-4 bg-orange-500 text-white p-2 rounded font-bold">{isSubmitting ? 'กำลังบันทึก...' : 'บันทึกข้อมูล'}</button>
-                    </div>
-                    {analysisResult && <div className="bg-white p-4 rounded shadow mt-4 text-center border-2 border-green-500"><h3 className="font-bold text-green-600">{analysisResult.statusText}</h3><p>{analysisResult.advice}</p></div>}
-                    <button onClick={() => setPage('home')} className="mt-4 text-gray-500 w-full text-center">กลับหน้าหลัก</button>
+                     </div>
+                     {analysisResult && <div className="bg-white p-4 rounded shadow mt-4 text-center border-2 border-green-500"><h3 className="font-bold text-green-600">{analysisResult.statusText}</h3><p>{analysisResult.advice}</p></div>}
+                     <button onClick={() => setPage('home')} className="mt-4 text-gray-500 w-full text-center">กลับหน้าหลัก</button>
                 </div>
             );
         };
 
         const HomePage = ({ user, onLogin, onAdminLogin, setPage, onLogout }) => (
             <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900 text-white p-6 flex flex-col items-center justify-center">
-                <h1 className="text-4xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-emerald-300">Vinai Innovation</h1>
-                <p className="text-gray-300 mb-8">Super App เพื่อเกษตรกรไทย</p>
-                <div className="grid gap-4 w-full max-w-md">
+                 <h1 className="text-4xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-emerald-300">Vinai Innovation</h1>
+                 <p className="text-gray-300 mb-8">Super App เพื่อเกษตรกรไทย</p>
+                 <div className="grid gap-4 w-full max-w-md">
                     <button onClick={() => setPage('kaset')} className="bg-emerald-600 p-4 rounded-xl font-bold hover:bg-emerald-700 transition flex items-center justify-center gap-2"><i className="fa-solid fa-seedling"></i> Kaset Cloud (คำนวณความรวย)</button>
                     <button onClick={() => setPage('market')} className="bg-orange-600 p-4 rounded-xl font-bold hover:bg-orange-700 transition flex items-center justify-center gap-2"><i className="fa-solid fa-shop"></i> ตลาด & ลงทะเบียน</button>
-                </div>
-                <AppFooter />
+                 </div>
+                 <AppFooter />
             </div>
         );
 
