@@ -388,6 +388,7 @@
             
             const kasetMapRef = useRef(null);
             const kasetMarkerRef = useRef(null);
+            const resultsRef = useRef(null);
 
             const handleProvinceChange = (e) => {
                 const p = e.target.value;
@@ -397,6 +398,14 @@
                 setResults(null);
             };
             
+            useEffect(() => {
+                if (results && resultsRef.current) {
+                    setTimeout(() => {
+                        resultsRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }, 100);
+                }
+            }, [results]);
+
             useEffect(() => {
                 if (!document.getElementById('kaset-map')) return;
 
@@ -560,7 +569,7 @@
                     </div>
 
                     {results && (
-                        <div className="space-y-6 animate-fade-in-up">
+                        <div ref={resultsRef} className="space-y-6 animate-fade-in-up">
                             <h3 className="text-xl font-bold text-emerald-800 pl-3 border-l-4 border-orange-500 flex items-center gap-2 bg-white p-2 rounded shadow-sm">
                                 <i className="fa-solid fa-ranking-star text-yellow-500 animate-bounce"></i> 
                                 <span className="animate-pulse">ผลลัพธ์การวิเคราะห์ AI</span>
