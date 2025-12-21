@@ -102,9 +102,7 @@
             "จันทบุรี": [12.6114, 102.1039],
             "ร้อยเอ็ด": [16.0538, 103.6520],
             "น่าน": [18.7756, 100.7730],
-            "กาญจนบุรี": [14.0205, 99.5304],
-            // Default fallback for others
-            "default": [13.7563, 100.5018]
+            "กาญจนบุรี": [14.0205, 99.5304]
         };
 
         const PROVINCE_DATA = {};
@@ -123,8 +121,32 @@
                 if (region === "กลาง") { ph = 7.0; moisture = 70; soil = "ดินเหนียว (ชุดดินราชบุรี)"; }
                 if (region === "ใต้") { ph = 5.0; moisture = 80; soil = "ดินร่วนปนดินเหนียว (ชุดดินคอหงส์)"; }
                 
-                const coords = PROVINCE_COORDS[prov] || PROVINCE_COORDS['default'];
-                PROVINCE_DATA[prov] = { ph, moisture, soil, region, lat: coords[0], lng: coords[1] };
+                // --- FIX: Generate distinct coordinates for ALL provinces ---
+                let lat, lng;
+                if (PROVINCE_COORDS[prov]) {
+                    [lat, lng] = PROVINCE_COORDS[prov];
+                } else {
+                    // Fallback: Generate distinct coords based on region center + deterministic hash of name
+                    // This prevents "Default to Bangkok" issue for unlisted provinces
+                    let hash = 0;
+                    for(let i=0; i<prov.length; i++) hash = prov.charCodeAt(i) + ((hash << 5) - hash);
+                    
+                    // Normalize hash to create offset (-1.0 to 1.0 degrees)
+                    const offsetLat = ((hash % 1000) / 500) - 1.0; 
+                    const offsetLng = (((hash >> 2) % 1000) / 500) - 1.0;
+                    
+                    const centers = {
+                        "เหนือ": [18.5, 99.5],
+                        "อีสาน": [16.0, 103.5],
+                        "กลาง": [14.5, 100.5],
+                        "ใต้": [8.5, 99.5]
+                    };
+                    const center = centers[region] || [13.7, 100.5];
+                    lat = center[0] + offsetLat;
+                    lng = center[1] + offsetLng;
+                }
+                
+                PROVINCE_DATA[prov] = { ph, moisture, soil, region, lat, lng };
             });
         });
 
@@ -382,6 +404,7 @@
             const [area, setArea] = useState(10);
             const [analyzing, setAnalyzing] = useState(false);
             const [results, setResults] = useState(null);
+            // Default to Bangkok data
             const [soilInfo, setSoilInfo] = useState(PROVINCE_DATA["กรุงเทพมหานคร"]);
             
             // Map state
@@ -400,15 +423,19 @@
             useEffect(() => {
                 if (!document.getElementById('kaset-map')) return;
 
+                // FIX: Use canonical data from PROVINCE_DATA directly for the flyTo target
+                // This ensures we fly to the province center, not just where the potentially dragged soilInfo state is
+                const targetInfo = PROVINCE_DATA[province];
+
                 if (!kasetMapRef.current) {
                     // Initialize Map
-                    const map = L.map('kaset-map').setView([soilInfo.lat, soilInfo.lng], 10);
+                    const map = L.map('kaset-map').setView([targetInfo.lat, targetInfo.lng], 10);
                     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                         attribution: '&copy; OpenStreetMap contributors'
                     }).addTo(map);
                     
                     // Draggable Marker
-                    const marker = L.marker([soilInfo.lat, soilInfo.lng], { draggable: true }).addTo(map);
+                    const marker = L.marker([targetInfo.lat, targetInfo.lng], { draggable: true }).addTo(map);
                     
                     marker.bindPopup(`<b>${province}</b><br>ลากหมุดเพื่อระบุตำแหน่งแปลง`).openPopup();
                     
@@ -429,9 +456,12 @@
                     const map = kasetMapRef.current;
                     const marker = kasetMarkerRef.current;
                     
-                    map.flyTo([soilInfo.lat, soilInfo.lng], 10);
-                    marker.setLatLng([soilInfo.lat, soilInfo.lng]);
-                    marker.setPopupContent(`<b>${province}</b><br>ลากหมุดเพื่อระบุตำแหน่งแปลง`);
+                    // Force flyTo the canonical province coordinates
+                    if (targetInfo) {
+                        map.flyTo([targetInfo.lat, targetInfo.lng], 10);
+                        marker.setLatLng([targetInfo.lat, targetInfo.lng]);
+                        marker.setPopupContent(`<b>${province}</b><br>ลากหมุดเพื่อระบุตำแหน่งแปลง`);
+                    }
                 }
             }, [province]); // Trigger when province changes
 
