@@ -835,10 +835,9 @@
                         </div>
                     </div>
 
-                    {/* NEW: Map Layer Data Overlay (Floating, No Background, Text Shadow) */}
-                    {/* MODIFIED for Landscape: Added grid classes and adjusted top position */}
-                    <div className="absolute top-[80px] landscape:top-[60px] left-4 right-4 z-[950] pointer-events-none flex flex-col landscape:grid landscape:grid-cols-2 landscape:gap-4 gap-2 text-xs md:text-sm text-white drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">
-                        {/* Group 1: Address */}
+                    {/* Left Overlay Group */}
+                    <div className="absolute top-[80px] left-4 z-[950] pointer-events-none flex flex-col gap-2 text-[10px] md:text-xs text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] max-w-[45%]">
+                        {/* Address */}
                         <div>
                             <div className="font-bold text-emerald-300"><i className="fa-solid fa-map-pin"></i> พิกัดปัจจุบัน</div>
                             <div>{address.village}</div>
@@ -846,43 +845,41 @@
                             <div className="text-yellow-400">{address.province}</div>
                         </div>
 
-                        {/* Group 2: Soil */}
-                        <div className="mt-2 landscape:mt-0">
+                        {/* Soil */}
+                        <div className="mt-1">
                             <div className="font-bold text-amber-300"><i className="fa-solid fa-layer-group"></i> ดิน & น้ำ</div>
                             <div>ชนิด: {soilInfo.soil}</div>
                             <div>pH: {soilInfo.ph} | ชื้น: {soilInfo.moisture}%</div>
 
-                            {/* UPDATED: Flood Risk Warning Box */}
-                            <div className={`flex items-center gap-2 ${floodData.risk === 'High' ? 'text-red-400 font-bold' : (floodData.risk === 'Medium' ? 'text-orange-400 font-bold' : 'text-green-300')}`}>
-                                <span>ความเสี่ยงน้ำท่วม: {floodData.desc}</span>
-                                {floodData.risk !== 'Low' && <i className="fa-solid fa-triangle-exclamation animate-pulse"></i>}
-                            </div>
-
-                            {/* FORCE DISPLAY IF RISK IS HIGH OR MEDIUM */}
+                            {/* Flood Risk */}
                             {(floodData.risk === 'High' || floodData.risk === 'Medium') && (
-                                <div className="mt-1 bg-red-500/20 border border-red-500/50 p-2 rounded text-xs text-red-100 animate-pulse">
+                                <div className="mt-1 bg-red-500/20 border border-red-500/50 p-1 rounded text-[9px] text-red-100 animate-pulse w-fit">
                                     <div className="font-bold flex items-center gap-1">
-                                        <i className="fa-solid fa-clock-rotate-left"></i> ประวัติน้ำท่วม:
+                                        <i className="fa-solid fa-clock-rotate-left"></i> เคยท่วม: {floodData.history.join(', ')}
                                     </div>
-                                    <div>เคยท่วมปี: {floodData.history.join(', ')}</div>
                                 </div>
                             )}
+                            <div className={`${floodData.risk === 'High' ? 'text-red-400 font-bold' : (floodData.risk === 'Medium' ? 'text-orange-400 font-bold' : 'text-green-300')}`}>
+                                {floodData.desc}
+                            </div>
                         </div>
+                    </div>
 
-                        {/* Group 3: Weather */}
-                        <div className="mt-2 landscape:mt-0">
+                    {/* Right Overlay Group */}
+                    <div className="absolute top-[80px] right-4 z-[950] pointer-events-none flex flex-col gap-2 text-[10px] md:text-xs text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] text-right items-end max-w-[45%]">
+                        {/* Weather */}
+                        <div>
                             <div className="font-bold text-blue-300"><i className="fa-solid fa-temperature-half"></i> อุณหภูมิ (Live)</div>
                             <div className="text-xl font-bold">{weatherData ? weatherData.temp : '-'}°C</div>
                             <div>ต่ำสุด: {weatherData ? weatherData.tempMin : '-'} | สูงสุด: {weatherData ? weatherData.tempMax : '-'}</div>
-                            <div>เฉลี่ยฤดู: {weatherData ? Math.round(weatherData.seasonalAvgTemp) : '-'}°C</div>
                         </div>
 
-                        {/* Group 4: Rain */}
-                        <div className="mt-2 landscape:mt-0">
+                        {/* Rain */}
+                        <div className="mt-1">
                             <div className="font-bold text-cyan-300"><i className="fa-solid fa-cloud-rain"></i> ปริมาณฝน</div>
                             <div>วันนี้: {weatherData ? weatherData.rain : 0}mm</div>
                             <div>สะสม 24ชม: {weatherData ? weatherData.dailyRain : 0}mm</div>
-                            <div>เฉลี่ยทั้งปี: ~{weatherData ? weatherData.seasonalAvgRain : '-'}mm</div>
+                            <div>ทั้งปี: ~{weatherData ? weatherData.seasonalAvgRain : '-'}mm</div>
                         </div>
                     </div>
 
