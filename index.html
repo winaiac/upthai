@@ -927,9 +927,10 @@
                                         <span className={`text-sm font-bold ${item.profitTotal > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
                                             {item.profitTotal > 0 ? '+' : ''}{item.profitTotal.toLocaleString()}
                                         </span>
+                                        {/* UPDATED BUTTON: Yellow, Flashing, Prominent */}
                                         <button
                                             onClick={(e) => { e.stopPropagation(); setSimulatingItem(item); }}
-                                            className="w-8 h-8 rounded-full bg-slate-700/50 hover:bg-emerald-500/50 text-slate-300 hover:text-white flex items-center justify-center transition border border-white/10"
+                                            className="w-8 h-8 rounded-full bg-yellow-500 hover:bg-yellow-400 text-slate-900 flex items-center justify-center shadow-[0_0_10px_rgba(234,179,8,0.6)] animate-pulse"
                                         >
                                             <i className="fa-solid fa-chevron-right text-xs"></i>
                                         </button>
