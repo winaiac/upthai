@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mangrove Carbon Intelligence - Dev Kit</title>
+
+    <!-- Libraries: React, Tailwind, Leaflet, Chart.js -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Leaflet Map CSS & JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;700&display=swap');
+
+        body {
+            font-family: 'Sarabun', sans-serif;
+            background-color: #0f172a;
+            color: #f1f5f9;
+        }
+
+        /* Custom Scrollbar */
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+        
+        /* Pulse Animation for Carbon Mode */
+        @keyframes carbon-pulse {
+            0% { box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.7); border-color: rgba(56, 189, 248, 0.5); }
+            70% { box-shadow: 0 0 0 10px rgba(56, 189, 248, 0); border-color: rgba(56, 189, 248, 1); }
+            100% { box-shadow: 0 0 0 0 rgba(56, 189, 248, 0); border-color: rgba(56, 189, 248, 0.5); }
+        }
+        .animate-carbon-pulse { animation: carbon-pulse 2s infinite; }
+    </style>
+</head>
+
+<body class="bg-slate-900 text-slate-100 overflow-hidden">
+
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // --- 1. DATA CONFIGURATION (ส่วนกำหนดค่าพืชและจังหวัด) ---
+        
+        // ข้อมูลพันธุ์ไม้ป่าชายเลนและคาร์บอนเครดิต
+        const MANGROVE_SPECIES = [
+            { 
+                id: 'm1', name: 'โกงกางใบใหญ่', scientific: 'Rhizophora mucronata',
+                yield: 4500, // Carbon Sequestration (kgCO2e/rai/year)
+                carbon_credit_price: 350, // Price per ton (THB)
+                cost: 8000, // Setup cost
+                salinity_req: [10, 30], // PPT requirement
+                risk_reason: 'รากค้ำจุนแข็งแรง ดักตะกอนได้ดีมาก เหมาะกับดินเลนลึกชายฝั่ง'
+            },
+            { 
+                id: 'm2', name: 'แสมขาว', scientific: 'Avicennia alba',
+                yield: 3800, 
+                carbon_credit_price: 350,
+                cost: 6000, 
+                salinity_req: [15, 35], 
+                risk_reason: 'ทนเค็มจัดได้ดี เหมาะกับพื้นที่ดินเลนแข็งหรือดินทรายชายหาด'
+            },
+            { 
+                id: 'm3', name: 'ลำพู', scientific: 'Sonneratia caseolaris',
+                yield: 3000, 
+                carbon_credit_price: 350,
+                cost: 5000, 
+                salinity_req: [0, 15], 
+                risk_reason: 'ชอบน้ำกร่อย-จืด ดินเลนปนทราย (ดึงดูดหิ่งห้อย)'
+            }
+        ];
+
+        // พิกัดจังหวัดตัวอย่าง (เน้นจังหวัดชายฝั่ง)
+        const PROVINCE_COORDS = {
+            "สมุทรสาคร": [13.5476, 100.2744],
+            "สมุทรสงคราม": [13.4098, 99.9488],
+            "สมุทรปราการ": [13.5991, 100.5966],
+            "กรุงเทพมหานคร (บางขุนเทียน)": [13.5292, 100.4379],
+            "ชลบุรี": [13.3611, 100.9847],
+            "ระยอง": [12.6814, 101.2816],
+            "จันทบุรี": [12.6114, 102.1039],
+            "ตราด": [12.2382, 102.5113],
+            "กระบี่": [8.0376, 98.9168],
+            "พังงา": [8.4501, 98.5255],
+            "ภูเก็ต": [7.8804, 98.3923]
+        };
+
+        // --- 2. COMPONENTS ---
+
+        // กราฟแสดงผล (Chart.js)
+        const ResultChart = ({ item }) => {
+            const chartRef = useRef(null);
+            const canvasRef = useRef(null);
+
+            useEffect(() => {
+                if (canvasRef.current) {
+                    if (chartRef.current) chartRef.current.destroy();
+                    const ctx = canvasRef.current.getContext('2d');
+                    
+                    // สร้างกราฟเปรียบเทียบการกักเก็บ vs รายได้
+                    chartRef.current = new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: ['การกักเก็บ (ตัน CO2)', 'รายได้ (บาท/ปี)'],
+                            datasets: [{
+                                label: 'Projection',
+                                data: [item.yield/1000, item.profitTotal],
+                                backgroundColor: ['rgba(56, 189, 248, 0.7)', 'rgba(16, 185, 129, 0.7)'],
+                                borderColor: ['rgba(56, 189, 248, 1)', 'rgba(16, 185, 129, 1)'],
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            indexAxis: 'y',
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: { legend: { display: false } },
+                            scales: { x: { beginAtZero: true, grid: { color: '#334155' } }, y: { grid: { display: false } } }
+                        }
+                    });
+                }
+                return () => { if (chartRef.current) chartRef.current.destroy(); };
+            }, [item]);
+
+            return <div className="h-24 w-full relative mt-2"><canvas ref={canvasRef}></canvas></div>;
+        };
+
+        // การ์ดแสดงผลลัพธ์
+        const ResultCard = ({ item, index }) => (
+            <div className="bg-slate-800/90 border border-blue-500/30 p-4 rounded-xl mb-3 shadow-lg hover:border-blue-400 transition relative overflow-hidden">
+                <div className="absolute top-0 left-0 bg-blue-600 text-white text-xs px-2 py-1 rounded-br-lg font-bold">Rank #{index + 1}</div>
+                <div className="mt-2 flex justify-between items-start">
+                    <div>
+                        <h3 className="font-bold text-lg text-blue-200">{item.name}</h3>
+                        <p className="text-xs text-slate-400 italic">{item.scientific}</p>
+                    </div>
+                    <div className="text-right">
+                        <p className="text-xs text-slate-400">Score</p>
+                        <p className="text-xl font-bold text-emerald-400">{item.score.toFixed(0)}%</p>
+                    </div>
+                </div>
+                
+                <div className="flex gap-2 my-3 text-xs">
+                    <div className="flex-1 bg-blue-900/20 border border-blue-500/20 p-2 rounded text-center">
+                        <p className="text-blue-400 mb-1">Carbon Credit</p>
+                        <p className="text-lg font-bold text-white">{(item.yield/1000).toFixed(2)} <span className="text-[10px]">tCO2e</span></p>
+                    </div>
+                    <div className="flex-1 bg-emerald-900/20 border border-emerald-500/20 p-2 rounded text-center">
+                        <p className="text-emerald-400 mb-1">Est. Revenue</p>
+                        <p className="text-lg font-bold text-white">{item.profitTotal.toLocaleString()} <span className="text-[10px]">฿</span></p>
+                    </div>
+                </div>
+
+                {item.risk_level === 'High' && (
+                    <div className="bg-red-900/20 border border-red-500/30 p-2 rounded text-xs text-red-300 mb-2">
+                        <i className="fa-solid fa-triangle-exclamation mr-1"></i> {item.risk_reason}
+                    </div>
+                )}
+
+                <ResultChart item={item} />
+            </div>
+        );
+
+        // --- 3. MAIN APP ---
+
+        const MangroveCarbonApp = () => {
+            // State
+            const [province, setProvince] = useState("สมุทรสาคร");
+            const [area, setArea] = useState(10); // Default 10 Rai
+            const [sensorData, setSensorData] = useState({ salinity: 25.5, ndvi: 0.75, temp: 29.2 });
+            const [results, setResults] = useState([]);
+            const [analyzing, setAnalyzing] = useState(false);
+            const [isSheetOpen, setIsSheetOpen] = useState(true);
+
+            const mapRef = useRef(null);
+            const markerRef = useRef(null);
+            const redZoneLayerRef = useRef(null);
+
+            // --- LOGIC: SIMULATE SENSORS ---
+            const simulateSensors = (lat, lng) => {
+                // จำลองค่า sensor เปลี่ยนตามตำแหน่ง (Random + Logic พื้นฐาน)
+                const salt = 20 + (Math.random() * 10); // 20-30 PPT
+                const veg = 0.5 + (Math.random() * 0.4); // 0.5-0.9 NDVI
+                const t = 28 + (Math.random() * 3); // 28-31 C
+                
+                setSensorData({
+                    salinity: parseFloat(salt.toFixed(1)),
+                    ndvi: parseFloat(veg.toFixed(2)),
+                    temp: parseFloat(t.toFixed(1))
+                });
+            };
+
+            // --- LOGIC: ANALYZE CARBON ---
+            const analyzeCarbon = () => {
+                setAnalyzing(true);
+                setTimeout(() => {
+                    const calculated = MANGROVE_SPECIES.map(species => {
+                        let score = 100;
+                        let risk = 'Low';
+                        let note = species.risk_reason;
+
+                        // Logic: Salinity Check
+                        if (sensorData.salinity < species.salinity_req[0] || sensorData.salinity > species.salinity_req[1]) {
+                            score -= 30;
+                            risk = 'High';
+                            note = `ความเค็ม (${sensorData.salinity} ppt) ไม่เหมาะสม (ช่วงที่ชอบ: ${species.salinity_req.join('-')})`;
+                        }
+
+                        // Logic: NDVI Bonus
+                        if (sensorData.ndvi > 0.7) score += 10;
+
+                        // Calculate Revenue
+                        const carbonTons = (species.yield * area) / 1000;
+                        const revenue = carbonTons * species.carbon_credit_price;
+
+                        return {
+                            ...species,
+                            profitTotal: revenue,
+                            score: Math.min(100, Math.max(0, score)),
+                            risk_level: risk,
+                            risk_reason: note
+                        };
+                    });
+
+                    // Sort by Score
+                    calculated.sort((a, b) => b.score - a.score);
+                    setResults(calculated);
+                    setAnalyzing(false);
+                }, 800);
+            };
+
+            // --- EFFECT: MAP INITIALIZATION & RED ZONE ---
+            useEffect(() => {
+                if (!mapRef.current) {
+                    const coords = PROVINCE_COORDS[province];
+                    const map = L.map('map-container').setView(coords, 13);
+
+                    // 1. Base Layer (Satellite Hybrid)
+                    L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+                        attribution: 'Google Maps'
+                    }).addTo(map);
+
+                    // 2. Marker (Draggable)
+                    const marker = L.marker(coords, { draggable: true }).addTo(map);
+                    marker.bindPopup("<b>จุดติดตั้งเซนเซอร์</b><br>ลากเพื่อเปลี่ยนตำแหน่ง").openPopup();
+
+                    marker.on('dragend', (e) => {
+                        const { lat, lng } = e.target.getLatLng();
+                        simulateSensors(lat, lng);
+                        analyzeCarbon(); // Re-analyze on move
+                    });
+
+                    // 3. *** RED ZONE IMPLEMENTATION (พื้นที่สีแดง) ***
+                    // จำลองการสร้าง Polygon สำหรับพื้นที่อนุรักษ์หรือพื้นที่ Carbon สูง
+                    // Developer สามารถแทนที่จุดเหล่านี้ด้วยข้อมูลจากไฟล์ .shp หรือ GeoJSON ได้
+                    const redZoneCoords = [
+                        [coords[0] + 0.01, coords[1] - 0.01],
+                        [coords[0] + 0.02, coords[1] - 0.005],
+                        [coords[0] + 0.015, coords[1] + 0.01],
+                        [coords[0] + 0.005, coords[1] + 0.005]
+                    ];
+
+                    const redPolygon = L.polygon(redZoneCoords, {
+                        color: 'red',       // เส้นขอบสีแดง
+                        fillColor: '#f03',  // สีเติมแดง
+                        fillOpacity: 0.3,   // ความโปร่งแสง
+                        weight: 2
+                    }).addTo(map);
+
+                    redPolygon.bindPopup("<b>พื้นที่สีแดง (Red Zone)</b><br>เขตวิกฤต/พื้นที่กักเก็บคาร์บอนสูง");
+
+                    mapRef.current = map;
+                    markerRef.current = marker;
+                    redZoneLayerRef.current = redPolygon;
+
+                    // Initial Analyze
+                    analyzeCarbon();
+
+                } else {
+                    // Update Map on Province Change
+                    const coords = PROVINCE_COORDS[province];
+                    mapRef.current.flyTo(coords, 13);
+                    markerRef.current.setLatLng(coords);
+                    
+                    // Move Red Zone (Mockup only - moves relative to center)
+                    const newRedZone = [
+                        [coords[0] + 0.01, coords[1] - 0.01],
+                        [coords[0] + 0.02, coords[1] - 0.005],
+                        [coords[0] + 0.015, coords[1] + 0.01],
+                        [coords[0] + 0.005, coords[1] + 0.005]
+                    ];
+                    redZoneLayerRef.current.setLatLngs(newRedZone);
+                    
+                    simulateSensors(coords[0], coords[1]);
+                    analyzeCarbon();
+                }
+            }, [province]);
+
+            // Re-analyze when Area changes
+            useEffect(() => {
+                const timer = setTimeout(() => analyzeCarbon(), 500);
+                return () => clearTimeout(timer);
+            }, [area]);
+
+            return (
+                <div className="relative w-full h-screen bg-slate-900 overflow-hidden">
+                    
+                    {/* --- MAP CONTAINER --- */}
+                    <div id="map-container" className="absolute inset-0 z-0"></div>
+
+                    {/* --- TOP CONTROL (Province & Area) --- */}
+                    <div className="absolute top-4 left-4 z-[1000] flex flex-col gap-2">
+                        <div className="bg-slate-900/80 backdrop-blur border border-blue-500/50 p-3 rounded-xl shadow-xl w-64">
+                            <h2 className="text-blue-400 font-bold text-sm mb-2"><i className="fa-solid fa-map-location-dot"></i> เลือกพื้นที่เป้าหมาย</h2>
+                            <select 
+                                className="w-full bg-slate-800 border border-slate-600 rounded p-1 text-sm mb-2 focus:ring-2 focus:ring-blue-500 outline-none"
+                                value={province}
+                                onChange={(e) => setProvince(e.target.value)}
+                            >
+                                {Object.keys(PROVINCE_COORDS).map(p => <option key={p} value={p}>{p}</option>)}
+                            </select>
+                            <div className="flex items-center gap-2">
+                                <input 
+                                    type="number" 
+                                    value={area} 
+                                    onChange={(e) => setArea(e.target.value)}
+                                    className="w-20 bg-slate-800 border border-slate-600 rounded p-1 text-center text-sm"
+                                />
+                                <span className="text-sm text-slate-300">ไร่ (Rai)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* --- RIGHT SENSOR PANEL (Smart Sensor) --- */}
+                    <div className="absolute top-4 right-4 z-[1000]">
+                        <div className="bg-slate-900/80 backdrop-blur border border-cyan-500/50 p-3 rounded-xl shadow-xl w-40 animate-carbon-pulse">
+                            <div className="flex justify-between items-center mb-2 border-b border-white/10 pb-1">
+                                <span className="text-cyan-400 font-bold text-xs"><i className="fa-solid fa-satellite-dish"></i> IoT Sensors</span>
+                                <span className="text-[8px] text-green-400 font-bold">● LIVE</span>
+                            </div>
+                            <div className="space-y-2 text-xs">
+                                <div className="flex justify-between">
+                                    <span className="text-slate-400">Salinity</span>
+                                    <span className="font-bold text-white">{sensorData.salinity} <span className="text-[9px] text-slate-500">ppt</span></span>
+                                </div>
+                                <div className="w-full bg-slate-700 h-1 rounded-full overflow-hidden">
+                                    <div className="bg-cyan-500 h-full" style={{width: `${(sensorData.salinity/40)*100}%`}}></div>
+                                </div>
+                                
+                                <div className="flex justify-between mt-1">
+                                    <span className="text-slate-400">NDVI</span>
+                                    <span className="font-bold text-green-400">{sensorData.ndvi}</span>
+                                </div>
+                                <div className="w-full bg-slate-700 h-1 rounded-full overflow-hidden">
+                                    <div className="bg-green-500 h-full" style={{width: `${sensorData.ndvi*100}%`}}></div>
+                                </div>
+
+                                <div className="flex justify-between mt-1">
+                                    <span className="text-slate-400">Temp</span>
+                                    <span className="font-bold text-orange-400">{sensorData.temp}°C</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* --- BOTTOM SHEET (Carbon Analysis Results) --- */}
+                    <div className={`absolute bottom-0 left-0 w-full bg-slate-900/90 backdrop-blur-md rounded-t-3xl border-t border-blue-500/50 shadow-2xl z-[1000] transition-all duration-500 flex flex-col ${isSheetOpen ? 'h-[50%]' : 'h-14'}`}>
+                        
+                        {/* Handle / Header */}
+                        <div 
+                            className="w-full h-14 flex items-center justify-between px-6 cursor-pointer border-b border-white/10 hover:bg-white/5"
+                            onClick={() => setIsSheetOpen(!isSheetOpen)}
+                        >
+                            <div className="flex items-center gap-3">
+                                <div className="bg-blue-500/20 p-2 rounded-full text-blue-400"><i className="fa-solid fa-tree"></i></div>
+                                <div>
+                                    <h3 className="font-bold text-blue-100 text-sm">Carbon Potential Analysis</h3>
+                                    <p className="text-[10px] text-slate-400">พื้นที่ {area} ไร่ • {province}</p>
+                                </div>
+                            </div>
+                            <i className={`fa-solid fa-chevron-up text-slate-400 transition-transform duration-300 ${isSheetOpen ? 'rotate-180' : ''}`}></i>
+                        </div>
+
+                        {/* Content */}
+                        <div className="flex-1 overflow-y-auto p-4 pb-10 scrollbar-hide">
+                            {analyzing ? (
+                                <div className="flex flex-col items-center justify-center h-full text-blue-400 space-y-3">
+                                    <i className="fa-solid fa-circle-notch fa-spin text-3xl"></i>
+                                    <p className="text-sm">กำลังวิเคราะห์ข้อมูลดาวเทียม...</p>
+                                </div>
+                            ) : (
+                                <div>
+                                    <div className="flex justify-between items-center mb-3 px-1">
+                                        <p className="text-xs text-slate-400">คำแนะนำพันธุ์ไม้ (เรียงตามคะแนนความเหมาะสม)</p>
+                                        <span className="text-[10px] bg-slate-800 px-2 py-1 rounded text-slate-300">ราคาเครดิต: 350฿/ตัน</span>
+                                    </div>
+                                    {results.map((item, idx) => (
+                                        <ResultCard key={item.id} item={item} index={idx} />
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<MangroveCarbonApp />);
+    </script>
+</body>
+</html>
