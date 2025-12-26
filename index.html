@@ -124,7 +124,7 @@
             background: #0f172a;
             border-radius: 0;
             border-left: 1px solid #334155;
-            box-shadow: inset 0 0 6px rgba(0,0,0,0.3);
+            box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.3);
         }
 
         .scrollbar-prominent::-webkit-scrollbar-thumb {
@@ -410,7 +410,7 @@
             const [localArea, setLocalArea] = useState(initialArea);
             const [yearCount, setYearCount] = useState(10);
             const [isFullscreen, setIsFullscreen] = useState(false);
-            
+
             const isTree = CROP_LIFECYCLE[item.name]?.type === 'tree';
             const lifeInfo = CROP_LIFECYCLE[item.name] || CROP_LIFECYCLE['default'];
             const costStructure = COST_STRUCTURE[item.name] || COST_STRUCTURE['default'];
@@ -509,7 +509,7 @@
                         }
                     });
                 }
-                
+
                 // Line Chart (Trend)
                 if (lineCanvasRef.current) {
                     if (lineChartRef.current) lineChartRef.current.destroy();
@@ -550,7 +550,7 @@
                     });
                 }
 
-                return () => { 
+                return () => {
                     if (donutChartRef.current) donutChartRef.current.destroy();
                     if (lineChartRef.current) lineChartRef.current.destroy();
                 };
@@ -561,20 +561,20 @@
                 setIsFullscreen(!isFullscreen);
             };
 
-            const modalClass = isFullscreen 
+            const modalClass = isFullscreen
                 ? "fixed inset-0 z-[2050] bg-slate-900 w-screen h-screen flex flex-col p-4 animate-fade-in-up overflow-hidden"
                 : "bg-slate-800 border-2 border-emerald-500 rounded-2xl w-full max-w-6xl p-6 relative shadow-[0_0_50px_rgba(16,185,129,0.3)] flex flex-col max-h-[95vh] h-[90vh]";
 
             // Simplified Wrapper logic
             if (isFullscreen) {
                 return (
-                   <div className={modalClass}>
-                       {/* Content - Same as below */}
-                       <ModalContent 
-                            item={item} 
-                            localArea={localArea} 
-                            setLocalArea={setLocalArea} 
-                            yearCount={yearCount} 
+                    <div className={modalClass}>
+                        {/* Content - Same as below */}
+                        <ModalContent
+                            item={item}
+                            localArea={localArea}
+                            setLocalArea={setLocalArea}
+                            yearCount={yearCount}
                             setYearCount={setYearCount}
                             totalProfit={totalProfit}
                             totalCost={totalCost}
@@ -585,19 +585,19 @@
                             toggleModalFullscreen={toggleModalFullscreen}
                             isFullscreen={isFullscreen}
                             onClose={onClose}
-                       />
-                   </div>
+                        />
+                    </div>
                 );
             }
 
             return (
                 <div className="fixed inset-0 z-[2000] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in-up pointer-events-auto">
                     <div className={modalClass}>
-                        <ModalContent 
-                            item={item} 
-                            localArea={localArea} 
-                            setLocalArea={setLocalArea} 
-                            yearCount={yearCount} 
+                        <ModalContent
+                            item={item}
+                            localArea={localArea}
+                            setLocalArea={setLocalArea}
+                            yearCount={yearCount}
                             setYearCount={setYearCount}
                             totalProfit={totalProfit}
                             totalCost={totalCost}
@@ -614,10 +614,10 @@
             );
         };
 
-        const ModalContent = ({ 
-            item, localArea, setLocalArea, yearCount, setYearCount, 
-            totalProfit, totalCost, simulationData, costBreakdown, 
-            donutCanvasRef, lineCanvasRef, toggleModalFullscreen, isFullscreen, onClose 
+        const ModalContent = ({
+            item, localArea, setLocalArea, yearCount, setYearCount,
+            totalProfit, totalCost, simulationData, costBreakdown,
+            donutCanvasRef, lineCanvasRef, toggleModalFullscreen, isFullscreen, onClose
         }) => {
             return (
                 <>
@@ -628,7 +628,7 @@
                             </div>
                             <div>
                                 <h3 className="text-lg md:text-2xl font-bold text-white flex items-center gap-2">
-                                    {item.name} 
+                                    {item.name}
                                     <span className={`text-xs px-2 py-0.5 rounded-full border ${item.risk === 'High' ? 'border-red-500 text-red-400 bg-red-500/10' : item.risk === 'Medium' ? 'border-orange-500 text-orange-400 bg-orange-500/10' : 'border-green-500 text-green-400 bg-green-500/10'}`}>
                                         Risk: {item.risk}
                                     </span>
@@ -636,24 +636,24 @@
                                 <p className="text-xs md:text-sm text-slate-400">จำลองผลประกอบการแบบเจาะลึก</p>
                             </div>
                         </div>
-                        
+
                         <div className="flex items-center gap-2">
                             <div className="flex items-center gap-1 bg-slate-700/50 rounded-lg px-2 py-1 border border-slate-600">
                                 <span className="text-xs text-slate-400">พื้นที่:</span>
-                                <input 
-                                    type="number" 
-                                    value={localArea} 
-                                    onChange={(e) => setLocalArea(Math.max(1, parseInt(e.target.value) || 0))} 
+                                <input
+                                    type="number"
+                                    value={localArea}
+                                    onChange={(e) => setLocalArea(Math.max(1, parseInt(e.target.value) || 0))}
                                     className="w-12 md:w-16 bg-transparent text-center font-bold text-emerald-400 focus:outline-none"
                                 />
                                 <span className="text-xs text-slate-400">ไร่</span>
                             </div>
                             <div className="flex items-center gap-1 bg-slate-700/50 rounded-lg px-2 py-1 border border-slate-600">
                                 <span className="text-xs text-slate-400">เวลา:</span>
-                                <input 
-                                    type="number" 
-                                    value={yearCount} 
-                                    onChange={(e) => setYearCount(Math.max(1, parseInt(e.target.value) || 0))} 
+                                <input
+                                    type="number"
+                                    value={yearCount}
+                                    onChange={(e) => setYearCount(Math.max(1, parseInt(e.target.value) || 0))}
                                     className="w-8 md:w-12 bg-transparent text-center font-bold text-yellow-400 focus:outline-none"
                                 />
                                 <span className="text-xs text-slate-400">ปี</span>
@@ -662,7 +662,7 @@
                             <button onClick={toggleModalFullscreen} className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-slate-700 hover:bg-slate-600 text-white flex items-center justify-center border border-white/20 transition shadow-lg">
                                 <i className={`fa-solid ${isFullscreen ? 'fa-compress' : 'fa-expand'}`}></i>
                             </button>
-                            
+
                             <button onClick={onClose} className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-red-500/20 hover:bg-red-500 text-red-200 hover:text-white flex items-center justify-center border border-red-500/50 transition">
                                 <i className="fa-solid fa-times"></i>
                             </button>
@@ -670,7 +670,7 @@
                     </div>
 
                     <div className="flex-1 overflow-y-auto overflow-x-hidden scrollbar-prominent grid grid-cols-1 lg:grid-cols-12 gap-4 pb-4">
-                        
+
                         <div className="lg:col-span-4 flex flex-col gap-4">
                             <div className="bg-slate-900/50 p-4 rounded-xl border border-slate-700 shadow-inner">
                                 <div className="grid grid-cols-2 gap-4">
@@ -759,10 +759,10 @@
                                     </table>
                                 </div>
                             </div>
-                            
+
                             <div className="bg-slate-900/50 p-4 rounded-xl border border-slate-700 h-[200px] overflow-hidden flex flex-col">
-                                    <h4 className="text-sm font-bold text-slate-300 mb-2">ตารางกระแสเงินสดรายปี</h4>
-                                    <div className="overflow-y-auto scrollbar-prominent flex-1">
+                                <h4 className="text-sm font-bold text-slate-300 mb-2">ตารางกระแสเงินสดรายปี</h4>
+                                <div className="overflow-y-auto scrollbar-prominent flex-1">
                                     <table className="w-full text-xs text-left text-slate-300">
                                         <thead className="bg-slate-800/50 sticky top-0">
                                             <tr>
@@ -783,7 +783,7 @@
                                             ))}
                                         </tbody>
                                     </table>
-                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -802,6 +802,10 @@
             const [soilInfo, setSoilInfo] = useState(PROVINCE_DATA["กรุงเทพมหานคร"]);
             const [isFullSheet, setIsFullSheet] = useState(false);
             const [isResultsUpdated, setIsResultsUpdated] = useState(false);
+
+            //ข้อ1.ตรงนี้ใช่ไหม
+            // --- เพิ่มบรรทัดนี้ครับ ---
+            const [hasArrived, setHasArrived] = useState(false);
 
             // PAGINATION STATE
             const [itemsPerPage, setItemsPerPage] = useState(5);
@@ -853,7 +857,7 @@
                     let y = item.yield, c = item.cost;
                     // Demand-Supply Logic
                     if (item.name.includes("ทุเรียน")) {
-                        const priceFactor = 0.85; 
+                        const priceFactor = 0.85;
                         item.price = item.price * priceFactor;
                         item.risk = "High";
                     }
@@ -878,6 +882,9 @@
                     if (GOV_SOURCES[item.primarySource]) usedSources.push(GOV_SOURCES[item.primarySource]);
                     if (floodData.risk !== 'Low') usedSources.push(GOV_SOURCES.GISTDA);
                     if (soilInfo.soil !== 'ดินร่วน') usedSources.push(GOV_SOURCES.LDD);
+
+
+
 
                     return {
                         ...item,
@@ -1026,6 +1033,10 @@
             const handleProvinceSelect = async (provName) => {
                 setSelectedProvince(provName);
                 setProvince(provName);
+
+                // --- เพิ่ม: รีเซ็ตสถานะว่ายังไม่ถึง ---
+                setHasArrived(false);
+
                 const info = PROVINCE_DATA[provName];
                 setSoilInfo(info);
                 setUserHasInteracted(true);
@@ -1053,6 +1064,10 @@
                         mapInstance.flyTo([offsetLat, info.lng], 9, { duration: 8, easeLinearity: 0.25 });
                         setTimeout(() => {
                             onTravelEnd();
+
+                            // --- เพิ่ม: เซ็ตสถานะว่าถึงแล้ว ตรงนี้ครับ ---
+                            setHasArrived(true);
+
                             if (kasetMarkerRef.current) {
                                 kasetMarkerRef.current.setLatLng([info.lat, info.lng]);
                             }
@@ -1070,6 +1085,10 @@
             const handleProvinceChange = (e) => {
                 const p = e.target.value;
                 setProvince(p);
+
+                // --- เพิ่ม: ให้ถือว่าถึงแล้วทันทีเพราะเป็นการเปลี่ยนแบบเร็ว ---
+                setHasArrived(true);
+
                 const info = PROVINCE_DATA[p];
                 setSoilInfo(info);
                 setUserHasInteracted(true);
@@ -1205,103 +1224,116 @@
                                 </div>
                             </div>
                         ) : (
-                            <>
-                                {isFullSheet && <button onClick={() => setIsFullSheet(false)} className="absolute top-4 right-4 z-[1010] text-white pointer-events-auto"><i className="fa-solid fa-times text-xl"></i></button>}
 
-                                <div className={resultHeaderClass} onClick={() => setIsFullSheet(!isFullSheet)}>
-                                    <div className="flex flex-wrap justify-between items-center w-full gap-2">
-                                        <div className={`font-bold text-base md:text-lg flex items-center gap-2 ${userHasInteracted ? 'text-emerald-200' : 'text-emerald-400'}`}>
-                                            <i className="fa-solid fa-ranking-star"></i>
-                                            <span className="truncate max-w-[150px] sm:max-w-none">จัดอันดับพืชเศรษฐกิจ ({selectedProvince})</span>
-                                        </div>
-                                        
-                                        <div className="flex items-center gap-3" onClick={(e) => e.stopPropagation()}>
-                                            {results && results.length > itemsPerPage && (
-                                                <div className="flex items-center gap-2 text-xs bg-white/10 rounded-full px-2 py-1">
-                                                    <button 
-                                                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                                                        disabled={currentPage === 1}
-                                                        className={`w-6 h-6 flex items-center justify-center rounded-full transition ${currentPage === 1 ? 'text-slate-500' : 'text-white hover:bg-white/20'}`}
-                                                    >
-                                                        <i className="fa-solid fa-chevron-left"></i>
-                                                    </button>
-                                                    <span className="font-mono text-yellow-400">{currentPage}/{totalPages}</span>
-                                                    <button 
-                                                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                                                        disabled={currentPage === totalPages}
-                                                        className={`w-6 h-6 flex items-center justify-center rounded-full transition ${currentPage === totalPages ? 'text-slate-500' : 'text-white hover:bg-white/20'}`}
-                                                    >
-                                                        <i className="fa-solid fa-chevron-right"></i>
-                                                    </button>
+                            // เดิมคือ: <> ... </> เฉยๆ
+                            // แก้เป็น: ใส่ hasArrived && ( ครอบไว้
+                            hasArrived && (
+                                <>
+
+                                    {/* ปุ่มปิด Fullscreen (กากบาทมุมขวาบน) */}
+                                    {isFullSheet &&
+
+                                        <button onClick={() => setIsFullSheet(false)} className="absolute top-4 right-4 z-[1010] text-white pointer-events-auto"><i className="fa-solid fa-times text-xl"></i></button>}
+
+                                    <div className={resultHeaderClass} onClick={() => setIsFullSheet(!isFullSheet)}>
+                                        <div className="flex flex-wrap justify-between items-center w-full gap-2">
+                                            <div className={`font-bold text-base md:text-lg flex items-center gap-2 ${userHasInteracted ? 'text-emerald-200' : 'text-emerald-400'}`}>
+                                                <i className="fa-solid fa-ranking-star"></i>
+                                                <span className="truncate max-w-[150px] sm:max-w-none">จัดอันดับพืชเศรษฐกิจ ({selectedProvince})</span>
+                                            </div>
+
+                                            <div className="flex items-center gap-3" onClick={(e) => e.stopPropagation()}>
+                                                {results && results.length > itemsPerPage && (
+                                                    <div className="flex items-center gap-2 text-xs bg-white/10 rounded-full px-2 py-1">
+                                                        <button
+                                                            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                                            disabled={currentPage === 1}
+                                                            className={`w-6 h-6 flex items-center justify-center rounded-full transition ${currentPage === 1 ? 'text-slate-500' : 'text-white hover:bg-white/20'}`}
+                                                        >
+                                                            <i className="fa-solid fa-chevron-left"></i>
+                                                        </button>
+                                                        <span className="font-mono text-yellow-400">{currentPage}/{totalPages}</span>
+                                                        <button
+                                                            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                                            disabled={currentPage === totalPages}
+                                                            className={`w-6 h-6 flex items-center justify-center rounded-full transition ${currentPage === totalPages ? 'text-slate-500' : 'text-white hover:bg-white/20'}`}
+                                                        >
+                                                            <i className="fa-solid fa-chevron-right"></i>
+                                                        </button>
+                                                    </div>
+                                                )}
+                                                <div className="text-slate-400 text-sm ml-2" onClick={() => setIsFullSheet(!isFullSheet)}>
+                                                    <i className={`fa-solid fa-chevron-up transition-transform ${isFullSheet ? 'rotate-180' : ''}`}></i>
                                                 </div>
-                                            )}
-                                            <div className="text-slate-400 text-sm ml-2" onClick={() => setIsFullSheet(!isFullSheet)}>
-                                                <i className={`fa-solid fa-chevron-up transition-transform ${isFullSheet ? 'rotate-180' : ''}`}></i>
                                             </div>
                                         </div>
                                     </div>
-                                </div>
 
-                                <div className="flex-1 flex flex-col pointer-events-auto bg-black/60 border-x border-white/10 backdrop-filter-none">
-                                    <div 
-                                        ref={listContainerRef}
-                                        className="flex-1 overflow-y-scroll scrollbar-prominent pb-10 pointer-events-auto overscroll-contain" 
-                                        style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-y', isolation: 'isolate' }}
-                                        onWheel={(e) => { e.stopPropagation(); }}
-                                        onMouseDown={(e) => { e.stopPropagation(); }}
-                                        onTouchStart={(e) => { e.stopPropagation(); }}
-                                    >
-                                        {results ? paginatedResults.map((item, i) => {
-                                            const realIndex = (currentPage - 1) * itemsPerPage + i;
-                                            return (
-                                                <div key={realIndex} onClick={() => setSimulatingItem(item)}
-                                                    className="group flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-white/10 p-4 cursor-pointer transition hover:bg-white/10 px-4 md:px-6 w-full gap-3">
-                                                    <div className="flex items-start gap-3 w-full sm:w-auto">
-                                                        <div className="w-8 h-8 rounded-full bg-slate-700/50 flex items-center justify-center text-sm font-bold text-emerald-400 border border-emerald-500/30 shrink-0 shadow-lg mt-1 sm:mt-0">
-                                                            {realIndex + 1}
+                                    <div className="flex-1 flex flex-col pointer-events-auto bg-black/60 border-x border-white/10 backdrop-filter-none">
+                                        <div
+                                            ref={listContainerRef}
+                                            className="flex-1 overflow-y-scroll scrollbar-prominent pb-10 pointer-events-auto overscroll-contain"
+                                            style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-y', isolation: 'isolate' }}
+                                            onWheel={(e) => { e.stopPropagation(); }}
+                                            onMouseDown={(e) => { e.stopPropagation(); }}
+                                            onTouchStart={(e) => { e.stopPropagation(); }}
+                                        >
+                                            {results ? paginatedResults.map((item, i) => {
+                                                const realIndex = (currentPage - 1) * itemsPerPage + i;
+                                                return (
+                                                    <div key={realIndex} onClick={() => setSimulatingItem(item)}
+                                                        className="group flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-white/10 p-4 cursor-pointer transition hover:bg-white/10 px-4 md:px-6 w-full gap-3">
+                                                        <div className="flex items-start gap-3 w-full sm:w-auto">
+                                                            <div className="w-8 h-8 rounded-full bg-slate-700/50 flex items-center justify-center text-sm font-bold text-emerald-400 border border-emerald-500/30 shrink-0 shadow-lg mt-1 sm:mt-0">
+                                                                {realIndex + 1}
+                                                            </div>
+                                                            <div className="flex flex-col gap-1 w-full">
+                                                                <span className="text-base md:text-lg font-bold text-slate-100 leading-snug group-hover:text-yellow-400 transition break-words">{item.name}</span>
+                                                                <div className="flex flex-wrap items-center gap-2 opacity-80">
+                                                                    {item.refSources && item.refSources.map((src, idx) => (
+                                                                        <span key={idx} className={`text-[10px] px-2 py-0.5 rounded border ${src.color} ${src.borderColor} ${src.bg} flex items-center gap-1 whitespace-nowrap`}>
+                                                                            <i className={`fa-solid ${src.icon} text-[9px]`}></i>
+                                                                            {src.name}
+                                                                        </span>
+                                                                    ))}
+                                                                </div>
+                                                                <div className="flex flex-col text-[10px] text-slate-300 mt-1">
+                                                                    <span>ราคา: {item.price.toLocaleString()} บาท/ตัน</span>
+                                                                    <span>Demand/Supply: {item.risk === 'High' ? 'Supply สูง/ราคาผันผวน' : (item.risk === 'Medium' ? 'สมดุล' : 'Demand สูง/ราคามั่นคง')}</span>
+                                                                </div>
+                                                            </div>
                                                         </div>
-                                                        <div className="flex flex-col gap-1 w-full">
-                                                            <span className="text-base md:text-lg font-bold text-slate-100 leading-snug group-hover:text-yellow-400 transition break-words">{item.name}</span>
-                                                            <div className="flex flex-wrap items-center gap-2 opacity-80">
-                                                                {item.refSources && item.refSources.map((src, idx) => (
-                                                                    <span key={idx} className={`text-[10px] px-2 py-0.5 rounded border ${src.color} ${src.borderColor} ${src.bg} flex items-center gap-1 whitespace-nowrap`}>
-                                                                        <i className={`fa-solid ${src.icon} text-[9px]`}></i>
-                                                                        {src.name}
-                                                                    </span>
-                                                                ))}
+                                                        <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-4 pl-11 sm:pl-0 mt-2 sm:mt-0">
+                                                            <div className="flex flex-col text-left sm:text-right">
+                                                                <span className="text-[10px] text-slate-400 leading-tight">กำไรสุทธิ</span>
+                                                                <span className={`text-base md:text-xl font-bold ${item.profitTotal > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                                                                    {item.profitTotal > 0 ? '+' : ''}{item.profitTotal.toLocaleString()}
+                                                                </span>
                                                             </div>
-                                                            <div className="flex flex-col text-[10px] text-slate-300 mt-1">
-                                                                <span>ราคา: {item.price.toLocaleString()} บาท/ตัน</span>
-                                                                <span>Demand/Supply: {item.risk === 'High' ? 'Supply สูง/ราคาผันผวน' : (item.risk === 'Medium' ? 'สมดุล' : 'Demand สูง/ราคามั่นคง')}</span>
+                                                            <div className="flex flex-col text-left sm:text-right w-[60px] sm:w-[80px]">
+                                                                <span className="text-[10px] text-slate-400 leading-tight">ความเสี่ยง</span>
+                                                                <span className={`text-xs font-bold ${item.risk_level === 'High' ? 'text-red-400' : (item.risk_level === 'Medium' ? 'text-orange-400' : 'text-green-400')}`}>
+                                                                    {item.risk_level}
+                                                                </span>
                                                             </div>
+                                                            <button
+                                                                onClick={(e) => { e.stopPropagation(); setSimulatingItem(item); }}
+                                                                className="w-8 h-8 rounded-full bg-yellow-500 hover:bg-yellow-400 text-slate-900 flex items-center justify-center shadow-[0_0_10px_rgba(234,179,8,0.6)] animate-pulse group-hover:scale-110 transition shrink-0"
+                                                            >
+                                                                <i className="fa-solid fa-chevron-right text-xs"></i>
+                                                            </button>
                                                         </div>
                                                     </div>
-                                                    <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-4 pl-11 sm:pl-0 mt-2 sm:mt-0">
-                                                        <div className="flex flex-col text-left sm:text-right">
-                                                            <span className="text-[10px] text-slate-400 leading-tight">กำไรสุทธิ</span>
-                                                            <span className={`text-base md:text-xl font-bold ${item.profitTotal > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                                                                {item.profitTotal > 0 ? '+' : ''}{item.profitTotal.toLocaleString()}
-                                                            </span>
-                                                        </div>
-                                                        <div className="flex flex-col text-left sm:text-right w-[60px] sm:w-[80px]">
-                                                            <span className="text-[10px] text-slate-400 leading-tight">ความเสี่ยง</span>
-                                                            <span className={`text-xs font-bold ${item.risk_level === 'High' ? 'text-red-400' : (item.risk_level === 'Medium' ? 'text-orange-400' : 'text-green-400')}`}>
-                                                                {item.risk_level}
-                                                            </span>
-                                                        </div>
-                                                        <button
-                                                            onClick={(e) => { e.stopPropagation(); setSimulatingItem(item); }}
-                                                            className="w-8 h-8 rounded-full bg-yellow-500 hover:bg-yellow-400 text-slate-900 flex items-center justify-center shadow-[0_0_10px_rgba(234,179,8,0.6)] animate-pulse group-hover:scale-110 transition shrink-0"
-                                                        >
-                                                            <i className="fa-solid fa-chevron-right text-xs"></i>
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            );
-                                        }) : <div className="text-center p-10 text-slate-500">กำลังวิเคราะห์...</div>}
+                                                );
+                                            }) : <div className="text-center p-10 text-slate-500">กำลังวิเคราะห์...</div>}
+                                        </div>
                                     </div>
-                                </div>
-                            </>
+                                </>
+
+                            ) // <--- อย่าลืมปิดวงเล็บตรงนี้ครับ
+
+                            // ▲▲▲▲▲ จบส่วนแก้ไข ▲▲▲▲▲
+
                         )}
                     </div>
 
