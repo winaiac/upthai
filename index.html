@@ -391,6 +391,28 @@
         const long2tile = (lon, zoom) => (Math.floor((lon + 180) / 360 * Math.pow(2, zoom)));
         const lat2tile = (lat, zoom) => (Math.floor((1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, zoom)));
 
+        // ... (ต่อจาก lat2tile) ...
+
+        // ฟังก์ชันแปลงองศาเป็นเรเดียน
+        const toRad = (deg) => deg * (Math.PI / 180);
+        const toDeg = (rad) => rad * (180 / Math.PI);
+
+        // ฟังก์ชันคำนวณทิศทาง (Bearing) จากจุด A ไป B
+        const getBearing = (startLat, startLng, destLat, destLng) => {
+            const startLatRad = toRad(startLat);
+            const startLngRad = toRad(startLng);
+            const destLatRad = toRad(destLat);
+            const destLngRad = toRad(destLng);
+
+            const y = Math.sin(destLngRad - startLngRad) * Math.cos(destLatRad);
+            const x = Math.cos(startLatRad) * Math.sin(destLatRad) -
+                Math.sin(startLatRad) * Math.cos(destLatRad) * Math.cos(destLngRad - startLngRad);
+
+            let brng = Math.atan2(y, x);
+            brng = toDeg(brng);
+            return (brng + 360) % 360; // แปลงให้อยู่ในช่วง 0-360 องศา
+        };
+
         const checkAndPreloadTiles = (lat, lng, zoom = 9) => {
             const promises = [];
             const x = long2tile(lng, zoom);
@@ -418,7 +440,9 @@
         };
 
         // --- SUB COMPONENTS ---
-        const CloudOverlay = ({ isActive, message }) => {
+        // แก้ไขบรรทัดรับ props และ style ของ icon
+        // --- CloudOverlay (แก้เครื่องบินกระเด้ง) ---
+        const CloudOverlay = ({ isActive, message, rotation }) => {
             return (
                 <div className={`cloud-container ${isActive ? 'active' : ''}`}>
                     <div className="cloud-layer"></div>
@@ -426,8 +450,17 @@
                     <div className="cloud-layer"></div>
                     {isActive && (
                         <div className="travel-message">
-                            <div className="text-4xl md:text-6xl text-emerald-600 mb-4 animate-bounce">
-                                <i className="fa-solid fa-plane-up"></i>
+                            {/* ▼▼▼ ลบ animate-bounce ออกจากบรรทัดนี้ ▼▼▼ */}
+                            <div className="text-4xl md:text-6xl text-emerald-600 mb-4 drop-shadow-2xl transition-all duration-1000">
+                                <i
+                                    className="fa-solid fa-plane-up"
+                                    // เพิ่ม transition ให้การหมุนนุ่มนวลขึ้น
+                                    style={{
+                                        transform: `rotate(${rotation || 0}deg)`,
+                                        display: 'inline-block',
+                                        transition: 'transform 1s cubic-bezier(0.4, 0, 0.2, 1)'
+                                    }}
+                                ></i>
                             </div>
                             <h2 className="text-2xl md:text-4xl font-bold bg-white/80 backdrop-blur-md px-6 py-3 rounded-full shadow-lg border-2 border-emerald-400 text-emerald-800">
                                 {message}
@@ -996,24 +1029,35 @@
                 setSoilInfo(info);
                 setUserHasInteracted(true);
                 if (mapInstance) {
-                    onTravelStart(`กำลังเตรียมการบิน...`);
+                    // กำหนดจุดเริ่มและสิ้นสุด
                     const startLat = DON_MUEANG_COORDS[0];
                     const startLng = DON_MUEANG_COORDS[1];
                     const endLat = info.lat;
                     const endLng = info.lng;
+
+                    // ★★★ คำนวณองศาหัวเครื่องบิน ★★★
+                    const bearing = getBearing(startLat, startLng, endLat, endLng);
+
+                    // ส่งค่า bearing ไปด้วย (Param ตัวที่ 2)
+                    onTravelStart(`กำลังเตรียมการบิน...`, bearing);
+
                     const midLat = (startLat + endLat) / 2;
                     const midLng = (startLng + endLng) / 2;
                     const slowNetTimer = setTimeout(() => {
-                        onTravelStart(`มีการใช้งานอินเตอร์เน็ตเยอะโปรดรอสักครู่...`);
+                        onTravelStart(`มีการใช้งานอินเตอร์เน็ตเยอะโปรดรอสักครู่...`, bearing);
                     }, 2000);
+
                     const cacheTasks = [
                         checkAndPreloadTiles(startLat, startLng, 9),
                         checkAndPreloadTiles(midLat, midLng, 9),
                         checkAndPreloadTiles(endLat, endLng, 9)
                     ];
+
                     await Promise.all(cacheTasks);
                     clearTimeout(slowNetTimer);
-                    onTravelStart(`พร้อมออกเดินทางไป ${provName}!`);
+
+                    onTravelStart(`พร้อมออกเดินทางไป ${provName}!`, bearing); // ส่ง bearing อีกรอบเพื่อความชัวร์
+
                     setTimeout(() => {
                         const offsetLat = info.lat - 0.15;
                         mapInstance.flyTo([offsetLat, info.lng], 9, { duration: 8, easeLinearity: 0.25 });
@@ -1378,7 +1422,8 @@
         const VinaiInnovationPortal = () => {
             const [page, setPage] = useState('home');
             const [isTransitioning, setIsTransitioning] = useState(false);
-            const [travelState, setTravelState] = useState({ active: false, message: '' });
+            // 1. เพิ่ม rotation: 0 ใน state เริ่มต้น
+            const [travelState, setTravelState] = useState({ active: false, message: '', rotation: 0 });
             const mapRef = useRef(null);
             const rotationInterval = useRef(null);
 
@@ -1413,12 +1458,19 @@
                 if (rotationInterval.current) { clearInterval(rotationInterval.current); rotationInterval.current = null; }
             };
 
-            const startTravel = (msg) => {
+            useEffect(() => {
+                if (page === 'kaset') {
+                    stopRotation(); // สั่งหยุดหมุนโลกทันทีเมื่อเข้าหน้าเกษตร
+                }
+            }, [page]);
+
+            // 2. แก้ฟังก์ชัน startTravel ให้รับ rotation
+            const startTravel = (msg, rotation = 0) => {
                 playJetSound();
-                setTravelState({ active: true, message: msg });
+                setTravelState({ active: true, message: msg, rotation: rotation });
             };
 
-            const endTravel = () => setTravelState({ active: false, message: '' });
+            const endTravel = () => setTravelState({ active: false, message: '', rotation: 0 });
 
             const handleStartKaset = () => {
                 if (!mapRef.current) return;
@@ -1442,7 +1494,8 @@
             return (
                 <div className="font-sans text-slate-200 h-[100dvh] w-screen overflow-hidden">
                     <div id="global-map"></div>
-                    <CloudOverlay isActive={travelState.active} message={travelState.message} />
+                    {/* 3. ส่ง rotation ไปให้ CloudOverlay */}
+                    <CloudOverlay isActive={travelState.active} message={travelState.message} rotation={travelState.rotation} />
 
                     <button onClick={handleGoHome} className="absolute top-6 left-6 z-[1050] bg-slate-900/10 hover:bg-slate-900/30 text-white w-10 h-10 rounded-full flex items-center justify-center backdrop-blur-md border border-white/20 shadow-lg transition-all group pointer-events-auto" title="กลับหน้าแรก">
                         <i className="fa-solid fa-house text-sm group-hover:text-emerald-400"></i>
