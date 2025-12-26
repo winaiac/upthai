@@ -323,102 +323,43 @@
     <script type="text/babel">
         const { useState, useEffect, useRef } = React;
 
-        // --- CHART JS DEFAULTS ---
+        // --- GLOBAL CONSTANTS ---
         Chart.defaults.color = '#cbd5e1';
         Chart.defaults.borderColor = '#334155';
         Chart.defaults.font.family = 'Sarabun';
 
-        // --- DATA (UPDATED: AIRPORT COORDINATES WHERE POSSIBLE) ---
-        // Don Mueang Airport
         const DON_MUEANG_COORDS = [13.9133, 100.6042];
 
         const PROVINCE_COORDS = {
-            // --- ภาคเหนือ (Airports) ---
-            "เชียงราย": [19.9502, 99.8826], // Mae Fah Luang
-            "เชียงใหม่": [18.7677, 98.9640], // Chiang Mai Intl
-            "น่าน": [18.8077, 100.7834], // Nan Nakhon
-            "พะเยา": [19.1662, 99.9022], // (No Airport, City)
-            "แพร่": [18.1301, 100.1623], // Phrae
-            "แม่ฮ่องสอน": [19.3005, 97.9706], // Mae Hong Son
-            "ลำปาง": [18.2764, 99.5028], // Lampang
-            "ลำพูน": [18.5772, 99.0087],
-            "อุตรดิตถ์": [17.6201, 100.0993],
-            "สุโขทัย": [17.2384, 99.8295], // Sukhothai
-            "พิษณุโลก": [16.7797, 100.2741], // Phitsanulok
-            "พิจิตร": [16.4418, 100.3488],
-            "เพชรบูรณ์": [16.7628, 101.1894], // Phetchabun
-            "กำแพงเพชร": [16.4834, 99.5215],
-            "ตาก": [16.8974, 99.2541], // Mae Sot
-            "นครสวรรค์": [15.6667, 100.1333],
-            "อุทัยธานี": [15.3835, 100.0246],
-            // --- ภาคอีสาน (Airports) ---
-            "กาฬสินธุ์": [16.4328, 103.5069],
-            "ขอนแก่น": [16.4643, 102.7872], // Khon Kaen
-            "ชัยภูมิ": [15.8105, 102.0288],
-            "นครพนม": [17.3833, 104.6433], // Nakhon Phanom
-            "นครราชสีมา": [14.9392, 102.1119], // Nakhon Ratchasima
-            "บึงกาฬ": [18.3612, 103.6461],
-            "บุรีรัมย์": [15.2294, 103.2533], // Buriram
-            "มหาสารคาม": [16.1858, 103.3015],
-            "มุกดาหาร": [16.5436, 104.7046],
-            "ยโสธร": [15.7924, 104.1451],
-            "ร้อยเอ็ด": [16.1507, 103.7745], // Roi Et
-            "เลย": [17.4411, 101.7225], // Loei
-            "สกลนคร": [17.1897, 104.1186], // Sakon Nakhon
-            "สุรินทร์": [14.8829, 103.4937],
-            "ศรีสะเกษ": [15.1186, 104.3227],
-            "หนองคาย": [17.8785, 102.7413],
-            "หนองบัวลำภู": [17.2044, 102.4413],
-            "อุดรธานี": [17.3859, 102.7880], // Udon Thani
-            "อุบลราชธานี": [15.2514, 104.8703], // Ubon Ratchathani
-            "อำนาจเจริญ": [15.8587, 104.6258],
-            // --- ภาคกลาง ---
-            "กรุงเทพมหานคร": [13.9133, 100.6042], // Don Mueang
-            "กาญจนบุรี": [14.0205, 99.5304],
-            "จันทบุรี": [12.6114, 102.1039],
-            "ฉะเชิงเทรา": [13.6904, 101.0779],
-            "ชลบุรี": [13.3611, 100.9847],
-            "ชัยนาท": [15.1852, 100.1251],
-            "ตราด": [12.2703, 102.3217], // Trat
-            "นครนายก": [14.2069, 101.2130],
-            "นครปฐม": [13.8188, 100.0373],
-            "นนทบุรี": [13.8591, 100.5217],
-            "ปทุมธานี": [14.0208, 100.5250],
-            "ประจวบคีรีขันธ์": [11.7916, 99.8037], // Hua Hin is close
-            "ปราจีนบุรี": [14.0620, 101.3783],
-            "พระนครศรีอยุธยา": [14.3532, 100.5684],
-            "เพชรบุรี": [13.1163, 99.9392],
-            "ระยอง": [12.6800, 101.0050], // U-Tapao
-            "ราชบุรี": [13.5282, 99.8144],
-            "ลพบุรี": [14.7995, 100.6533],
-            "สมุทรปราการ": [13.6900, 100.7501], // Suvarnabhumi
-            "สมุทรสงคราม": [13.4098, 100.0023],
-            "สมุทรสาคร": [13.5475, 100.2736],
-            "สระแก้ว": [13.8240, 102.0649],
-            "สระบุรี": [14.5289, 100.9101],
-            "สิงห์บุรี": [14.8910, 100.3958],
-            "สุพรรณบุรี": [14.4745, 100.1177],
-            "อ่างทอง": [14.5896, 100.4550],
-            // --- ภาคใต้ (Airports) ---
-            "กระบี่": [8.0991, 98.9850], // Krabi
-            "ชุมพร": [10.7119, 99.3636], // Chumphon
-            "ตรัง": [7.5097, 99.6158], // Trang
-            "นครศรีธรรมราช": [8.5408, 99.9442], // Nakhon Si Thammarat
-            "นราธิวาส": [6.5239, 101.7431], // Narathiwat
-            "ปัตตานี": [6.7867, 101.1578], // Pattani
-            "พังงา": [8.4501, 98.5255],
-            "พัทลุง": [7.6172, 100.0708],
-            "ภูเก็ต": [8.1132, 98.3169], // Phuket
-            "ยะลา": [6.5412, 101.2804],
-            "ระนอง": [9.7777, 98.5853], // Ranong
-            "สงขลา": [6.9333, 100.3933], // Hat Yai
-            "สตูล": [6.6238, 100.0674],
-            "สุราษฎร์ธานี": [9.1328, 99.1356] // Surat Thani
+            "เชียงราย": [19.9502, 99.8826], "เชียงใหม่": [18.7677, 98.9640], "น่าน": [18.8077, 100.7834],
+            "พะเยา": [19.1662, 99.9022], "แพร่": [18.1301, 100.1623], "แม่ฮ่องสอน": [19.3005, 97.9706],
+            "ลำปาง": [18.2764, 99.5028], "ลำพูน": [18.5772, 99.0087], "อุตรดิตถ์": [17.6201, 100.0993],
+            "สุโขทัย": [17.2384, 99.8295], "พิษณุโลก": [16.7797, 100.2741], "พิจิตร": [16.4418, 100.3488],
+            "เพชรบูรณ์": [16.7628, 101.1894], "กำแพงเพชร": [16.4834, 99.5215], "ตาก": [16.8974, 99.2541],
+            "นครสวรรค์": [15.6667, 100.1333], "อุทัยธานี": [15.3835, 100.0246], "กาฬสินธุ์": [16.4328, 103.5069],
+            "ขอนแก่น": [16.4643, 102.7872], "ชัยภูมิ": [15.8105, 102.0288], "นครพนม": [17.3833, 104.6433],
+            "นครราชสีมา": [14.9392, 102.1119], "บึงกาฬ": [18.3612, 103.6461], "บุรีรัมย์": [15.2294, 103.2533],
+            "มหาสารคาม": [16.1858, 103.3015], "มุกดาหาร": [16.5436, 104.7046], "ยโสธร": [15.7924, 104.1451],
+            "ร้อยเอ็ด": [16.1507, 103.7745], "เลย": [17.4411, 101.7225], "สกลนคร": [17.1897, 104.1186],
+            "สุรินทร์": [14.8829, 103.4937], "ศรีสะเกษ": [15.1186, 104.3227], "หนองคาย": [17.8785, 102.7413],
+            "หนองบัวลำภู": [17.2044, 102.4413], "อุดรธานี": [17.3859, 102.7880], "อุบลราชธานี": [15.2514, 104.8703],
+            "อำนาจเจริญ": [15.8587, 104.6258], "กรุงเทพมหานคร": [13.9133, 100.6042], "กาญจนบุรี": [14.0205, 99.5304],
+            "จันทบุรี": [12.6114, 102.1039], "ฉะเชิงเทรา": [13.6904, 101.0779], "ชลบุรี": [13.3611, 100.9847],
+            "ชัยนาท": [15.1852, 100.1251], "ตราด": [12.2703, 102.3217], "นครนายก": [14.2069, 101.2130],
+            "นครปฐม": [13.8188, 100.0373], "นนทบุรี": [13.8591, 100.5217], "ปทุมธานี": [14.0208, 100.5250],
+            "ประจวบคีรีขันธ์": [11.7916, 99.8037], "ปราจีนบุรี": [14.0620, 101.3783], "พระนครศรีอยุธยา": [14.3532, 100.5684],
+            "เพชรบุรี": [13.1163, 99.9392], "ระยอง": [12.6800, 101.0050], "ราชบุรี": [13.5282, 99.8144],
+            "ลพบุรี": [14.7995, 100.6533], "สมุทรปราการ": [13.6900, 100.7501], "สมุทรสงคราม": [13.4098, 100.0023],
+            "สมุทรสาคร": [13.5475, 100.2736], "สระแก้ว": [13.8240, 102.0649], "สระบุรี": [14.5289, 100.9101],
+            "สิงห์บุรี": [14.8910, 100.3958], "สุพรรณบุรี": [14.4745, 100.1177], "อ่างทอง": [14.5896, 100.4550],
+            "กระบี่": [8.0991, 98.9850], "ชุมพร": [10.7119, 99.3636], "ตรัง": [7.5097, 99.6158],
+            "นครศรีธรรมราช": [8.5408, 99.9442], "นราธิวาส": [6.5239, 101.7431], "ปัตตานี": [6.7867, 101.1578],
+            "พังงา": [8.4501, 98.5255], "พัทลุง": [7.6172, 100.0708], "ภูเก็ต": [8.1132, 98.3169],
+            "ยะลา": [6.5412, 101.2804], "ระนอง": [9.7777, 98.5853], "สงขลา": [6.9333, 100.3933],
+            "สตูล": [6.6238, 100.0674], "สุราษฎร์ธานี": [9.1328, 99.1356]
         };
 
         const PROVINCE_DATA = {};
-
-        // REORGANIZED 6 REGIONS
         const regions = {
             "เหนือ": ["เชียงราย", "เชียงใหม่", "น่าน", "พะเยา", "แพร่", "แม่ฮ่องสอน", "ลำปาง", "ลำพูน", "อุตรดิตถ์", "สุโขทัย", "พิษณุโลก", "พิจิตร", "เพชรบูรณ์", "กำแพงเพชร", "นครสวรรค์", "อุทัยธานี"],
             "อีสาน": ["กาฬสินธุ์", "ขอนแก่น", "ชัยภูมิ", "นครพนม", "นครราชสีมา", "บึงกาฬ", "บุรีรัมย์", "มหาสารคาม", "มุกดาหาร", "ยโสธร", "ร้อยเอ็ด", "เลย", "สกลนคร", "สุรินทร์", "ศรีสะเกษ", "หนองคาย", "หนองบัวลำภู", "อุดรธานี", "อุบลราชธานี", "อำนาจเจริญ"],
@@ -448,7 +389,6 @@
             });
         });
 
-        // Cost Breakdown Data (Estimates)
         const COST_STRUCTURE = {
             'ข้าวหอมมะลิ': { fertilizer: 25, labor: 35, seeds: 15, water: 15, misc: 10 },
             'ข้าวหอมมะลิ 105': { fertilizer: 25, labor: 35, seeds: 15, water: 15, misc: 10 },
@@ -476,7 +416,17 @@
             'default': { type: 'annual', lifespan: 1, advice: 'ℹ️ ควรปลูกพืชตระกูลถั่วสลับ...' }
         };
 
-        // --- PREFETCHING LOGIC (PROMISE BASED) ---
+        const GOV_SOURCES = {
+            OAE: { id: 'oae', name: 'สศก. (เศรษฐกิจการเกษตร)', icon: 'fa-chart-line', color: 'text-blue-400', borderColor: 'border-blue-500/30', bg: 'bg-blue-500/10' },
+            LDD: { id: 'ldd', name: 'กรมพัฒนาที่ดิน (Agri-Map)', icon: 'fa-layer-group', color: 'text-amber-400', borderColor: 'border-amber-500/30', bg: 'bg-amber-500/10' },
+            TMD: { id: 'tmd', name: 'กรมอุตุนิยมวิทยา', icon: 'fa-cloud-bolt', color: 'text-cyan-400', borderColor: 'border-cyan-500/30', bg: 'bg-cyan-500/10' },
+            GISTDA: { id: 'gistda', name: 'GISTDA (ดาวเทียม)', icon: 'fa-satellite', color: 'text-purple-400', borderColor: 'border-purple-500/30', bg: 'bg-purple-500/10' },
+            MARKET: { id: 'market', name: 'ตลาดไท/สี่มุมเมือง', icon: 'fa-shop', color: 'text-green-400', borderColor: 'border-green-500/30', bg: 'bg-green-500/10' },
+            DOA: { id: 'doa', name: 'กรมวิชาการเกษตร', icon: 'fa-seedling', color: 'text-pink-400', borderColor: 'border-pink-500/30', bg: 'bg-pink-500/10' },
+            RICE: { id: 'rice', name: 'กรมการข้าว', icon: 'fa-bowl-rice', color: 'text-yellow-200', borderColor: 'border-yellow-200/30', bg: 'bg-yellow-200/10' }
+        };
+
+        // --- HELPER FUNCTIONS ---
         const long2tile = (lon, zoom) => (Math.floor((lon + 180) / 360 * Math.pow(2, zoom)));
         const lat2tile = (lat, zoom) => (Math.floor((1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, zoom)));
 
@@ -484,23 +434,19 @@
             const promises = [];
             const x = long2tile(lng, zoom);
             const y = lat2tile(lat, zoom);
-
-            // Load 3x3 grid
             for (let i = -1; i <= 1; i++) {
                 for (let j = -1; j <= 1; j++) {
                     const tx = x + i;
                     const ty = y + j;
-
                     const urls = [
                         `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${zoom}/${ty}/${tx}`,
                         `https://mt1.google.com/vt/lyrs=h&x=${tx}&y=${ty}&z=${zoom}`
                     ];
-
                     urls.forEach(url => {
                         const p = new Promise((resolve) => {
                             const img = new Image();
                             img.onload = () => resolve(true);
-                            img.onerror = () => resolve(false); // Resolve even on error to keep going
+                            img.onerror = () => resolve(false);
                             img.src = url;
                         });
                         promises.push(p);
@@ -510,6 +456,7 @@
             return Promise.all(promises);
         };
 
+        // --- SUB COMPONENTS ---
         const CloudOverlay = ({ isActive, message }) => {
             return (
                 <div className={`cloud-container ${isActive ? 'active' : ''}`}>
@@ -695,7 +642,7 @@
         // --- KASET CLOUD APP ---
         const KasetCloudApp = ({ mapInstance, onTravelStart, onTravelEnd }) => {
             const [selectedRegion, setSelectedRegion] = useState(null);
-            const [selectedProvince, setSelectedProvince] = useState(null); // New state for specific province selection
+            const [selectedProvince, setSelectedProvince] = useState(null);
             const [province, setProvince] = useState("กรุงเทพมหานคร");
             const [area, setArea] = useState(1);
             const [analyzing, setAnalyzing] = useState(false);
@@ -705,9 +652,9 @@
             const [isResultsUpdated, setIsResultsUpdated] = useState(false);
 
             // PAGINATION STATE
+            const [itemsPerPage, setItemsPerPage] = useState(5);
             const [currentPage, setCurrentPage] = useState(1);
-            // UPDATED: Decreased items per page to match visible area (Fix gap issue)
-            const ITEMS_PER_PAGE = 5; 
+            const listContainerRef = useRef(null);
 
             const [weatherData, setWeatherData] = useState(null);
             const [address, setAddress] = useState({
@@ -722,17 +669,6 @@
             const kasetMarkerRef = useRef(null);
             const debounceRef = useRef(null);
 
-            // --- GOVERNMENT DATA SOURCES CONFIG (ADDED) ---
-            const GOV_SOURCES = {
-                OAE: { id: 'oae', name: 'สศก. (เศรษฐกิจการเกษตร)', icon: 'fa-chart-line', color: 'text-blue-400', borderColor: 'border-blue-500/30', bg: 'bg-blue-500/10' },
-                LDD: { id: 'ldd', name: 'กรมพัฒนาที่ดิน (Agri-Map)', icon: 'fa-layer-group', color: 'text-amber-400', borderColor: 'border-amber-500/30', bg: 'bg-amber-500/10' },
-                TMD: { id: 'tmd', name: 'กรมอุตุนิยมวิทยา', icon: 'fa-cloud-bolt', color: 'text-cyan-400', borderColor: 'border-cyan-500/30', bg: 'bg-cyan-500/10' },
-                GISTDA: { id: 'gistda', name: 'GISTDA (ดาวเทียม)', icon: 'fa-satellite', color: 'text-purple-400', borderColor: 'border-purple-500/30', bg: 'bg-purple-500/10' },
-                MARKET: { id: 'market', name: 'ตลาดไท/สี่มุมเมือง', icon: 'fa-shop', color: 'text-green-400', borderColor: 'border-green-500/30', bg: 'bg-green-500/10' },
-                DOA: { id: 'doa', name: 'กรมวิชาการเกษตร', icon: 'fa-seedling', color: 'text-pink-400', borderColor: 'border-pink-500/30', bg: 'bg-pink-500/10' },
-                RICE: { id: 'rice', name: 'กรมการข้าว', icon: 'fa-bowl-rice', color: 'text-yellow-200', borderColor: 'border-yellow-200/30', bg: 'bg-yellow-200/10' }
-            };
-
             const toggleFullScreen = () => {
                 if (!document.fullscreenElement) {
                     document.documentElement.requestFullscreen().then(() => setIsFullscreen(true));
@@ -743,9 +679,7 @@
                 }
             };
 
-            // --- ANALYZE DATA MOVED UP ---
             const analyzeData = () => {
-                // Base Data with explicit Primary Source (UNLIMITED MOCK)
                 let baseData = [
                     { name: "ข้าวหอมมะลิ 105", category: "พืชไร่", price: 14500, yield: 750, cost: 4800, risk: "Medium", primarySource: "RICE" },
                     { name: "ข้าวโพดเลี้ยงสัตว์", category: "พืชไร่", price: 9500, yield: 1200, cost: 6000, risk: "Medium", primarySource: "OAE" },
@@ -767,35 +701,21 @@
 
                 const calculated = baseData.map(item => {
                     let y = item.yield, c = item.cost;
-
-                    // Logic: ปรับผลผลิตตามข้อมูล GISTDA (น้ำท่วม) และ TMD (ฝน)
                     if (floodData.risk === 'High') {
                         c *= 1.3;
-                        if (!item.name.includes("ข้าว")) y *= 0.5; // พืชอื่นตายง่ายกว่าข้าว
+                        if (!item.name.includes("ข้าว")) y *= 0.5;
                     }
-
-                    // Logic: ปรับตามกรมพัฒนาที่ดิน (Soil Suitability)
                     if (soilInfo.soil.includes("ทราย") && item.name.includes("ข้าว")) {
-                        y *= 0.8; // ดินทรายไม่เหมาะกับข้าว
+                        y *= 0.8;
                     }
-
-                    // Logic: ปรับตามกรมอุตุ (ฝนแล้ง)
                     if (weatherData && weatherData.dailyRain < 2 && item.name.includes("ข้าว")) {
                         y *= 0.9;
                     }
-
-                    const rev = item.price * (y / 1000) * area; // แปลงหน่วย
+                    const rev = item.price * (y / 1000) * area;
                     const cost = c * area;
-
-                    // เพิ่ม Tag แหล่งข้อมูล (Attribution Logic)
                     const usedSources = [];
-                    // 1. Primary Source (Price/Base Info)
                     if (GOV_SOURCES[item.primarySource]) usedSources.push(GOV_SOURCES[item.primarySource]);
-
-                    // 2. Risk Source
                     if (floodData.risk !== 'Low') usedSources.push(GOV_SOURCES.GISTDA);
-
-                    // 3. Soil/Environment Source
                     if (soilInfo.soil !== 'ดินร่วน') usedSources.push(GOV_SOURCES.LDD);
 
                     return {
@@ -804,60 +724,70 @@
                         costTotal: cost,
                         risk_level: item.risk,
                         history: [],
-                        refSources: usedSources // เก็บแหล่งที่มาไว้แสดงผล
+                        refSources: usedSources
                     };
                 });
 
                 setResults(calculated.sort((a, b) => b.profitTotal - a.profitTotal));
                 setAnalyzing(false);
                 setIsResultsUpdated(true);
-                setCurrentPage(1); // Reset page on new analyze
+                setCurrentPage(1);
                 setTimeout(() => setIsResultsUpdated(false), 5000);
             };
 
-            // 1. Map Interaction Logic
             useEffect(() => {
-                if (!mapInstance) return;
+                const handleResize = () => {
+                    if (listContainerRef.current) {
+                        const containerHeight = listContainerRef.current.clientHeight;
+                        const itemElement = listContainerRef.current.querySelector('.group');
+                        const itemHeight = itemElement ? itemElement.offsetHeight : 100;
+                        const calculatedItems = Math.floor(containerHeight / itemHeight);
+                        setItemsPerPage(Math.max(3, calculatedItems));
+                    }
+                };
+                handleResize();
+                const timer = setTimeout(handleResize, 600);
+                window.addEventListener('resize', handleResize);
+                return () => {
+                    window.removeEventListener('resize', handleResize);
+                    clearTimeout(timer);
+                };
+            }, [isFullSheet, results, province]);
 
-                const targetInfo = PROVINCE_DATA[province];
+            useEffect(() => {
+                if (mapInstance) {
+                    const targetInfo = PROVINCE_DATA[province];
+                    mapInstance.dragging.enable();
+                    mapInstance.touchZoom.enable();
+                    mapInstance.doubleClickZoom.enable();
+                    mapInstance.scrollWheelZoom.enable();
+                    mapInstance.boxZoom.enable();
+                    mapInstance.keyboard.enable();
+                    if (mapInstance.tap) mapInstance.tap.enable();
+                    mapInstance.getContainer().style.cursor = 'grab';
 
-                mapInstance.dragging.enable();
-                mapInstance.touchZoom.enable();
-                mapInstance.doubleClickZoom.enable();
-                mapInstance.scrollWheelZoom.enable();
-                mapInstance.boxZoom.enable();
-                mapInstance.keyboard.enable();
-                if (mapInstance.tap) mapInstance.tap.enable();
-                mapInstance.getContainer().style.cursor = 'grab';
-
-                if (!kasetMarkerRef.current) {
-                    const marker = L.marker([targetInfo.lat, targetInfo.lng], { draggable: true }).addTo(mapInstance);
-                    marker.bindPopup(`<b>${province}</b><br>ลากหมุดเพื่อระบุตำแหน่งแปลง`).openPopup();
-
-                    marker.on('dragend', async function (event) {
-                        const m = event.target;
-                        const position = m.getLatLng();
-
-                        setSoilInfo(prev => ({ ...prev, lat: position.lat, lng: position.lng }));
-                        await fetchDetailedAddress(position.lat, position.lng);
-                        setFloodData(calculateFloodRisk(position.lat, position.lng));
-                        fetchDetailedWeather(position.lat, position.lng);
-
-                        setUserHasInteracted(true);
-                        m.setPopupContent(`<b>กำลังวิเคราะห์พื้นที่...</b>`).openPopup();
-                    });
-
-                    marker.on('mouseover', () => { mapInstance.getContainer().style.cursor = 'pointer'; });
-                    marker.on('mouseout', () => { mapInstance.getContainer().style.cursor = 'grab'; });
-
-                    kasetMarkerRef.current = marker;
-                } else {
-                    // Update marker position ONLY if interacted or region changed recently
-                    if (!userHasInteracted || selectedRegion) {
-                        kasetMarkerRef.current.setLatLng([targetInfo.lat, targetInfo.lng]);
+                    if (!kasetMarkerRef.current) {
+                        const marker = L.marker([targetInfo.lat, targetInfo.lng], { draggable: true }).addTo(mapInstance);
+                        marker.bindPopup(`<b>${province}</b><br>ลากหมุดเพื่อระบุตำแหน่งแปลง`).openPopup();
+                        marker.on('dragend', async function (event) {
+                            const m = event.target;
+                            const position = m.getLatLng();
+                            setSoilInfo(prev => ({ ...prev, lat: position.lat, lng: position.lng }));
+                            await fetchDetailedAddress(position.lat, position.lng);
+                            setFloodData(calculateFloodRisk(position.lat, position.lng));
+                            fetchDetailedWeather(position.lat, position.lng);
+                            setUserHasInteracted(true);
+                            m.setPopupContent(`<b>กำลังวิเคราะห์พื้นที่...</b>`).openPopup();
+                        });
+                        marker.on('mouseover', () => { mapInstance.getContainer().style.cursor = 'pointer'; });
+                        marker.on('mouseout', () => { mapInstance.getContainer().style.cursor = 'grab'; });
+                        kasetMarkerRef.current = marker;
+                    } else {
+                        if (!userHasInteracted || selectedRegion) {
+                            kasetMarkerRef.current.setLatLng([targetInfo.lat, targetInfo.lng]);
+                        }
                     }
                 }
-
                 return () => {
                     if (kasetMarkerRef.current) {
                         kasetMarkerRef.current.remove();
@@ -866,7 +796,6 @@
                 };
             }, [mapInstance, province]);
 
-            // 2. Fetch Data Functions
             const fetchDetailedAddress = async (lat, lng) => {
                 try {
                     const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`, { headers: { 'User-Agent': 'WinaiPortal/1.0' } });
@@ -900,7 +829,6 @@
                 try {
                     const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=temperature_2m,rain,surface_pressure&daily=temperature_2m_max,temperature_2m_min,precipitation_sum&timezone=Asia%2FBangkok&forecast_days=1`);
                     const data = await res.json();
-
                     if (data && data.current && data.daily) {
                         setWeatherData({
                             temp: data.current.temperature_2m,
@@ -930,51 +858,35 @@
                 return () => clearTimeout(debounceRef.current);
             }, [province, area, weatherData, floodData]);
 
-            // NEW: Step 1 - Select Region
             const handleRegionSelect = (regionName) => {
                 setSelectedRegion(regionName);
             };
 
-            // NEW: Step 2 - Select Province & Fly with Cache Check
             const handleProvinceSelect = async (provName) => {
                 setSelectedProvince(provName);
                 setProvince(provName);
-
                 const info = PROVINCE_DATA[provName];
                 setSoilInfo(info);
                 setUserHasInteracted(true);
-
-                // --- SMART PRELOAD CHECK ---
                 if (mapInstance) {
                     onTravelStart(`กำลังเตรียมการบิน...`);
-
-                    // 1. Calculate Midpoint for smooth path caching
                     const startLat = DON_MUEANG_COORDS[0];
                     const startLng = DON_MUEANG_COORDS[1];
                     const endLat = info.lat;
                     const endLng = info.lng;
                     const midLat = (startLat + endLat) / 2;
                     const midLng = (startLng + endLng) / 2;
-
-                    // 2. Set timeout to change message if slow
                     const slowNetTimer = setTimeout(() => {
                         onTravelStart(`มีการใช้งานอินเตอร์เน็ตเยอะโปรดรอสักครู่...`);
                     }, 2000);
-
-                    // 3. Cache: Start -> Mid -> End
                     const cacheTasks = [
                         checkAndPreloadTiles(startLat, startLng, 9),
                         checkAndPreloadTiles(midLat, midLng, 9),
                         checkAndPreloadTiles(endLat, endLng, 9)
                     ];
-
                     await Promise.all(cacheTasks);
-
-                    // 4. Ready!
                     clearTimeout(slowNetTimer);
                     onTravelStart(`พร้อมออกเดินทางไป ${provName}!`);
-
-                    // 5. Fly
                     setTimeout(() => {
                         const offsetLat = info.lat - 0.15;
                         mapInstance.flyTo([offsetLat, info.lng], 9, { duration: 8, easeLinearity: 0.25 });
@@ -991,18 +903,15 @@
             const resetRegion = () => {
                 setSelectedRegion(null);
                 setSelectedProvince(null);
-                // Fly back to Don Mueang
                 if (mapInstance) mapInstance.flyTo(DON_MUEANG_COORDS, 10, { duration: 4 });
             };
 
-            // Keep this for manual dropdown changes AFTER landing
             const handleProvinceChange = (e) => {
                 const p = e.target.value;
                 setProvince(p);
                 const info = PROVINCE_DATA[p];
                 setSoilInfo(info);
                 setUserHasInteracted(true);
-
                 if (mapInstance && kasetMarkerRef.current) {
                     const offsetLat = info.lat - 0.15;
                     mapInstance.flyTo([offsetLat, info.lng], 10, { duration: 3 });
@@ -1016,30 +925,22 @@
 
             const resultHeaderClass = "w-full min-h-14 flex flex-col justify-center px-4 py-2 bg-black/80 text-white cursor-pointer pointer-events-auto rounded-t-xl border-t border-white/10 backdrop-blur-md";
 
-            // PREPARE PAGINATED RESULTS
-            const totalPages = results ? Math.ceil(results.length / ITEMS_PER_PAGE) : 0;
-            const paginatedResults = results ? results.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE) : [];
-
-            // UPDATED: Adjusted bottom sheet class with Dynamic Viewport Height Logic
+            const totalPages = results ? Math.ceil(results.length / itemsPerPage) : 0;
+            const paginatedResults = results ? results.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage) : [];
             const bottomSheetClass = `absolute bottom-0 left-0 right-0 mx-auto w-full md:max-w-4xl lg:max-w-5xl bg-transparent z-[1000] bottom-sheet flex flex-col pointer-events-none transition-all duration-500 ${isFullSheet || !selectedProvince ? 'h-[90%] max-h-[95dvh]' : 'h-[65%] max-h-[70dvh] landscape:h-[80%]'}`;
 
             return (
                 <div className="relative w-full h-[100dvh] overflow-hidden ui-layer pointer-events-none">
-
-                    {/* Fullscreen Button */}
                     <button onClick={toggleFullScreen} className="absolute top-6 right-6 z-[1050] bg-slate-900/10 backdrop-blur-xl border border-white/20 text-white w-10 h-10 rounded-full flex items-center justify-center hover:bg-slate-800/40 hover:scale-110 transition-all shadow-lg pointer-events-auto">
                         <i className={`fa-solid ${isFullscreen ? 'fa-compress' : 'fa-expand'} text-sm`}></i>
                     </button>
 
-                    {/* Top Controls - Show Dropdown ONLY AFTER Province Selected */}
                     {selectedProvince && (
                         <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[990] w-full pointer-events-auto">
                             <div className={inputContainerClass + " flex flex-row items-center gap-2 justify-center w-fit mx-auto"}>
-                                {/* Back Button */}
                                 <button onClick={resetRegion} className="w-8 h-8 rounded-full bg-slate-700 hover:bg-slate-600 text-white flex items-center justify-center border border-white/20 transition mr-1" title="เปลี่ยนภูมิภาค">
                                     <i className="fa-solid fa-arrow-left"></i>
                                 </button>
-
                                 <div className="relative group">
                                     <i className={`fa-solid fa-location-dot absolute left-2 top-2 text-xs z-10 ${!userHasInteracted ? 'text-yellow-400 animate-bounce' : 'text-emerald-300'}`}></i>
                                     <select className={`w-[140px] py-1.5 pl-7 pr-4 text-xs rounded-full text-white focus:outline-none appearance-none cursor-pointer font-bold ${!userHasInteracted ? 'bg-yellow-500/20 border-yellow-500' : 'bg-transparent border border-white/30'}`}
@@ -1059,7 +960,6 @@
                         </div>
                     )}
 
-                    {/* Overlay - Show ONLY AFTER Province Selected */}
                     {selectedProvince && (
                         <>
                             <div className="absolute top-[80px] left-4 z-[950] pointer-events-none flex flex-col gap-2 text-[10px] md:text-xs text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] max-w-[45%]">
@@ -1102,11 +1002,8 @@
                         </>
                     )}
 
-                    {/* Logic for Bottom Sheet / Menus */}
                     <div className={bottomSheetClass}>
-
                         {!selectedRegion ? (
-                            // MENU 1: REGION SELECTION
                             <div className="flex-1 flex items-center justify-center p-6 pointer-events-auto">
                                 <div className="w-full max-w-2xl grid grid-cols-2 gap-4 animate-fade-in-up">
                                     {Object.keys(regions).map((region) => (
@@ -1129,7 +1026,6 @@
                                 </div>
                             </div>
                         ) : !selectedProvince ? (
-                            // MENU 2: PROVINCE SELECTION
                             <div className="flex-1 flex flex-col items-center p-4 pointer-events-auto bg-black/60 rounded-t-3xl backdrop-blur-sm max-w-2xl mx-auto w-full">
                                 <div className="flex items-center gap-4 mb-4 w-full px-4">
                                     <button onClick={() => setSelectedRegion(null)} className="text-white/70 hover:text-white"><i className="fa-solid fa-arrow-left"></i></button>
@@ -1148,7 +1044,6 @@
                                 </div>
                             </div>
                         ) : (
-                            // RESULT LIST MODE (AFTER LANDING)
                             <>
                                 {isFullSheet && <button onClick={() => setIsFullSheet(false)} className="absolute top-4 right-4 z-[1010] text-white pointer-events-auto"><i className="fa-solid fa-times text-xl"></i></button>}
 
@@ -1160,7 +1055,7 @@
                                         </div>
                                         
                                         <div className="flex items-center gap-3" onClick={(e) => e.stopPropagation()}>
-                                            {results && results.length > ITEMS_PER_PAGE && (
+                                            {results && results.length > itemsPerPage && (
                                                 <div className="flex items-center gap-2 text-xs bg-white/10 rounded-full px-2 py-1">
                                                     <button 
                                                         onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
@@ -1187,9 +1082,8 @@
                                 </div>
 
                                 <div className="flex-1 flex flex-col pointer-events-auto bg-black/60 border-x border-white/10 backdrop-filter-none">
-
-                                    {/* Scrollable Content: FIXED for touch/scroll interaction */}
                                     <div 
+                                        ref={listContainerRef}
                                         className="flex-1 overflow-y-scroll scrollbar-prominent pb-10 pointer-events-auto overscroll-contain" 
                                         style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-y', isolation: 'isolate' }}
                                         onWheel={(e) => { e.stopPropagation(); }}
@@ -1197,20 +1091,16 @@
                                         onTouchStart={(e) => { e.stopPropagation(); }}
                                     >
                                         {results ? paginatedResults.map((item, i) => {
-                                            const realIndex = (currentPage - 1) * ITEMS_PER_PAGE + i;
+                                            const realIndex = (currentPage - 1) * itemsPerPage + i;
                                             return (
                                                 <div key={realIndex} onClick={() => setSimulatingItem(item)}
-                                                    className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-white/10 p-4 cursor-pointer transition hover:bg-white/10 group px-4 md:px-6 w-full gap-3">
-                                                    
-                                                    {/* LEFT PART: RANK & NAME */}
+                                                    className="group flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-white/10 p-4 cursor-pointer transition hover:bg-white/10 px-4 md:px-6 w-full gap-3">
                                                     <div className="flex items-start gap-3 w-full sm:w-auto">
                                                         <div className="w-8 h-8 rounded-full bg-slate-700/50 flex items-center justify-center text-sm font-bold text-emerald-400 border border-emerald-500/30 shrink-0 shadow-lg mt-1 sm:mt-0">
                                                             {realIndex + 1}
                                                         </div>
                                                         <div className="flex flex-col gap-1 w-full">
                                                             <span className="text-base md:text-lg font-bold text-slate-100 leading-snug group-hover:text-yellow-400 transition break-words">{item.name}</span>
-
-                                                            {/* UPDATED: Data Source Badges Layout */}
                                                             <div className="flex flex-wrap items-center gap-2 opacity-80">
                                                                 {item.refSources && item.refSources.map((src, idx) => (
                                                                     <span key={idx} className={`text-[10px] px-2 py-0.5 rounded border ${src.color} ${src.borderColor} ${src.bg} flex items-center gap-1 whitespace-nowrap`}>
@@ -1221,8 +1111,6 @@
                                                             </div>
                                                         </div>
                                                     </div>
-
-                                                    {/* RIGHT PART: STATS & BUTTON */}
                                                     <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-4 pl-11 sm:pl-0 mt-2 sm:mt-0">
                                                         <div className="flex flex-col text-left sm:text-right">
                                                             <span className="text-[10px] text-slate-400 leading-tight">กำไรสุทธิ</span>
@@ -1230,15 +1118,12 @@
                                                                 {item.profitTotal > 0 ? '+' : ''}{item.profitTotal.toLocaleString()}
                                                             </span>
                                                         </div>
-
-                                                        {/* Risk Tag */}
                                                         <div className="flex flex-col text-left sm:text-right w-[60px] sm:w-[80px]">
                                                             <span className="text-[10px] text-slate-400 leading-tight">ความเสี่ยง</span>
                                                             <span className={`text-xs font-bold ${item.risk_level === 'High' ? 'text-red-400' : (item.risk_level === 'Medium' ? 'text-orange-400' : 'text-green-400')}`}>
                                                                 {item.risk_level}
                                                             </span>
                                                         </div>
-
                                                         <button
                                                             onClick={(e) => { e.stopPropagation(); setSimulatingItem(item); }}
                                                             className="w-8 h-8 rounded-full bg-yellow-500 hover:bg-yellow-400 text-slate-900 flex items-center justify-center shadow-[0_0_10px_rgba(234,179,8,0.6)] animate-pulse group-hover:scale-110 transition shrink-0"
@@ -1255,7 +1140,6 @@
                         )}
                     </div>
 
-                    {/* Simulation Modal */}
                     {simulatingItem && <SimulationModal item={simulatingItem} area={area} floodData={floodData} onClose={() => setSimulatingItem(null)} />}
                 </div>
             );
@@ -1273,27 +1157,22 @@
                 }
             };
 
-            // AGGRESSIVE PREFETCHING: HOME SCREEN
             useEffect(() => {
-                // Prefetch Kaset Cloud Start View (Don Mueang Zoom 10)
                 checkAndPreloadTiles(13.9133, 100.6042, 10);
             }, []);
 
             return (
                 <div className="min-h-screen relative flex flex-col items-center justify-center text-white p-6 overflow-hidden ui-layer">
-                    {/* Cloud Layers */}
                     <div className="absolute inset-0 w-full h-full pointer-events-none z-0 overflow-hidden">
                         <div className="cloud-layer opacity-30 mix-blend-screen"></div>
                         <div className="cloud-layer opacity-20 mix-blend-screen" style={{ animationDirection: 'reverse', animationDuration: '60s' }}></div>
                     </div>
 
-                    {/* Fullscreen Button */}
                     <button onClick={toggleFullScreen} className="absolute top-6 right-6 z-50 bg-slate-800/40 backdrop-blur-md border border-white/10 text-white w-10 h-10 rounded-full flex items-center justify-center hover:bg-slate-700/60 hover:scale-110 transition-all shadow-[0_0_15px_rgba(255,255,255,0.1)] group">
                         <i className={`fa-solid ${isFullscreen ? 'fa-compress' : 'fa-expand'} text-sm group-hover:text-emerald-400`}></i>
                     </button>
 
                     <div className="z-20 text-center animate-fade-in-up relative flex flex-col items-center">
-                        {/* Thai Flag */}
                         <div className="relative mb-4 pr-2">
                             <div className="absolute top-0 right-[-3px] w-2 h-2 bg-yellow-400 rounded-full shadow-[0_0_5px_rgba(250,204,21,0.8)] z-20"></div>
                             <div className="absolute top-0 right-[-1px] w-1 h-20 bg-slate-400 rounded-b-full shadow-sm z-0"></div>
@@ -1317,7 +1196,6 @@
                                 <span className="text-xs font-normal opacity-90 block mt-1">(คำนวณความรวยแม่นยำ 99%)</span>
                             </button>
 
-                            {/* MOVED: Footer Section is now here (Inside Flex Container) */}
                             <div className="bg-black/40 px-6 py-4 rounded-xl backdrop-blur-sm border border-white/5 flex flex-col items-center w-full">
                                 <div className="flex flex-wrap justify-center gap-3 mb-3">
                                     <a href="https://line.me/ti/p/-M5tBwhz9j" target="_blank" className="inline-flex items-center justify-center gap-2 bg-[#06C755] hover:bg-[#05a546] text-white py-1 px-3 rounded-full text-xs font-bold shadow-sm transition hover:scale-105">
@@ -1357,7 +1235,6 @@
                 } catch (e) { }
             };
 
-            // GLOBAL MAP INIT
             useEffect(() => {
                 if (!document.getElementById('global-map')) return;
                 const map = L.map('global-map', { zoomControl: false, attributionControl: false, zoomSnap: 0.1, minZoom: 2 }).setView([13.7563, 100.5018], 2.5);
@@ -1392,7 +1269,6 @@
                 setIsTransitioning(true);
                 setTravelState({ active: true, message: 'กำลังเดินทางไปที่ กรุงเทพมหานคร (ดอนเมือง)...' });
                 stopRotation();
-                // Fly to Don Mueang Airport
                 mapRef.current.flyTo(DON_MUEANG_COORDS, 10, { duration: 8, easeLinearity: 0.25 });
                 setTimeout(() => { setPage('kaset'); setIsTransitioning(false); setTravelState({ active: false, message: '' }); }, 8000);
             };
@@ -1411,7 +1287,6 @@
                     <div id="global-map"></div>
                     <CloudOverlay isActive={travelState.active} message={travelState.message} />
 
-                    {/* MOVED: Home Button to Top-Left */}
                     <button onClick={handleGoHome} className="absolute top-6 left-6 z-[1050] bg-slate-900/10 hover:bg-slate-900/30 text-white w-10 h-10 rounded-full flex items-center justify-center backdrop-blur-md border border-white/20 shadow-lg transition-all group pointer-events-auto" title="กลับหน้าแรก">
                         <i className="fa-solid fa-house text-sm group-hover:text-emerald-400"></i>
                     </button>
