@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Winai Innovation Portal - Super App เพื่อคนไทย</title>
 
     <link rel="icon" type="image/svg+xml"
@@ -32,6 +32,8 @@
             color: #f1f5f9;
             overflow: hidden;
             /* Prevent body scroll, handle in app */
+            height: 100dvh;
+            /* Dynamic Viewport Height for Mobile */
         }
 
         /* Leaflet Cursor Fixes */
@@ -174,23 +176,39 @@
             /* เงาสมจริง */
         }
 
-        /* Prominent Scrollbar */
+        /* --- UPDATED: FORCED VISIBLE SCROLLBAR CSS --- */
+        .scrollbar-prominent {
+            /* Standard CSS for Firefox/Modern Browsers */
+            scrollbar-width: thin;
+            /* or auto */
+            scrollbar-color: #fbbf24 #0f172a;
+            /* thumb track */
+        }
+
         .scrollbar-prominent::-webkit-scrollbar {
-            width: 10px;
-            /* Wider scrollbar */
+            width: 12px;
+            /* Increased width for visibility on mobile */
+            height: 12px;
+            display: block;
+            /* Ensure it's displayed */
+            -webkit-appearance: none;
         }
 
         .scrollbar-prominent::-webkit-scrollbar-track {
             background: #0f172a;
-            border-radius: 0 0 10px 0;
+            border-radius: 0;
             border-left: 1px solid #334155;
+            box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.3);
+            /* Inner shadow for depth */
         }
 
         .scrollbar-prominent::-webkit-scrollbar-thumb {
             background: linear-gradient(180deg, #fbbf24, #d97706, #b45309);
-            /* More vivid */
             border-radius: 6px;
             border: 2px solid #0f172a;
+            /* Creates padding effect */
+            min-height: 40px;
+            /* Ensure thumb is never too small */
         }
 
         .scrollbar-prominent::-webkit-scrollbar-thumb:hover {
@@ -1011,11 +1029,11 @@
             const totalPages = results ? Math.ceil(results.length / ITEMS_PER_PAGE) : 0;
             const paginatedResults = results ? results.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE) : [];
 
-            // UPDATED: Adjusted bottom sheet class to be WIDER and TALLER
-            const bottomSheetClass = `absolute bottom-0 left-0 right-0 mx-auto w-full md:max-w-4xl lg:max-w-5xl bg-transparent z-[1000] bottom-sheet flex flex-col pointer-events-none transition-all duration-500 ${isFullSheet || !selectedProvince ? 'h-[90%]' : 'h-[60%] landscape:h-[50%]'}`;
+            // UPDATED: Adjusted bottom sheet class with Dynamic Viewport Height Logic
+            const bottomSheetClass = `absolute bottom-0 left-0 right-0 mx-auto w-full md:max-w-4xl lg:max-w-5xl bg-transparent z-[1000] bottom-sheet flex flex-col pointer-events-none transition-all duration-500 ${isFullSheet || !selectedProvince ? 'h-[90%] max-h-[95dvh]' : 'h-[65%] max-h-[70dvh] landscape:h-[80%]'}`;
 
             return (
-                <div className="relative w-full h-[calc(100vh-60px)] overflow-hidden ui-layer pointer-events-none">
+                <div className="relative w-full h-[100dvh] overflow-hidden ui-layer pointer-events-none">
 
                     {/* Fullscreen Button */}
                     <button onClick={toggleFullScreen} className="absolute top-6 right-6 z-[1050] bg-slate-900/10 backdrop-blur-xl border border-white/20 text-white w-10 h-10 rounded-full flex items-center justify-center hover:bg-slate-800/40 hover:scale-110 transition-all shadow-lg pointer-events-auto">
@@ -1158,26 +1176,24 @@
 
                                 <div className="flex-1 flex flex-col pointer-events-auto bg-black/60 border-x border-white/10 backdrop-filter-none">
 
-                                    {/* Scrollable Content */}
-                                    <div className="flex-1 overflow-y-auto scrollbar-prominent">
+                                    {/* Scrollable Content: CHANGED to force scrollbar */}
+                                    <div className="flex-1 overflow-y-scroll scrollbar-prominent pb-10">
                                         {results ? paginatedResults.map((item, i) => {
                                             const realIndex = (currentPage - 1) * ITEMS_PER_PAGE + i;
                                             return (
                                                 <div key={realIndex} onClick={() => setSimulatingItem(item)}
-                                                    className="flex items-center justify-between border-b border-white/10 p-3 md:p-4 cursor-pointer transition hover:bg-white/10 group px-6 w-full gap-4">
+                                                    className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-white/10 p-4 cursor-pointer transition hover:bg-white/10 group px-4 md:px-6 w-full gap-3">
 
                                                     {/* LEFT PART: RANK & NAME */}
-                                                    <div className="flex items-start md:items-center gap-4 flex-1">
-                                                        <div className="w-8 h-8 rounded-full bg-slate-700/50 flex items-center justify-center text-sm font-bold text-emerald-400 border border-emerald-500/30 shrink-0 shadow-lg">
+                                                    <div className="flex items-start gap-3 w-full sm:w-auto">
+                                                        <div className="w-8 h-8 rounded-full bg-slate-700/50 flex items-center justify-center text-sm font-bold text-emerald-400 border border-emerald-500/30 shrink-0 shadow-lg mt-1 sm:mt-0">
                                                             {realIndex + 1}
                                                         </div>
-                                                        <div className="flex flex-col md:flex-row md:items-center gap-2 w-full">
-                                                            <div className="min-w-[150px]">
-                                                                <span className="text-base md:text-lg font-bold text-slate-100 leading-tight group-hover:text-yellow-400 transition">{item.name}</span>
-                                                            </div>
+                                                        <div className="flex flex-col gap-1 w-full">
+                                                            <span className="text-base md:text-lg font-bold text-slate-100 leading-snug group-hover:text-yellow-400 transition break-words">{item.name}</span>
 
                                                             {/* UPDATED: Data Source Badges Layout */}
-                                                            <div className="flex items-center gap-2 opacity-80 flex-wrap">
+                                                            <div className="flex flex-wrap items-center gap-2 opacity-80">
                                                                 {item.refSources && item.refSources.map((src, idx) => (
                                                                     <span key={idx} className={`text-[10px] px-2 py-0.5 rounded border ${src.color} ${src.borderColor} ${src.bg} flex items-center gap-1 whitespace-nowrap`}>
                                                                         <i className={`fa-solid ${src.icon} text-[9px]`}></i>
@@ -1189,16 +1205,16 @@
                                                     </div>
 
                                                     {/* RIGHT PART: STATS & BUTTON */}
-                                                    <div className="flex flex-col md:flex-row items-end md:items-center gap-2 md:gap-6 text-right shrink-0">
-                                                        <div className="flex flex-col text-right">
+                                                    <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-4 pl-11 sm:pl-0 mt-2 sm:mt-0">
+                                                        <div className="flex flex-col text-left sm:text-right">
                                                             <span className="text-[10px] text-slate-400 leading-tight">กำไรสุทธิ</span>
                                                             <span className={`text-base md:text-xl font-bold ${item.profitTotal > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
                                                                 {item.profitTotal > 0 ? '+' : ''}{item.profitTotal.toLocaleString()}
                                                             </span>
                                                         </div>
 
-                                                        {/* Risk Tag (Hidden on small mobile if crowded, or flexed) */}
-                                                        <div className="hidden sm:flex flex-col text-right w-[80px]">
+                                                        {/* Risk Tag */}
+                                                        <div className="flex flex-col text-left sm:text-right w-[60px] sm:w-[80px]">
                                                             <span className="text-[10px] text-slate-400 leading-tight">ความเสี่ยง</span>
                                                             <span className={`text-xs font-bold ${item.risk_level === 'High' ? 'text-red-400' : (item.risk_level === 'Medium' ? 'text-orange-400' : 'text-green-400')}`}>
                                                                 {item.risk_level}
@@ -1207,9 +1223,9 @@
 
                                                         <button
                                                             onClick={(e) => { e.stopPropagation(); setSimulatingItem(item); }}
-                                                            className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-yellow-500 hover:bg-yellow-400 text-slate-900 flex items-center justify-center shadow-[0_0_10px_rgba(234,179,8,0.6)] animate-pulse group-hover:scale-110 transition"
+                                                            className="w-8 h-8 rounded-full bg-yellow-500 hover:bg-yellow-400 text-slate-900 flex items-center justify-center shadow-[0_0_10px_rgba(234,179,8,0.6)] animate-pulse group-hover:scale-110 transition shrink-0"
                                                         >
-                                                            <i className="fa-solid fa-chevron-right text-xs md:text-sm"></i>
+                                                            <i className="fa-solid fa-chevron-right text-xs"></i>
                                                         </button>
                                                     </div>
                                                 </div>
@@ -1217,15 +1233,15 @@
                                         }) : <div className="text-center p-10 text-slate-500">กำลังวิเคราะห์...</div>}
                                     </div>
 
-                                    {/* Pagination Controls (Always Visible if needed) */}
+                                    {/* Pagination Controls (Sticky Bottom) */}
                                     {results && results.length > ITEMS_PER_PAGE && (
-                                        <div className="h-12 border-t border-white/10 flex items-center justify-center gap-6 bg-slate-900/80 shrink-0 backdrop-blur-md">
+                                        <div className="h-14 border-t border-white/10 flex items-center justify-center gap-6 bg-slate-900/90 shrink-0 backdrop-blur-md pb-safe">
                                             <button
                                                 onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                                                 disabled={currentPage === 1}
                                                 className={`text-sm px-4 py-1.5 rounded-full border transition flex items-center gap-2 ${currentPage === 1 ? 'border-slate-700 text-slate-600' : 'border-emerald-500/50 text-emerald-400 hover:bg-emerald-500/20'}`}
                                             >
-                                                <i className="fa-solid fa-chevron-left"></i> หน้าก่อนหน้า
+                                                <i className="fa-solid fa-chevron-left"></i> ก่อนหน้า
                                             </button>
                                             <span className="text-sm text-slate-400">
                                                 หน้า <span className="text-white font-bold text-lg mx-1">{currentPage}</span> / {totalPages}
@@ -1235,7 +1251,7 @@
                                                 disabled={currentPage === totalPages}
                                                 className={`text-sm px-4 py-1.5 rounded-full border transition flex items-center gap-2 ${currentPage === totalPages ? 'border-slate-700 text-slate-600' : 'border-emerald-500/50 text-emerald-400 hover:bg-emerald-500/20'}`}
                                             >
-                                                หน้าถัดไป <i className="fa-solid fa-chevron-right"></i>
+                                                ถัดไป <i className="fa-solid fa-chevron-right"></i>
                                             </button>
                                         </div>
                                     )}
@@ -1397,7 +1413,7 @@
             };
 
             return (
-                <div className="font-sans text-slate-200 h-screen w-screen overflow-hidden">
+                <div className="font-sans text-slate-200 h-[100dvh] w-screen overflow-hidden">
                     <div id="global-map"></div>
                     <CloudOverlay isActive={travelState.active} message={travelState.message} />
 
