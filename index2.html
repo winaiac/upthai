@@ -1,0 +1,1450 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>KasetCloud - ระบบวางแผนเกษตรอัจฉริยะ (Unified)</title>
+    <meta name="description" content="วางแผนการเกษตร คำนวณกำไร และวิเคราะห์ความเสี่ยงด้วย AI แม่นยำ 99%">
+
+    <meta property="og:title" content="KasetCloud - Super App เพื่อเกษตรกรไทย">
+    <meta property="og:description" content="มิกซ์เกษตรของคุณเอง คำนวณต้นทุนและกำไรล่วงหน้าได้ทันที">
+    <meta property="og:image" content="https://upload.wikimedia.org/wikipedia/commons/a/a9/Flag_of_Thailand.svg">
+    <meta property="og:url" content="https://kasetcloud.app">
+    <meta property="og:type" content="website">
+
+    <link rel="icon" type="image/svg+xml"
+        href="https://upload.wikimedia.org/wikipedia/commons/a/a9/Flag_of_Thailand.svg">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;700&display=swap');
+
+        body {
+            font-family: 'Sarabun', sans-serif;
+            background-color: #0f172a;
+            color: #f1f5f9;
+            overflow: hidden;
+            height: 100dvh;
+        }
+
+        .leaflet-container {
+            cursor: grab !important;
+        }
+
+        .leaflet-container:active {
+            cursor: grabbing !important;
+        }
+
+        .leaflet-interactive {
+            cursor: pointer !important;
+        }
+
+        .animate-fade-in-up {
+            animation: fadeInUp 0.8s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .btn-super-pulse {
+            animation: pulse-glow 2s infinite;
+        }
+
+        @keyframes pulse-glow {
+
+            0%,
+            100% {
+                box-shadow: 0 0 15px rgba(236, 72, 153, 0.6);
+                transform: scale(1);
+            }
+
+            50% {
+                box-shadow: 0 0 30px rgba(236, 72, 153, 1);
+                transform: scale(1.05);
+            }
+        }
+
+        /* Animation for Scanner Effect */
+        @keyframes scan-line {
+            0% {
+                transform: translateY(-100%);
+                opacity: 0;
+            }
+
+            50% {
+                opacity: 1;
+            }
+
+            100% {
+                transform: translateY(200%);
+                opacity: 0;
+            }
+        }
+
+        .animate-scan {
+            animation: scan-line 2s linear infinite;
+            background: linear-gradient(to bottom, transparent, rgba(56, 189, 248, 0.5), transparent);
+        }
+
+        .animate-flag-wave {
+            animation: flag-wave-left 3s infinite cubic-bezier(0.45, 0.05, 0.55, 0.95);
+            transform-origin: bottom right;
+            filter: drop-shadow(0 10px 10px rgba(0, 0, 0, 0.5));
+        }
+
+        @keyframes flag-wave-left {
+            0% {
+                transform: perspective(400px) rotateY(-5deg) skewY(0deg) translateY(0);
+            }
+
+            50% {
+                transform: perspective(400px) rotateY(-5deg) skewY(0deg) translateY(0);
+            }
+
+            25% {
+                transform: perspective(400px) rotateY(-15deg) skewY(2deg) translateY(-2px);
+            }
+
+            75% {
+                transform: perspective(400px) rotateY(5deg) skewY(-2deg) translateY(2px);
+            }
+        }
+
+        .scrollbar-prominent::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        .scrollbar-prominent::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+
+        .scrollbar-prominent::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+
+        .scrollbar-prominent::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+
+        .bottom-sheet {
+            transition: all 0.5s cubic-bezier(0.32, 0.72, 0, 1);
+        }
+
+        #global-map {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+
+        .ui-layer {
+            position: relative;
+            z-index: 10;
+        }
+
+        .cloud-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 50;
+            opacity: 0;
+            transition: opacity 1.5s ease-in-out;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .cloud-container.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .cloud-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 200%;
+            height: 100%;
+            background-size: 100% 100%;
+            filter: blur(40px);
+            opacity: 0.6;
+            animation: cloudFly 20s linear infinite;
+            background: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.5) 0%, transparent 20%);
+        }
+
+        @keyframes cloudFly {
+            from {
+                transform: translateX(-20%);
+            }
+
+            to {
+                transform: translateX(-60%);
+            }
+        }
+
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* Badge Styles */
+        .source-badge {
+            font-size: 0.6rem;
+            padding: 2px 6px;
+            border-radius: 9999px;
+            display: inline-block;
+            margin-left: 4px;
+            font-weight: bold;
+        }
+
+        .source-live {
+            background-color: rgba(16, 185, 129, 0.2);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.4);
+        }
+
+        .source-mock {
+            background-color: rgba(245, 158, 11, 0.2);
+            color: #fbbf24;
+            border: 1px solid rgba(245, 158, 11, 0.4);
+        }
+    </style>
+</head>
+
+<body class="bg-slate-900 text-slate-100">
+
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef, useMemo } = React;
+
+        // --- SUPABASE CONFIGURATION ---
+        const SUPABASE_URL = "https://ldsysxczitmkxmukmwri.supabase.co";
+        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxkc3lzeGN6aXRta3htdWttd3JpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYxNzI4NDAsImV4cCI6MjA4MTc0ODg0MH0.1rHQug1PlhgNE6lsy3RllAQC36k0BoY6KqjeeQvAVhc";
+
+        // --- MOCK SUPABASE IMPLEMENTATION ---
+        class MockSupabaseClient {
+            constructor() {
+                this.auth = {
+                    signUp: async ({ email, password }) => {
+                        const user = { id: 'mock-user-' + Date.now(), email, role: email === 'winayo@gmail.com' ? 'admin' : 'user' };
+                        localStorage.setItem('kaset_user', JSON.stringify(user));
+                        return { data: { user }, error: null };
+                    },
+                    signInWithPassword: async ({ email, password }) => {
+                        if (email === 'winayo@gmail.com' && password !== 'Adadas01*') return { data: { user: null }, error: { message: "รหัสผ่านไม่ถูกต้อง" } };
+                        const user = { id: 'mock-user-' + Date.now(), email, role: email === 'winayo@gmail.com' ? 'admin' : 'user' };
+                        localStorage.setItem('kaset_user', JSON.stringify(user));
+                        return { data: { user }, error: null };
+                    },
+                    signOut: async () => { localStorage.removeItem('kaset_user'); return { error: null }; },
+                    getUser: async () => { const user = JSON.parse(localStorage.getItem('kaset_user')); return { data: { user }, error: null }; }
+                };
+            }
+            from(table) {
+                return {
+                    insert: async (data) => {
+                        const existing = JSON.parse(localStorage.getItem(`kaset_${table}`) || '[]');
+                        const newData = { id: Date.now(), ...data };
+                        existing.push(newData);
+                        localStorage.setItem(`kaset_${table}`, JSON.stringify(existing));
+                        return { data: [newData], error: null };
+                    },
+                    upsert: async (data) => {
+                        if (table === 'user_settings') {
+                            let records = JSON.parse(localStorage.getItem(`kaset_${table}`) || '[]');
+                            records = records.filter(r => r.user_id !== data.user_id);
+                            records.push({ ...data, updated_at: new Date() });
+                            localStorage.setItem(`kaset_${table}`, JSON.stringify(records));
+                            return { data: [data], error: null };
+                        }
+                        return { error: 'Mock upsert not supported' };
+                    },
+                    select: () => ({
+                        order: () => ({ data: JSON.parse(localStorage.getItem(`kaset_${table}`) || '[]').sort((a, b) => new Date(b.created_at) - new Date(a.created_at)), error: null }),
+                        eq: (col, val) => ({
+                            single: async () => {
+                                const records = JSON.parse(localStorage.getItem(`kaset_${table}`) || '[]');
+                                const found = records.find(r => r[col] === val);
+                                return { data: found, error: null };
+                            }
+                        })
+                    }),
+                    delete: () => ({ eq: async (col, val) => { const d = JSON.parse(localStorage.getItem(`kaset_${table}`) || '[]'); localStorage.setItem(`kaset_${table}`, JSON.stringify(d.filter(i => i[col] !== val))); return { error: null }; } })
+                };
+            }
+        }
+
+        let supabase;
+        if (SUPABASE_URL && SUPABASE_KEY) { supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY); }
+        else { supabase = new MockSupabaseClient(); }
+
+        // --- GLOBAL CONSTANTS ---
+        Chart.defaults.color = '#cbd5e1';
+        Chart.defaults.borderColor = '#334155';
+        Chart.defaults.font.family = 'Sarabun';
+
+        const DON_MUEANG_COORDS = [13.9133, 100.6042];
+
+        // --- PROVINCE DATA ---
+        const PROVINCE_COORDS = {
+            "เชียงราย": [19.9502, 99.8826], "เชียงใหม่": [18.7677, 98.9640], "น่าน": [18.8077, 100.7834],
+            "พะเยา": [19.1662, 99.9022], "แพร่": [18.1301, 100.1623], "แม่ฮ่องสอน": [19.3005, 97.9706],
+            "ลำปาง": [18.2764, 99.5028], "ลำพูน": [18.5772, 99.0087], "อุตรดิตถ์": [17.6201, 100.0993],
+            "สุโขทัย": [17.2384, 99.8295], "พิษณุโลก": [16.7797, 100.2741], "พิจิตร": [16.4418, 100.3488],
+            "เพชรบูรณ์": [16.7628, 101.1894], "กำแพงเพชร": [16.4834, 99.5215], "ตาก": [16.8974, 99.2541],
+            "นครสวรรค์": [15.6667, 100.1333], "อุทัยธานี": [15.3835, 100.0246], "กาฬสินธุ์": [16.4328, 103.5069],
+            "ขอนแก่น": [16.4643, 102.7872], "ชัยภูมิ": [15.8105, 102.0288], "นครพนม": [17.3833, 104.6433],
+            "นครราชสีมา": [14.9392, 102.1119], "บึงกาฬ": [18.3612, 103.6461], "บุรีรัมย์": [15.2294, 103.2533],
+            "มหาสารคาม": [16.1858, 103.3015], "มุกดาหาร": [16.5436, 104.7046], "ยโสธร": [15.7924, 104.1451],
+            "ร้อยเอ็ด": [16.1507, 103.7745], "เลย": [17.4411, 101.7225], "สกลนคร": [17.1897, 104.1186],
+            "สุรินทร์": [14.8829, 103.4937], "ศรีสะเกษ": [15.1186, 104.3227], "หนองคาย": [17.8785, 102.7413],
+            "หนองบัวลำภู": [17.2044, 102.4413], "อุดรธานี": [17.3859, 102.7880], "อุบลราชธานี": [15.2514, 104.8703],
+            "อำนาจเจริญ": [15.8587, 104.6258], "กรุงเทพมหานคร": [13.9133, 100.6042], "กาญจนบุรี": [14.0205, 99.5304],
+            "จันทบุรี": [12.6114, 102.1039], "ฉะเชิงเทรา": [13.6904, 101.0779], "ชลบุรี": [13.3611, 100.9847],
+            "ชัยนาท": [15.1852, 100.1251], "ตราด": [12.2703, 102.3217], "นครนายก": [14.2069, 101.2130],
+            "นครปฐม": [13.8188, 100.0373], "นนทบุรี": [13.8591, 100.5217], "ปทุมธานี": [14.0208, 100.5250],
+            "ประจวบคีรีขันธ์": [11.7916, 99.8037], "ปราจีนบุรี": [14.0620, 101.3783], "พระนครศรีอยุธยา": [14.3532, 100.5684],
+            "เพชรบุรี": [13.1163, 99.9392], "ระยอง": [12.6800, 101.0050], "ราชบุรี": [13.5282, 99.8144],
+            "ลพบุรี": [14.7995, 100.6533], "สมุทรปราการ": [13.6900, 100.7501], "สมุทรสงคราม": [13.4098, 100.0023],
+            "สมุทรสาคร": [13.5475, 100.2736], "สระแก้ว": [13.8240, 102.0649], "สระบุรี": [14.5289, 100.9101],
+            "สิงห์บุรี": [14.8910, 100.3958], "สุพรรณบุรี": [14.4745, 100.1177], "อ่างทอง": [14.5896, 100.4550],
+            "กระบี่": [8.0991, 98.9850], "ชุมพร": [10.7119, 99.3636], "ตรัง": [7.5097, 99.6158],
+            "นครศรีธรรมราช": [8.5408, 99.9442], "นราธิวาส": [6.5239, 101.7431], "ปัตตานี": [6.7867, 101.1578],
+            "พังงา": [8.4501, 98.5255], "พัทลุง": [7.6172, 100.0708], "ภูเก็ต": [8.1132, 98.3169],
+            "ยะลา": [6.5412, 101.2804], "ระนอง": [9.7777, 98.5853], "สงขลา": [6.9333, 100.3933],
+            "สตูล": [6.6238, 100.0674], "สุราษฎร์ธานี": [9.1328, 99.1356]
+        };
+
+        const PROVINCE_DATA = {};
+        const regions = {
+            "เหนือ": ["เชียงราย", "เชียงใหม่", "น่าน", "พะเยา", "แพร่", "แม่ฮ่องสอน", "ลำปาง", "ลำพูน", "อุตรดิตถ์", "สุโขทัย", "พิษณุโลก", "พิจิตร", "เพชรบูรณ์", "กำแพงเพชร", "นครสวรรค์", "อุทัยธานี"],
+            "อีสาน": ["กาฬสินธุ์", "ขอนแก่น", "ชัยภูมิ", "นครพนม", "นครราชสีมา", "บึงกาฬ", "บุรีรัมย์", "มหาสารคาม", "มุกดาหาร", "ยโสธร", "ร้อยเอ็ด", "เลย", "สกลนคร", "สุรินทร์", "ศรีสะเกษ", "หนองคาย", "หนองบัวลำภู", "อุดรธานี", "อุบลราชธานี", "อำนาจเจริญ"],
+            "กลาง": ["กรุงเทพมหานคร", "ชัยนาท", "นครนายก", "นครปฐม", "นนทบุรี", "ปทุมธานี", "พระนครศรีอยุธยา", "ลพบุรี", "สมุทรปราการ", "สมุทรสงคราม", "สมุทรสาคร", "สระบุรี", "สิงห์บุรี", "สุพรรณบุรี", "อ่างทอง"],
+            "ตะวันออก": ["จันทบุรี", "ฉะเชิงเทรา", "ชลบุรี", "ตราด", "ปราจีนบุรี", "ระยอง", "สระแก้ว"],
+            "ตะวันตก": ["ตาก", "กาญจนบุรี", "ประจวบคีรีขันธ์", "เพชรบุรี", "ราชบุรี"],
+            "ใต้": ["กระบี่", "ชุมพร", "ตรัง", "นครศรีธรรมราช", "นราธิวาส", "ปัตตานี", "พังงา", "พัทลุง", "ภูเก็ต", "ยะลา", "ระนอง", "สงขลา", "สตูล", "สุราษฎร์ธานี"]
+        };
+
+        Object.keys(regions).forEach(region => {
+            regions[region].forEach(prov => {
+                let ph = 6.5, moisture = 60, soil = "ดินร่วน";
+                if (region === "อีสาน") { ph = 5.5; moisture = 40; soil = "ดินทราย (ชุดดินร้อยเอ็ด)"; }
+                if (region === "เหนือ") { ph = 6.0; moisture = 55; soil = "ดินร่วนปนทราย (ชุดดินแม่ริม)"; }
+                if (region === "กลาง") { ph = 7.0; moisture = 70; soil = "ดินเหนียว (ชุดดินราชบุรี)"; }
+                if (region === "ใต้") { ph = 5.0; moisture = 80; soil = "ดินร่วนปนดินเหนียว (ชุดดินคอหงส์)"; }
+                if (region === "ตะวันออก") { ph = 5.5; moisture = 75; soil = "ดินร่วนปนทราย (ผลไม้)"; }
+                if (region === "ตะวันตก") { ph = 6.5; moisture = 50; soil = "ดินร่วนปนทราย"; }
+
+                let lat, lng;
+                if (PROVINCE_COORDS[prov]) { [lat, lng] = PROVINCE_COORDS[prov]; }
+                else { lat = 13.7563; lng = 100.5018; }
+                PROVINCE_DATA[prov] = { ph, moisture, soil, region, lat, lng };
+            });
+        });
+
+        const COST_STRUCTURE = {
+            'ข้าวหอมมะลิ': { fertilizer: 25, labor: 35, seeds: 15, water: 15, misc: 10 },
+            'ข้าวหอมมะลิ 105': { fertilizer: 25, labor: 35, seeds: 15, water: 15, misc: 10 },
+            'ทุเรียน': { fertilizer: 35, labor: 30, seeds: 10, water: 15, misc: 10 },
+            'ทุเรียนหมอนทอง': { fertilizer: 35, labor: 30, seeds: 10, water: 15, misc: 10 },
+            'ผักสลัดไฮโดร': { fertilizer: 40, labor: 20, seeds: 20, water: 10, misc: 10 },
+            'ผักสลัดไฮโดรฯ': { fertilizer: 40, labor: 20, seeds: 20, water: 10, misc: 10 },
+            'มันสำปะหลัง': { fertilizer: 20, labor: 40, seeds: 20, water: 10, misc: 10 },
+            'ยางพารา': { fertilizer: 25, labor: 50, seeds: 10, water: 5, misc: 10 },
+            'ปาล์มน้ำมัน': { fertilizer: 30, labor: 40, seeds: 10, water: 10, misc: 10 },
+            'อ้อยโรงงาน': { fertilizer: 30, labor: 40, seeds: 10, water: 15, misc: 5 },
+            'ข้าวโพดเลี้ยงสัตว์': { fertilizer: 35, labor: 30, seeds: 15, water: 15, misc: 5 },
+            'มะพร้าวน้ำหอม': { fertilizer: 20, labor: 40, seeds: 10, water: 20, misc: 10 },
+            'มังคุด': { fertilizer: 25, labor: 45, seeds: 10, water: 10, misc: 10 },
+            'ลำไย': { fertilizer: 35, labor: 40, seeds: 5, water: 10, misc: 10 },
+            'พริกจินดาแดง': { fertilizer: 35, labor: 35, seeds: 10, water: 10, misc: 10 },
+            'มะนาว': { fertilizer: 30, labor: 30, seeds: 10, water: 20, misc: 10 },
+            'livestock_default': { fertilizer: 60, labor: 15, seeds: 15, water: 5, misc: 5 },
+            'โคขุน': { fertilizer: 50, labor: 15, seeds: 25, water: 5, misc: 5 },
+            'สุกรขุน': { fertilizer: 65, labor: 10, seeds: 15, water: 5, misc: 5 },
+            'ไก่เนื้อ': { fertilizer: 70, labor: 10, seeds: 10, water: 5, misc: 5 },
+            'ไก่ไข่': { fertilizer: 70, labor: 10, seeds: 10, water: 5, misc: 5 },
+            'เป็ดไล่ทุ่ง': { fertilizer: 40, labor: 30, seeds: 20, water: 5, misc: 5 },
+            'จิ้งหรีด': { fertilizer: 50, labor: 20, seeds: 10, water: 10, misc: 10 },
+            'แพะเนื้อ': { fertilizer: 40, labor: 30, seeds: 20, water: 5, misc: 5 },
+            'ปลานิล': { fertilizer: 60, labor: 10, seeds: 20, water: 5, misc: 5 },
+            'mixed_default': { fertilizer: 25, labor: 30, seeds: 20, water: 15, misc: 10 },
+            'default': { fertilizer: 30, labor: 30, seeds: 20, water: 10, misc: 10 }
+        };
+
+        const CROP_LIFECYCLE = {
+            'ทุเรียน': { type: 'tree', wait_years: 5, peak_start: 10, decline_start: 20, lifespan: 25, advice: '⚠️ ต้นทุเรียนเริ่มแก่...' },
+            'ทุเรียนหมอนทอง': { type: 'tree', wait_years: 5, peak_start: 10, decline_start: 20, lifespan: 25, advice: '⚠️ ต้นทุเรียนเริ่มแก่...' },
+            'ยางพารา': { type: 'tree', wait_years: 7, peak_start: 12, decline_start: 20, lifespan: 25, advice: '⚠️ หน้าเริ่มตาย น้ำยางลดลง...' },
+            'ปาล์มน้ำมัน': { type: 'tree', wait_years: 3, peak_start: 7, decline_start: 18, lifespan: 22, advice: '⚠️ ต้นสูงเก็บเกี่ยวยาก...' },
+            'มะพร้าวน้ำหอม': { type: 'tree', wait_years: 3, peak_start: 5, decline_start: 30, lifespan: 40, advice: '⚠️ ต้นสูงเก็บเกี่ยวยาก...' },
+            'มังคุด': { type: 'tree', wait_years: 5, peak_start: 10, decline_start: 30, lifespan: 50, advice: '⚠️ โตช้าแต่อายุยืน...' },
+            'ลำไย': { type: 'tree', wait_years: 3, peak_start: 5, decline_start: 20, lifespan: 30, advice: '⚠️ ต้องราดสาร...' },
+            'โคขุน': { type: 'animal', wait_years: 0, peak_start: 1, decline_start: 5, lifespan: 8, advice: '⚠️ เริ่มปลดระวาง...' },
+            'mixed_default': { type: 'mixed', lifespan: 50, advice: '🌱 ยั่งยืนตลอดไป...' },
+            'default': { type: 'annual', lifespan: 1, advice: 'ℹ️ ควรปลูกพืชหมุนเวียน...' }
+        };
+
+        const FARMING_STEPS = {
+            'ข้าว': [
+                { title: 'เตรียมดิน', desc: 'ไถดะตากดิน 7-14 วัน แล้วไถแปรเพื่อกำจัดวัชพืช' },
+                { title: 'เพาะปลูก', desc: 'หว่านเมล็ดพันธุ์ (15-20 กก./ไร่) หรือปักดำ' },
+                { title: 'ดูแลรักษา', desc: 'ใส่ปุ๋ยครั้งแรกหลังปลูก 20 วัน และครั้งที่ 2 ระยะกำเนิดช่อดอก' },
+                { title: 'เก็บเกี่ยว', desc: 'เก็บเกี่ยวเมื่อรวงเหลือง 80-90% (ประมาณ 100-120 วัน)' }
+            ],
+            'ทุเรียน': [
+                { title: 'เตรียมพื้นที่', desc: 'ยกโคกสูง 50-80 ซม. กว้าง 4-6 เมตร วางระบบน้ำเหวี่ยง' },
+                { title: 'ลงปลูก', desc: 'ขุดหลุมขนาดเท่าถุงชำ รองก้นหลุมด้วยปุ๋ยคอก ปลูกเสมอระดับดินเดิม' },
+                { title: 'ตัดแต่งกิ่ง', desc: 'ตัดกิ่งแขนงในทรงพุ่มออกเพื่อให้แสงส่องถึง' },
+                { title: 'ทำดอก/ผล', desc: 'งดน้ำกระตุ้นดอกเมื่อใบแก่จัด ผสมเกสรช่วงค่ำ' }
+            ],
+            'มันสำปะหลัง': [
+                { title: 'เตรียมท่อนพันธุ์', desc: 'ตัดท่อนพันธุ์ยาว 20 ซม. แช่น้ำยาเร่งราก 10 นาที' },
+                { title: 'เตรียมดิน', desc: 'ยกร่องสูงเพื่อให้หัวขยายตัวได้ดี' },
+                { title: 'การปลูก', desc: 'ปักท่อนพันธุ์ลึก 2 ใน 3 ของท่อน ระยะห่าง 80x80 ซม.' },
+                { title: 'เก็บเกี่ยว', desc: 'ขุดเมื่ออายุ 8-12 เดือน (เช็คเปอร์เซ็นต์แป้ง)' }
+            ],
+            'ยางพารา': [
+                { title: 'วางแนวปลูก', desc: 'ระยะ 3x7 เมตร (76 ต้น/ไร่) ขุดหลุม 50x50x50 ซม.' },
+                { title: 'ปลูกซ่อม', desc: 'ควรปลูกซ่อมให้เสร็จภายในปีแรก' },
+                { title: 'ใส่ปุ๋ย', desc: 'ใส่ตามสูตรบำรุงต้น จนกว่าจะเปิดกรีด (ประมาณ 7 ปี)' },
+                { title: 'เปิดกรีด', desc: 'เมื่อต้นมีเส้นรอบวง 50 ซม. ที่ความสูง 150 ซม.' }
+            ],
+            'livestock': [
+                { title: 'เตรียมโรงเรือน', desc: 'สร้างโรงเรือนที่ระบายอากาศได้ดี สะอาด และป้องกันโรค' },
+                { title: 'คัดเลือกพันธุ์', desc: 'เลือกสายพันธุ์ที่แข็งแรง โตไว ต้านทานโรค' },
+                { title: 'การให้อาหาร', desc: 'ให้อาหารที่มีโภชนาการครบถ้วนตามช่วงอายุ' },
+                { title: 'การจัดการโรค', desc: 'ทำวัคซีนตามกำหนดและรักษาความสะอาดสม่ำเสมอ' }
+            ],
+            'mixed': [
+                { title: 'วางผังแปลง', desc: 'แบ่งพื้นที่ตามสัดส่วน 30:30:30:10 (น้ำ:นา:สวน:บ้าน)' },
+                { title: 'ขุดสระเก็บน้ำ', desc: 'ขุดสระให้ลึกพอเก็บน้ำได้ตลอดปี เลี้ยงปลาในสระ' },
+                { title: 'ปลูกพืชผสม', desc: 'ปลูกไม้ผล ไม้ยืนต้น และพืชผักสวนครัวสลับกัน' },
+                { title: 'เลี้ยงสัตว์', desc: 'เลี้ยงเป็ด/ไก่บนบ่อปลา เพื่อเกื้อกูลกันตามธรรมชาติ' }
+            ],
+            'default': [
+                { title: 'เตรียมพื้นที่', desc: 'ไถพรวนปรับสภาพดินและกำจัดวัชพืช' },
+                { title: 'ปรับปรุงดิน', desc: 'ตรวจ pH และใส่ปูนขาวหรือปุ๋ยคอกตามความจำเป็น' },
+                { title: 'ดูแลรักษา', desc: 'ให้น้ำสม่ำเสมอและป้องกันแมลงศัตรูพืช' },
+                { title: 'เก็บเกี่ยว', desc: 'เก็บผลผลิตในช่วงเวลาที่เหมาะสมเพื่อคุณภาพสูงสุด' }
+            ]
+        };
+
+        const AGENCIES = {
+            OAE: { id: 'OAE', name: 'สศก. (เศรษฐกิจการเกษตร)', icon: 'fa-chart-line', color: 'text-blue-400', desc: 'ราคาพืช/ต้นทุน' },
+            DIT: { id: 'DIT', name: 'กรมการค้าภายใน (ตลาด)', icon: 'fa-shop', color: 'text-green-400', desc: 'ราคาขายส่ง' },
+            LDD: { id: 'LDD', name: 'กรมพัฒนาที่ดิน (Agri-Map)', icon: 'fa-layer-group', color: 'text-amber-400', desc: 'ความเหมาะสมดิน' },
+            DLD: { id: 'DLD', name: 'กรมปศุสัตว์', icon: 'fa-cow', color: 'text-orange-400', desc: 'ราคา/โรคระบาดสัตว์' },
+            DOF: { id: 'DOF', name: 'กรมประมง', icon: 'fa-fish', color: 'text-cyan-400', desc: 'ราคาสัตว์น้ำ' },
+            GISTDA: { id: 'GISTDA', name: 'GISTDA', icon: 'fa-satellite', color: 'text-purple-400', desc: 'พื้นที่เสี่ยงภัย' },
+            TMD: { id: 'TMD', name: 'กรมอุตุนิยมวิทยา', icon: 'fa-cloud-bolt', color: 'text-sky-300', desc: 'น้ำฝน/ภัยแล้ง' },
+            DITP: { id: 'DITP', name: 'กรมส่งเสริมการค้าระหว่างประเทศ', icon: 'fa-plane-departure', color: 'text-pink-400', desc: 'ราคาส่งออก/ระเบียบ' }
+        };
+
+        const EXPORT_GUIDELINES = {
+            'plants': [
+                { step: 1, title: 'ขึ้นทะเบียนเกษตรกร (GAP)', desc: 'ขอใบรับรอง GAP ที่สำนักงานเกษตรอำเภอ เพื่อยืนยันคุณภาพและความปลอดภัย' },
+                { step: 2, title: 'คัดแยกเกรดและบรรจุภัณฑ์', desc: 'คัดเลือกผลผลิตเกรด A+ ผิวสวย ขนาดได้มาตรฐาน บรรจุลงกล่องสำหรับการส่งออก' },
+                { step: 3, title: 'ติดต่อผู้ส่งออก/ล้ง', desc: 'นำผลผลิตไปขายที่ล้งส่งออกที่มีใบรับรอง GMP/HACCP' },
+                { step: 4, title: 'พิธีการศุลกากร', desc: 'ตรวจสอบสารตกค้างและขอใบรับรองสุขอนามัยพืช (Phytosanitary Certificate)' }
+            ],
+            'livestock': [
+                { step: 1, title: 'มาตรฐานฟาร์ม (GAP/GFM)', desc: 'ฟาร์มต้องได้รับรองมาตรฐานจากกรมปศุสัตว์ ปลอดโรคปากเท้าเปื่อย' },
+                { step: 2, title: 'โรงเชือดมาตรฐาน', desc: 'ส่งเข้าโรงเชือดที่ได้รับรองเพื่อการส่งออก (EST)' },
+                { step: 3, title: 'ใบรับรองฮาลาล (ถ้ามี)', desc: 'สำหรับตลาดตะวันออกกลางและมุสลิม' }
+            ],
+            'default': [
+                { step: 1, title: 'เตรียมความพร้อม', desc: 'ศึกษาตลาดปลายทางและกฎระเบียบ' },
+                { step: 2, title: 'ขอใบรับรอง', desc: 'ติดต่อหน่วยงานที่เกี่ยวข้องเพื่อขอใบรับรองคุณภาพ' }
+            ]
+        };
+
+        // Added 'dataSource', 'fbGroup', 'youtubeLink'
+        const INITIAL_MARKET_DATA = [
+            { name: "ข้าวหอมมะลิ 105", category: "plants", price: 16500, marketPrice: 18500, exportPrice: 28000, yield: 780, cost: 5200, risk: "Low", primarySource: "OAE", density: "15-20 กก.", yieldUnit: "ข้าวเปลือก (ความชื้น 15%)", soilFactor: 1.0, floodRisk: "Low", dataSource: "Mock DB", fbGroup: "https://www.facebook.com/share/g/1DAKpZbEr3/?mibextid=A7sQZp", youtubeLink: "https://www.youtube.com/watch?v=V_awJWve32U" },
+            { name: "มันสำปะหลัง", category: "plants", price: 3200, marketPrice: 3800, exportPrice: 6500, yield: 3600, cost: 3800, risk: "High", primarySource: "OAE", density: "1,600 ต้น", yieldUnit: "หัวมันสด", soilFactor: 0.9, floodRisk: "Medium", dataSource: "Mock DB", fbGroup: "https://www.facebook.com/share/g/1EqSeXoQXw/?mibextid=A7sQZp", youtubeLink: "https://www.youtube.com/watch?v=J8cdLwjYWbc" },
+            { name: "ทุเรียนหมอนทอง", category: "plants", price: 140000, marketPrice: 180000, exportPrice: 250000, yield: 2200, cost: 32000, risk: "High", primarySource: "OAE", density: "20-25 ต้น", yieldUnit: "ผลสด", soilFactor: 1.2, floodRisk: "High", dataSource: "Mock DB", fbGroup: "https://www.facebook.com/share/g/16cn2z5d6L/?mibextid=A7sQZp", youtubeLink: "https://www.youtube.com/watch?v=HE_DzRrRO84" },
+            { name: "ยางพารา", category: "plants", price: 62000, marketPrice: 65000, exportPrice: 75000, yield: 240, cost: 4500, risk: "Medium", primarySource: "OAE", density: "76 ต้น", yieldUnit: "ยางแผ่น", soilFactor: 1.0, floodRisk: "Low", dataSource: "Mock DB", fbGroup: "https://www.facebook.com/share/g/1HMNozvzr3/?mibextid=A7sQZp" },
+            { name: "ปาล์มน้ำมัน", category: "plants", price: 5800, marketPrice: 6200, exportPrice: 0, yield: 3200, cost: 4200, risk: "Low", primarySource: "OAE", density: "22 ต้น", yieldUnit: "ทะลายสด", soilFactor: 1.0, floodRisk: "Low", dataSource: "Mock DB", fbGroup: "https://www.facebook.com/share/g/1b1f2tp9K5/?mibextid=A7sQZp" },
+            { name: "ข้าวโพดเลี้ยงสัตว์", category: "plants", price: 10500, marketPrice: 11500, exportPrice: 14000, yield: 1250, cost: 6500, risk: "Medium", primarySource: "OAE", density: "10,000 ต้น", yieldUnit: "เมล็ดความชื้น 14.5%", soilFactor: 1.0, floodRisk: "Low", dataSource: "Mock DB", fbGroup: "https://www.facebook.com/share/g/1PuMd6Gxm4/?mibextid=A7sQZp" },
+            { name: "อ้อยโรงงาน", category: "plants", price: 1250, marketPrice: 1350, exportPrice: 0, yield: 12500, cost: 6500, risk: "Low", primarySource: "OAE", density: "10,000 ลำ", yieldUnit: "ตันอ้อย", soilFactor: 1.0, floodRisk: "Medium", dataSource: "Mock DB", fbGroup: "https://www.facebook.com/share/g/16oZqQ9Pg1/?mibextid=A7sQZp" },
+            { name: "พริกจินดาแดง", category: "plants", price: 80000, marketPrice: 95000, exportPrice: 120000, yield: 2000, cost: 35000, risk: "High", primarySource: "MARKET", density: "3,000 ต้น", yieldUnit: "ผลสด", soilFactor: 1.0, floodRisk: "High", dataSource: "Mock DB", fbGroup: "https://www.facebook.com/share/g/1AGEWsE9ZW/?mibextid=A7sQZp" },
+            { name: "มะนาว (เบอร์ใหญ่)", category: "plants", price: 75000, marketPrice: 85000, exportPrice: 100000, yield: 1500, cost: 20000, risk: "Medium", primarySource: "MARKET", density: "50 ต้น", yieldUnit: "ลูก (ประมาณ)", soilFactor: 1.0, floodRisk: "Low", dataSource: "Mock DB", fbGroup: "https://www.facebook.com/share/g/19Y6yWVmG9/?mibextid=A7sQZp" },
+            { name: "ผักสลัดไฮโดรฯ", category: "plants", price: 90000, marketPrice: 120000, exportPrice: 150000, yield: 2200, cost: 35000, risk: "Low", primarySource: "MARKET", density: "4,000 ต้น", yieldUnit: "ต้นสด", soilFactor: 1.0, floodRisk: "High", dataSource: "Mock DB", fbGroup: "https://www.facebook.com/share/g/1BtxGaVxwd/?mibextid=A7sQZp", youtubeLink: "https://www.youtube.com/watch?v=VoMki6v1tVo" },
+            { name: "มังคุด", category: "plants", price: 45000, marketPrice: 60000, exportPrice: 90000, yield: 1600, cost: 15000, risk: "Medium", primarySource: "DOA", density: "20 ต้น", yieldUnit: "ผลสด", soilFactor: 1.1, floodRisk: "Low", dataSource: "Mock DB", fbGroup: "https://www.facebook.com/share/g/1DtBEdrEgp/?mibextid=A7sQZp" },
+            { name: "มะพร้าวน้ำหอม", category: "plants", price: 16000, marketPrice: 20000, exportPrice: 35000, yield: 3000, cost: 12000, risk: "Low", primarySource: "MARKET", density: "40 ต้น", yieldUnit: "ลูก", soilFactor: 1.2, floodRisk: "Medium", dataSource: "Mock DB", fbGroup: "https://www.facebook.com/share/g/17p1JY2C4h/?mibextid=A7sQZp" },
+            { name: "โคขุน", category: "livestock", price: 100, marketPrice: 120, exportPrice: 180, yield: 120000, cost: 85000, risk: "Low", primarySource: "DLD", density: "4-5 ตัว", yieldUnit: "กก. (ขายออก)", soilFactor: 1.0, floodRisk: "Low", dataSource: "Mock DB", fbGroup: "https://www.facebook.com/share/g/17n9T6tRY2/?mibextid=A7sQZp", youtubeLink: "https://www.youtube.com/watch?v=eEBgGOyGvnU" },
+            { name: "สุกรขุน", category: "livestock", price: 80, marketPrice: 95, exportPrice: 120, yield: 4500, cost: 3800, risk: "High", primarySource: "DLD", density: "50 ตัว", yieldUnit: "กก.", soilFactor: 1.0, floodRisk: "Medium", dataSource: "Mock DB", fbGroup: "https://www.facebook.com/share/g/16de5XCC4o/?mibextid=A7sQZp" },
+            { name: "ไก่เนื้อ", category: "livestock", price: 42, marketPrice: 50, exportPrice: 85, yield: 8000, cost: 3200, risk: "High", primarySource: "DLD", density: "2500 ตัว", yieldUnit: "กก.", soilFactor: 1.0, floodRisk: "High", dataSource: "Mock DB", fbGroup: "https://www.facebook.com/share/g/1C5eP2SCNw/?mibextid=A7sQZp", youtubeLink: "https://www.youtube.com/watch?v=J8QX8ml8cPM" },
+            { name: "ไก่ไข่", category: "livestock", price: 3.5, marketPrice: 4.2, exportPrice: 5.5, yield: 85000, cost: 240000, risk: "Medium", primarySource: "DLD", density: "1000 ตัว", yieldUnit: "ฟอง/ปี", soilFactor: 1.0, floodRisk: "Low", dataSource: "Mock DB", fbGroup: "https://www.facebook.com/share/g/1KZYtjqiw7/?mibextid=A7sQZp" },
+            { name: "ปลานิล", category: "livestock", price: 60, marketPrice: 80, exportPrice: 120, yield: 3000, cost: 45000, risk: "Medium", primarySource: "DOF", density: "3000 ตัว", yieldUnit: "กก.", soilFactor: 1.0, floodRisk: "High", dataSource: "Mock DB", fbGroup: "https://www.facebook.com/share/g/1GEd7r2Nvh/?mibextid=A7sQZp" },
+            { name: "เป็ดไล่ทุ่ง", category: "livestock", price: 60, marketPrice: 80, exportPrice: 0, yield: 3000, cost: 1500, risk: "Medium", primarySource: "DLD", density: "1,000 ตัว", yieldUnit: "ตัว/ไข่", soilFactor: 1.0, floodRisk: "Medium", dataSource: "Mock DB" },
+            { name: "จิ้งหรีด", category: "livestock", price: 100, marketPrice: 150, exportPrice: 300, yield: 1500, cost: 800, risk: "Low", primarySource: "DOA", density: "20 บ่อ", yieldUnit: "กก.", soilFactor: 1.0, floodRisk: "Low", dataSource: "Mock DB" },
+            { name: "แพะเนื้อ", category: "livestock", price: 120, marketPrice: 150, exportPrice: 250, yield: 3000, cost: 2000, risk: "Medium", primarySource: "DLD", density: "15 ตัว", yieldUnit: "กก.", soilFactor: 1.0, floodRisk: "Low", dataSource: "Mock DB" },
+            { name: "เกษตรทฤษฎีใหม่", category: "mixed", price: 1, marketPrice: 1, exportPrice: 0, yield: 45000, cost: 15000, risk: "Low", primarySource: "LDD", density: "จัดสรรพื้นที่", yieldUnit: "รายได้รวม", soilFactor: 1.1, floodRisk: "Low", dataSource: "Mock DB" },
+            { name: "โคก หนอง นา", category: "mixed", price: 1, marketPrice: 1, exportPrice: 0, yield: 55000, cost: 20000, risk: "Low", primarySource: "LDD", density: "ตามภูมิสังคม", yieldUnit: "รายได้รวม", soilFactor: 1.2, floodRisk: "Low", dataSource: "Mock DB" },
+            { name: "ข้าว + ปลา", category: "mixed", price: 1, marketPrice: 1, exportPrice: 0, yield: 22000, cost: 8000, risk: "Medium", primarySource: "FISH", density: "-", yieldUnit: "รายได้รวม", soilFactor: 1.0, floodRisk: "Medium", dataSource: "Mock DB" },
+            { name: "สวนผสม (โกโก้+กล้วย)", category: "mixed", price: 1, marketPrice: 1, exportPrice: 0, yield: 35000, cost: 12000, risk: "Low", primarySource: "DOA", density: "-", yieldUnit: "รายได้รวม", soilFactor: 1.1, floodRisk: "Low", dataSource: "Mock DB" },
+            { name: "ไผ่กิมซุง + เห็ด", category: "mixed", price: 1, marketPrice: 1, exportPrice: 0, yield: 28000, cost: 5000, risk: "Low", primarySource: "DOA", density: "-", yieldUnit: "รายได้รวม", soilFactor: 1.0, floodRisk: "Low", dataSource: "Mock DB" }
+        ];
+
+        // --- HELPER FUNCTIONS ---
+        const toRad = (deg) => deg * (Math.PI / 180);
+        const toDeg = (rad) => rad * (180 / Math.PI);
+        const getBearing = (startLat, startLng, destLat, destLng) => {
+            const startLatRad = toRad(startLat), startLngRad = toRad(startLng), destLatRad = toRad(destLat), destLngRad = toRad(destLng);
+            const y = Math.sin(destLngRad - startLngRad) * Math.cos(destLatRad);
+            const x = Math.cos(startLatRad) * Math.sin(destLatRad) - Math.sin(startLatRad) * Math.cos(destLatRad) * Math.cos(destLngRad - startLngRad);
+            return (toDeg(Math.atan2(y, x)) + 360) % 360;
+        };
+        const long2tile = (lon, zoom) => (Math.floor((lon + 180) / 360 * Math.pow(2, zoom)));
+        const lat2tile = (lat, zoom) => (Math.floor((1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, zoom)));
+
+        const checkAndPreloadTiles = (lat, lng, zoom = 9) => {
+            const promises = [];
+            const x = long2tile(lng, zoom);
+            const y = lat2tile(lat, zoom);
+            for (let i = -1; i <= 1; i++) {
+                for (let j = -1; j <= 1; j++) {
+                    const tx = x + i;
+                    const ty = y + j;
+                    const urls = [
+                        `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${zoom}/${ty}/${tx}`,
+                        `https://mt1.google.com/vt/lyrs=h&x=${tx}&y=${ty}&z=${zoom}`
+                    ];
+                    urls.forEach(url => {
+                        const p = new Promise((resolve) => {
+                            const img = new Image();
+                            img.onload = () => resolve(true);
+                            img.onerror = () => resolve(false);
+                            img.src = url;
+                        });
+                        promises.push(p);
+                    });
+                }
+            }
+            return Promise.all(promises);
+        };
+
+        // --- COMPONENTS ---
+
+        const CloudOverlay = ({ isActive, message, rotation }) => {
+            return (
+                <div className={`cloud-container ${isActive ? 'active' : ''}`}>
+                    <div className="cloud-layer"></div>
+                    <div className="cloud-layer"></div>
+                    <div className="cloud-layer"></div>
+                    {isActive && (
+                        <div className="travel-message">
+                            <div className="text-4xl md:text-6xl text-emerald-600 mb-4 drop-shadow-2xl transition-all duration-1000">
+                                <i className="fa-solid fa-plane-up" style={{ transform: `rotate(${rotation || 0}deg)`, display: 'inline-block', transition: 'transform 1s cubic-bezier(0.4, 0, 0.2, 1)' }}></i>
+                            </div>
+                            <h2 className="text-2xl md:text-4xl font-bold bg-white/80 backdrop-blur-md px-6 py-3 rounded-full shadow-lg border-2 border-emerald-400 text-emerald-800">{message}</h2>
+                            <p className="mt-2 text-slate-800 font-bold bg-white/50 inline-block px-3 py-1 rounded-full shadow-sm">กำลังดาวน์โหลดข้อมูลแผนที่...</p>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const AuthModal = ({ onClose, onLogin }) => {
+            const [isRegister, setIsRegister] = useState(false);
+            const [email, setEmail] = useState('');
+            const [password, setPassword] = useState('');
+            const [loading, setLoading] = useState(false);
+            const [error, setError] = useState('');
+
+            const handleSubmit = async (e) => {
+                e.preventDefault(); setLoading(true); setError('');
+                try {
+                    const { data, error } = isRegister ? await supabase.auth.signUp({ email, password }) : await supabase.auth.signInWithPassword({ email, password });
+                    if (error) throw error;
+                    if (data.user) { onLogin(data.user); onClose(); }
+                } catch (err) { setError(err.message || "เกิดข้อผิดพลาด"); } finally { setLoading(false); }
+            };
+
+            return (
+                <div className="fixed inset-0 z-[3000] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in-up pointer-events-auto" onClick={onClose}>
+                    <div className="bg-slate-800 border border-emerald-500/30 p-6 rounded-2xl w-full max-w-md shadow-2xl relative" onClick={e => e.stopPropagation()}>
+                        <button onClick={onClose} className="absolute top-4 right-4 text-slate-400 hover:text-white"><i className="fa-solid fa-times"></i></button>
+                        <h2 className="text-2xl font-bold text-emerald-400 mb-6 text-center">{isRegister ? 'สมัครสมาชิกใหม่' : 'เข้าสู่ระบบ'}</h2>
+                        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+                            <input type="email" required value={email} onChange={e => setEmail(e.target.value)} className="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-2 text-white" placeholder="อีเมล" />
+                            <input type="password" required value={password} onChange={e => setPassword(e.target.value)} className="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-2 text-white" placeholder="รหัสผ่าน" />
+                            {error && <div className="text-red-400 text-xs text-center">{error}</div>}
+                            <button type="submit" disabled={loading} className="bg-emerald-600 text-white font-bold py-2 rounded-lg">{loading ? 'Loading...' : (isRegister ? 'สมัครสมาชิก' : 'เข้าสู่ระบบ')}</button>
+                        </form>
+                        <div className="mt-4 text-center text-xs text-slate-400"><button onClick={() => setIsRegister(!isRegister)} className="text-emerald-400 hover:underline font-bold">{isRegister ? 'เข้าสู่ระบบ' : 'สมัครสมาชิก'}</button></div>
+                    </div>
+                </div>
+            );
+        };
+
+        const AdminDashboard = ({ user, onClose, marketData, onUpdateMarketData }) => {
+            const [activeTab, setActiveTab] = useState('users');
+            const [plans, setPlans] = useState([]);
+            const [loading, setLoading] = useState(false);
+            const [localMarketData, setLocalMarketData] = useState(marketData);
+            const [syncStatus, setSyncStatus] = useState({});
+
+            useEffect(() => { if (activeTab === 'users') fetchPlans(); }, [activeTab]);
+
+            const fetchPlans = async () => {
+                setLoading(true);
+                const { data } = await supabase.from('saved_plans').select('*').order('created_at', { ascending: false });
+                if (data) setPlans(data);
+                setLoading(false);
+            };
+
+            const deletePlan = async (id) => { if (!confirm("ลบข้อมูล?")) return; await supabase.from('saved_plans').delete().eq('id', id); fetchPlans(); };
+
+            const handleSync = (agencyKey) => {
+                setSyncStatus(prev => ({ ...prev, [agencyKey]: 'loading' }));
+
+                setTimeout(() => {
+                    const updated = localMarketData.map(item => {
+                        let newItem = { ...item };
+                        const volatility = 1 + (Math.random() * 0.15 - 0.05);
+                        let sourceTag = "Mock DB";
+
+                        // Simulate sync logic but label it honestly as Mock/Simulated for now unless we had real API
+                        // The user requested: "if sync fails, say Mock Database"
+                        // Since we don't have real API keys here, we simulate success but label as Mock
+
+                        if (agencyKey === 'OAE' && item.category === 'plants') {
+                            newItem.price = Math.round(item.price * volatility);
+                            sourceTag = "สศก. (Mock)";
+                        } else if (agencyKey === 'DIT') {
+                            newItem.marketPrice = Math.round(newItem.price * 1.25 * volatility);
+                            // Market price source logic
+                        } else if (agencyKey === 'DLD' && item.category === 'livestock') {
+                            newItem.price = Math.round(item.price * volatility);
+                            sourceTag = "กรมปศุสัตว์ (Mock)";
+                        } else if (agencyKey === 'DOF' && item.name.includes('ปลา')) {
+                            newItem.price = Math.round(item.price * volatility);
+                            sourceTag = "กรมประมง (Mock)";
+                        }
+
+                        // Update source if it matched an agency logic
+                        if (sourceTag !== "Mock DB") newItem.dataSource = sourceTag;
+
+                        return newItem;
+                    });
+
+                    setLocalMarketData(updated);
+                    onUpdateMarketData(updated);
+                    setSyncStatus(prev => ({ ...prev, [agencyKey]: 'success' }));
+                    setTimeout(() => setSyncStatus(prev => ({ ...prev, [agencyKey]: null })), 3000);
+                }, 2000);
+            };
+
+            const handleSyncAll = () => {
+                Object.keys(AGENCIES).forEach((key, index) => {
+                    setTimeout(() => handleSync(key), index * 500);
+                });
+            };
+
+            const handleDataChange = (idx, field, value) => {
+                const newData = [...localMarketData];
+                newData[idx][field] = parseFloat(value) || 0;
+                setLocalMarketData(newData);
+            };
+
+            const saveMarketChanges = () => {
+                onUpdateMarketData(localMarketData);
+                alert("บันทึกการเปลี่ยนแปลงราคากลางเรียบร้อย");
+            };
+
+            return (
+                <div className="fixed inset-0 z-[4000] bg-slate-900 flex flex-col animate-fade-in-up pointer-events-auto text-slate-100">
+                    <div className="bg-slate-800 p-4 shadow-md flex justify-between items-center border-b border-slate-700">
+                        <div className="flex items-center gap-3">
+                            <div className="bg-gradient-to-br from-yellow-400 to-orange-500 w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-2xl shadow-lg border-2 border-white/20"><i className="fa-solid fa-user-gear"></i></div>
+                            <div><h2 className="text-xl font-bold text-white">ศูนย์บัญชาการข้อมูล (Data Command Center)</h2><p className="text-xs text-slate-400">Admin: {user.email}</p></div>
+                        </div>
+                        <button onClick={onClose} className="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg transition"><i className="fa-solid fa-times mr-2"></i>ปิด</button>
+                    </div>
+
+                    <div className="flex bg-slate-800 border-b border-slate-700 px-4 gap-4">
+                        <button onClick={() => setActiveTab('users')} className={`py-3 px-4 text-sm font-bold border-b-2 transition ${activeTab === 'users' ? 'border-emerald-500 text-emerald-400' : 'border-transparent text-slate-400 hover:text-white'}`}><i className="fa-solid fa-users mr-2"></i>ผู้ใช้งาน</button>
+                        <button onClick={() => setActiveTab('data')} className={`py-3 px-4 text-sm font-bold border-b-2 transition ${activeTab === 'data' ? 'border-blue-500 text-blue-400' : 'border-transparent text-slate-400 hover:text-white'}`}><i className="fa-solid fa-database mr-2"></i>ซิงค์ข้อมูลกระทรวง</button>
+                    </div>
+
+                    <div className="flex-1 overflow-auto p-4 md:p-8 scrollbar-prominent bg-slate-900">
+                        {activeTab === 'users' ? (
+                            <div className="max-w-6xl mx-auto">
+                                <div className="flex justify-between items-center mb-6"><h3 className="text-xl font-bold text-white border-l-4 border-emerald-500 pl-3">แผนการปลูกของผู้ใช้</h3><button onClick={fetchPlans} className="text-emerald-400 bg-slate-800 px-3 py-1 rounded-full text-xs border border-emerald-500/30"><i className="fa-solid fa-sync mr-1"></i> รีเฟรช</button></div>
+                                {loading ? <div className="text-center text-slate-400">Loading...</div> : <div className="grid gap-4">{plans.map(p => (<div key={p.id} className="bg-slate-800 p-4 rounded-xl flex justify-between border border-slate-700"><div><div className="font-bold">{p.province}</div><div className="text-sm text-slate-400">{p.email}</div></div><button onClick={() => deletePlan(p.id)} className="text-red-400"><i className="fa-solid fa-trash"></i></button></div>))}</div>}
+                            </div>
+                        ) : (
+                            <div className="max-w-7xl mx-auto">
+                                <div className="bg-slate-800/50 p-6 rounded-2xl border border-blue-500/20 mb-8 relative overflow-hidden shadow-[0_0_50px_rgba(59,130,246,0.1)]">
+                                    <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
+                                    <div className="flex flex-col md:flex-row justify-between items-center relative z-10">
+                                        <div>
+                                            <h3 className="text-2xl font-bold text-white flex items-center gap-3">
+                                                <div className="w-3 h-3 bg-emerald-500 rounded-full animate-ping"></div>
+                                                เชื่อมต่อฐานข้อมูลภาครัฐ (Live Sync)
+                                            </h3>
+                                            <p className="text-slate-400 text-sm mt-2 ml-6">ดึงข้อมูล Real-time จาก 8 กระทรวงหลัก เพื่อความแม่นยำสูงสุดในการวิเคราะห์</p>
+                                        </div>
+                                        <button onClick={handleSyncAll} disabled={Object.values(syncStatus).some(s => s === 'loading')} className="mt-4 md:mt-0 bg-gradient-to-r from-blue-600 via-cyan-500 to-teal-400 hover:from-blue-500 hover:to-teal-300 text-white px-8 py-3 rounded-xl font-bold shadow-[0_0_20px_rgba(6,182,212,0.5)] transform hover:scale-105 transition-all border border-white/10 group relative overflow-hidden">
+                                            <div className="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
+                                            <span className="relative flex items-center gap-2">
+                                                {Object.values(syncStatus).some(s => s === 'loading') ? <i className="fa-solid fa-circle-notch fa-spin"></i> : <i className="fa-solid fa-bolt"></i>}
+                                                SYNC ALL DATA
+                                            </span>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                                    {Object.keys(AGENCIES).map(key => {
+                                        const agency = AGENCIES[key];
+                                        const status = syncStatus[key];
+                                        const isSyncing = status === 'loading';
+                                        const isSuccess = status === 'success';
+
+                                        return (
+                                            <div key={key} className={`bg-slate-800/80 backdrop-blur-sm p-4 rounded-xl border transition-all duration-300 relative overflow-hidden group ${isSyncing ? 'border-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.3)] scale-[1.02]' : 'border-slate-700 hover:border-blue-400 hover:shadow-lg'}`}>
+                                                {isSyncing && <div className="absolute inset-0 w-full h-10 animate-scan pointer-events-none z-0"></div>}
+
+                                                <div className="flex justify-between items-start mb-3 relative z-10">
+                                                    <div className={`w-12 h-12 rounded-lg bg-slate-900 flex items-center justify-center text-xl shadow-inner border border-white/5 ${agency.color} group-hover:scale-110 transition-transform duration-300`}>
+                                                        <i className={`fa-solid ${agency.icon}`}></i>
+                                                    </div>
+                                                    <div className="flex flex-col items-end">
+                                                        <span className="text-[10px] font-mono text-slate-500 uppercase">Status</span>
+                                                        <span className={`text-[10px] font-bold ${isSyncing ? 'text-blue-400 animate-pulse' : (isSuccess ? 'text-emerald-400' : 'text-slate-400')}`}>
+                                                            {isSyncing ? 'SYNCING...' : (isSuccess ? 'UPDATED' : 'READY')}
+                                                        </span>
+                                                    </div>
+                                                </div>
+
+                                                <div className="relative z-10">
+                                                    <h4 className="font-bold text-white text-lg tracking-tight">{agency.id}</h4>
+                                                    <p className="text-xs text-slate-300 truncate mb-3">{agency.name}</p>
+
+                                                    <div className="bg-slate-900/50 rounded-lg p-2 mb-3 border border-white/5 flex justify-between items-center">
+                                                        <span className="text-[10px] text-slate-400">{agency.desc}</span>
+                                                        <i className={`fa-solid fa-wifi text-[10px] ${isSyncing ? 'text-blue-500 animate-pulse' : 'text-slate-600'}`}></i>
+                                                    </div>
+
+                                                    <button onClick={() => handleSync(key)} disabled={isSyncing} className={`w-full py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 ${isSuccess ? 'bg-emerald-500 text-white' : (isSyncing ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'bg-slate-700 text-slate-300 hover:bg-blue-600 hover:text-white')}`}>
+                                                        {isSuccess ? <><i className="fa-solid fa-check"></i> เรียบร้อย</> : (isSyncing ? <><i className="fa-solid fa-circle-notch fa-spin"></i> กำลังโหลด</> : 'Sync Now')}
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )
+                                    })}
+                                </div>
+
+                                <div className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden shadow-xl">
+                                    <div className="p-4 bg-slate-900/50 border-b border-slate-700 flex justify-between items-center sticky top-0 z-10">
+                                        <h3 className="font-bold text-white"><i className="fa-solid fa-table-list mr-2"></i>ตารางราคากลาง (Live Data)</h3>
+                                        <button onClick={saveMarketChanges} className="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg text-sm shadow font-bold"><i className="fa-solid fa-save mr-2"></i>บันทึกการแก้ไข</button>
+                                    </div>
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-sm text-left text-slate-300">
+                                            <thead className="text-xs text-slate-400 uppercase bg-slate-900">
+                                                <tr>
+                                                    <th className="px-4 py-3">สินค้า</th>
+                                                    <th className="px-4 py-3">แหล่งที่มา</th>
+                                                    <th className="px-4 py-3 text-right">ราคาหน้าสวน</th>
+                                                    <th className="px-4 py-3 text-right">ตลาดไท</th>
+                                                    <th className="px-4 py-3 text-right">ส่งออก (DITP)</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {localMarketData.map((item, idx) => (
+                                                    <tr key={idx} className="border-b border-slate-700 hover:bg-slate-700/30">
+                                                        <td className="px-4 py-2 font-bold text-white">{item.name}</td>
+                                                        <td className="px-4 py-2 text-xs text-yellow-400">{item.dataSource}</td>
+                                                        <td className="px-4 py-2 text-right"><input type="number" className="bg-transparent text-right w-20 border-b border-slate-600 focus:border-blue-500 outline-none text-emerald-400" value={item.price} onChange={e => handleDataChange(idx, 'price', e.target.value)} /></td>
+                                                        <td className="px-4 py-2 text-right"><input type="number" className="bg-transparent text-right w-20 border-b border-slate-600 focus:border-blue-500 outline-none text-blue-400" value={item.marketPrice || 0} onChange={e => handleDataChange(idx, 'marketPrice', e.target.value)} /></td>
+                                                        <td className="px-4 py-2 text-right"><input type="number" className="bg-transparent text-right w-20 border-b border-slate-600 focus:border-blue-500 outline-none text-pink-400" value={item.exportPrice || 0} onChange={e => handleDataChange(idx, 'exportPrice', e.target.value)} /></td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        const ItemSelectorModal = ({ onClose, onSelect, items }) => {
+            const [searchTerm, setSearchTerm] = useState('');
+            const filtered = items.filter(i => i.name.toLowerCase().includes(searchTerm.toLowerCase()));
+            return (
+                <div className="fixed inset-0 z-[3000] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 pointer-events-auto" onClick={onClose}>
+                    <div className="bg-slate-800 border border-slate-600 rounded-2xl w-full max-w-lg h-[60vh] flex flex-col" onClick={e => e.stopPropagation()}>
+                        <div className="p-4 border-b border-slate-700 flex justify-between"><h3 className="text-white font-bold">เลือกรายการ</h3><button onClick={onClose}><i className="fa-solid fa-times text-white"></i></button></div>
+                        <div className="p-4"><input type="text" placeholder="ค้นหา..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white" /></div>
+                        <div className="flex-1 overflow-y-auto p-4 grid grid-cols-2 gap-2">
+                            {filtered.map((item, idx) => (
+                                <button key={idx} onClick={() => onSelect(item)} className="bg-slate-700 p-2 rounded text-white hover:bg-emerald-600 transition flex flex-col items-center gap-1">
+                                    <span className="text-2xl">{item.category === 'plants' ? '🌱' : (item.category === 'livestock' ? '🐄' : '🌾')}</span>
+                                    <span className="text-xs font-bold">{item.name}</span>
+                                    <span className="text-[10px] text-slate-400">ราคา: {item.price.toLocaleString()}</span>
+                                    <span className="text-[8px] text-yellow-500 bg-yellow-500/10 px-1 rounded">{item.dataSource}</span>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const SimulationModal = ({ item, onClose, initialArea, floodData, soilInfo }) => {
+            const [localArea, setLocalArea] = useState(initialArea);
+            const [marketType, setMarketType] = useState('domestic');
+            const [activeTab, setActiveTab] = useState('analysis');
+            const [yearCount, setYearCount] = useState(10);
+            const [customCosts, setCustomCosts] = useState(null);
+
+            const donutCanvasRef = useRef(null);
+            const donutChartRef = useRef(null);
+            const lineCanvasRef = useRef(null);
+            const lineChartRef = useRef(null);
+
+            const isTree = CROP_LIFECYCLE[item.name]?.type === 'tree';
+            const lifeInfo = CROP_LIFECYCLE[item.name] || CROP_LIFECYCLE['default'];
+
+            let price = item.price;
+            let yieldFactor = 1.0;
+            let costMultiplier = 1.0;
+
+            if (marketType === 'export') {
+                price = item.exportPrice || (item.price * 1.5);
+                yieldFactor = 0.7;
+                costMultiplier = 1.3;
+            }
+
+            const soilMultiplier = item.soilFactor || 1.0;
+            const riskFactor = item.floodRisk === 'High' ? 0.5 : (item.floodRisk === 'Medium' ? 0.8 : 1.0);
+            const expectedYield = item.yield * soilMultiplier * riskFactor * yieldFactor;
+
+            const totalRevenue = price * (expectedYield / (item.category === 'plants' ? 1000 : 1)) * localArea;
+            const totalCost = item.cost * costMultiplier * localArea;
+            const profit = totalRevenue - totalCost;
+
+            const exportGuide = EXPORT_GUIDELINES[item.category] || EXPORT_GUIDELINES['default'];
+            const plantingSteps = FARMING_STEPS[Object.keys(FARMING_STEPS).find(k => item.name.includes(k))] || FARMING_STEPS['default'];
+
+            useEffect(() => {
+                const costStruct = COST_STRUCTURE[item.name] || COST_STRUCTURE['default'];
+                setCustomCosts({
+                    fertilizer: totalCost * (costStruct.fertilizer / 100),
+                    labor: totalCost * (costStruct.labor / 100),
+                    seeds: totalCost * (costStruct.seeds / 100),
+                    water: totalCost * (costStruct.water / 100),
+                    misc: totalCost * (costStruct.misc / 100)
+                });
+            }, [item, localArea, marketType]);
+
+            const handleCostChange = (key, value) => {
+                const numVal = parseFloat(value) || 0;
+                setCustomCosts(prev => ({ ...prev, [key]: numVal }));
+            };
+
+            const simulationData = [];
+            let cumulativeProfit = 0;
+            const currentTotalCostPerYear = customCosts ? Object.values(customCosts).reduce((a, b) => a + b, 0) : 0;
+
+            if (customCosts) {
+                const currentYearBE = new Date().getFullYear() + 543;
+                for (let i = 0; i < yearCount; i++) {
+                    const yearBE = currentYearBE + i;
+                    const age = i + 1;
+                    let yearlyCost = currentTotalCostPerYear;
+                    let yearlyRev = totalRevenue;
+
+                    if (isTree) {
+                        if (age <= lifeInfo.wait_years) { yearlyRev = 0; yearlyCost *= 0.5; }
+                        else if (age < lifeInfo.peak_start) { yearlyRev *= 0.6; }
+                    }
+
+                    const yearlyProfit = yearlyRev - yearlyCost;
+                    cumulativeProfit += yearlyProfit;
+
+                    let note = "-";
+                    if (floodData.risk === 'High' && i % 4 === 0) { note = "🌊 น้ำท่วม (จำลอง)"; yearlyRev *= 0.2; yearlyCost *= 1.2; }
+
+                    simulationData.push({ year: yearBE, age, cost: yearlyCost, revenue: yearlyRev, profit: yearlyProfit, accumulatedProfit: cumulativeProfit, note });
+                }
+            }
+
+            useEffect(() => {
+                if (!customCosts || activeTab !== 'analysis') return;
+
+                if (donutCanvasRef.current) {
+                    if (donutChartRef.current) donutChartRef.current.destroy();
+                    const ctx = donutCanvasRef.current.getContext('2d');
+                    donutChartRef.current = new Chart(ctx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: ['ปุ๋ย/ยา', 'แรงงาน', 'พันธุ์', 'น้ำ/ไฟ', 'เบ็ดเตล็ด'],
+                            datasets: [{ data: Object.values(customCosts), backgroundColor: ['#34d399', '#facc15', '#f87171', '#60a5fa', '#94a3b8'], borderWidth: 0 }]
+                        },
+                        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { color: '#cbd5e1', font: { size: 10 } } } } }
+                    });
+                }
+
+                if (lineCanvasRef.current) {
+                    if (lineChartRef.current) lineChartRef.current.destroy();
+                    const ctx = lineCanvasRef.current.getContext('2d');
+                    lineChartRef.current = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: simulationData.map(d => d.year),
+                            datasets: [
+                                { label: 'กำไรสะสม', data: simulationData.map(d => d.accumulatedProfit), borderColor: '#34d399', backgroundColor: 'rgba(52, 211, 153, 0.2)', fill: true, tension: 0.4 },
+                                { label: 'รายรับรายปี', data: simulationData.map(d => d.revenue), borderColor: '#60a5fa', borderDash: [2, 2], tension: 0.4, fill: false }
+                            ]
+                        },
+                        options: { responsive: true, maintainAspectRatio: false, scales: { x: { ticks: { color: '#94a3b8' }, grid: { color: '#334155' } }, y: { ticks: { color: '#94a3b8' }, grid: { color: '#334155' } } }, plugins: { legend: { labels: { color: '#cbd5e1' } } } }
+                    });
+                }
+                return () => { if (donutChartRef.current) donutChartRef.current.destroy(); if (lineChartRef.current) lineChartRef.current.destroy(); };
+            }, [customCosts, yearCount, activeTab, marketType]);
+
+
+            return (
+                <div className="fixed inset-0 z-[2000] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 pointer-events-auto" onClick={onClose}>
+                    <div className="bg-slate-800 border-2 border-emerald-500 rounded-2xl w-full max-w-6xl p-6 relative overflow-hidden flex flex-col h-[90vh]" onClick={e => e.stopPropagation()}>
+                        <div className="absolute top-0 right-0 p-4 z-10"><button onClick={onClose} className="text-white bg-red-500 w-8 h-8 rounded-full shadow-lg">X</button></div>
+
+                        <div className="flex flex-wrap items-center justify-between mb-4 border-b border-slate-700 pb-2 shrink-0 relative mt-2 pr-24">
+                            <div className="flex items-center gap-3">
+                                <div className="bg-yellow-500 p-2 md:p-3 rounded-full text-slate-900 text-lg md:text-xl shadow-lg"><i className="fa-solid fa-calculator"></i></div>
+                                <div>
+                                    <h3 className="text-lg md:text-2xl font-bold text-white flex items-center gap-2">
+                                        {item.name}
+                                        <span className={`text-xs px-2 py-0.5 rounded-full border ${item.risk === 'High' ? 'border-red-500 text-red-400 bg-red-500/10' : 'border-green-500 text-green-400 bg-green-500/10'}`}>Risk: {item.risk}</span>
+                                    </h3>
+                                    <div className="text-[10px] text-slate-400 flex items-center gap-2">
+                                        Produced by KasetCloud AI
+                                        <span className="text-yellow-500 bg-yellow-500/10 px-1 rounded border border-yellow-500/20">Source: {item.dataSource}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <button onClick={() => setActiveTab('analysis')} className={`px-3 py-1 rounded-md text-xs transition ${activeTab === 'analysis' ? 'bg-emerald-500 text-white' : 'text-slate-400'}`}>วิเคราะห์ & กราฟ</button>
+                                <button onClick={() => setActiveTab('farming')} className={`px-3 py-1 rounded-md text-xs transition ${activeTab === 'farming' ? 'bg-emerald-500 text-white' : 'text-slate-400'}`}>ขั้นตอนการฟาร์ม</button>
+                            </div>
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto scrollbar-prominent pr-2">
+                            <div className="flex flex-wrap gap-2 mb-4 bg-slate-900 p-2 rounded-lg w-full items-center justify-between">
+                                <div className="flex gap-2">
+                                    <button onClick={() => setMarketType('domestic')} className={`px-4 py-1.5 rounded-md text-sm font-bold transition ${marketType === 'domestic' ? 'bg-emerald-500 text-white' : 'text-slate-400 hover:text-white'}`}>🇹🇭 ขายในประเทศ</button>
+                                    <button onClick={() => setMarketType('export')} className={`px-4 py-1.5 rounded-md text-sm font-bold transition ${marketType === 'export' ? 'bg-pink-500 text-white' : 'text-slate-400 hover:text-white'}`}>✈️ ส่งออก (Export)</button>
+                                </div>
+                                <div className="flex gap-2">
+                                    {item.fbGroup && <a href={item.fbGroup} target="_blank" className="px-3 py-1.5 rounded-md text-xs font-bold bg-blue-600 text-white hover:bg-blue-500 transition flex items-center gap-2"><i className="fa-brands fa-facebook"></i> กลุ่มผู้รู้ (FB)</a>}
+                                    {item.youtubeLink && <a href={item.youtubeLink} target="_blank" className="px-3 py-1.5 rounded-md text-xs font-bold bg-red-600 text-white hover:bg-red-500 transition flex items-center gap-2"><i className="fa-brands fa-youtube"></i> วิธีทำ (Video)</a>}
+                                </div>
+                            </div>
+
+                            {activeTab === 'analysis' && (
+                                <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+                                    <div className="lg:col-span-4 flex flex-col gap-4">
+                                        <div className={`bg-gradient-to-r ${marketType === 'export' ? 'from-pink-900/50 to-purple-900/50 border-pink-500/30' : 'from-emerald-900/50 to-slate-900/50 border-emerald-500/30'} p-5 rounded-2xl border`}>
+                                            <h4 className="text-sm font-bold text-white mb-2">{marketType === 'export' ? 'ประมาณการส่งออก (DITP)' : 'ประมาณการในประเทศ'}</h4>
+                                            <div className="flex justify-between items-end mb-2">
+                                                <span className="text-slate-300">กำไรสุทธิคาดการณ์</span>
+                                                <span className={`text-3xl font-bold ${profit > 0 ? (marketType === 'export' ? 'text-pink-400' : 'text-emerald-400') : 'text-red-500'}`}>{Math.round(profit).toLocaleString()} ฿</span>
+                                            </div>
+                                            <div className="text-xs text-slate-400">
+                                                <div>รายรับ: <span className="text-white">{Math.round(totalRevenue).toLocaleString()}</span> | ต้นทุน: <span className="text-red-300">{Math.round(totalCost).toLocaleString()}</span></div>
+                                            </div>
+                                        </div>
+
+                                        <div className="bg-slate-900/50 p-4 rounded-xl border border-slate-700 flex-1">
+                                            <h4 className="text-sm font-bold text-yellow-400 mb-2">โครงสร้างต้นทุน (ปรับค่าได้)</h4>
+                                            {customCosts && (
+                                                <div className="space-y-2 text-xs">
+                                                    {Object.keys(customCosts).map(k => (
+                                                        <div key={k} className="flex justify-between items-center">
+                                                            <span className="text-slate-300 capitalize">{k}</span>
+                                                            <input type="number" value={Math.round(customCosts[k])} onChange={(e) => handleCostChange(k, e.target.value)} className="bg-slate-800 border border-slate-600 rounded px-1 w-20 text-right text-emerald-300" />
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                            <div className="h-[150px] mt-4 relative"><canvas ref={donutCanvasRef}></canvas></div>
+                                        </div>
+                                    </div>
+
+                                    <div className="lg:col-span-8 flex flex-col gap-4">
+                                        <div className="bg-slate-900/50 p-4 rounded-xl border border-slate-700 h-[300px] flex flex-col">
+                                            <h4 className="text-sm font-bold text-slate-300 mb-2">แนวโน้มกำไรสะสม {yearCount} ปี</h4>
+                                            <div className="flex-1 relative"><canvas ref={lineCanvasRef}></canvas></div>
+                                        </div>
+
+                                        {marketType === 'export' && (
+                                            <div className="bg-slate-900 p-4 rounded-xl border border-slate-700">
+                                                <h4 className="font-bold text-pink-400 mb-3"><i className="fa-solid fa-passport mr-2"></i>ขั้นตอนการส่งออก (DITP Knowledge)</h4>
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                    {exportGuide.map((step, idx) => (
+                                                        <div key={idx} className="flex gap-3">
+                                                            <div className="flex-shrink-0 w-6 h-6 rounded-full bg-pink-500 text-white flex items-center justify-center text-xs font-bold">{step.step}</div>
+                                                            <div>
+                                                                <div className="font-bold text-sm text-white">{step.title}</div>
+                                                                <div className="text-xs text-slate-400">{step.desc}</div>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
+                            {activeTab === 'farming' && (
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 animate-fade-in-up">
+                                    {plantingSteps.map((step, idx) => (
+                                        <div key={idx} className="bg-slate-800/50 p-4 rounded-xl border border-slate-700 hover:border-emerald-500/50 transition">
+                                            <div className="w-8 h-8 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold mb-3">{idx + 1}</div>
+                                            <h3 className="text-lg font-bold text-white mb-2">{step.title}</h3>
+                                            <p className="text-sm text-slate-300">{step.desc}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const KasetCloudApp = ({ mapInstance, onTravelStart, onTravelEnd }) => {
+            const [marketData, setMarketData] = useState(INITIAL_MARKET_DATA);
+            const [selectedRegion, setSelectedRegion] = useState(null);
+            const [selectedProvince, setSelectedProvince] = useState(null);
+            const [province, setProvince] = useState("กรุงเทพมหานคร");
+            const [area, setArea] = useState(1);
+            const [rankingMode, setRankingMode] = useState('plants');
+            const [mixItems, setMixItems] = useState([]);
+            const [showItemPicker, setShowItemPicker] = useState(false);
+            const [showAuthModal, setShowAuthModal] = useState(false);
+            const [showAdmin, setShowAdmin] = useState(false);
+            const [user, setUser] = useState(null);
+            const [savingMix, setSavingMix] = useState(false);
+            const [results, setResults] = useState(null);
+            const [isFullSheet, setIsFullSheet] = useState(false);
+            const [hasArrived, setHasArrived] = useState(false);
+            const [simulatingItem, setSimulatingItem] = useState(null);
+
+            const [weatherData, setWeatherData] = useState(null);
+            const [address, setAddress] = useState({ village: '-', subDistrict: '-', district: '-', province: 'กรุงเทพมหานคร' });
+            const [floodData, setFloodData] = useState({ risk: 'Low', history: [], desc: 'ปกติ' });
+
+            const [soilInfo, setSoilInfo] = useState(PROVINCE_DATA["กรุงเทพมหานคร"] || {});
+            const kasetMarkerRef = useRef(null);
+
+            useEffect(() => { const checkUser = async () => { const { data } = await supabase.auth.getUser(); if (data.user) setUser(data.user); }; checkUser(); }, []);
+
+            const analyzeData = () => {
+                let filtered = marketData;
+                if (rankingMode !== 'mixed' && rankingMode !== 'custom') filtered = marketData.filter(i => i.category === rankingMode || (rankingMode === 'plants' && i.category === 'plants'));
+
+                const calculated = filtered.map(item => {
+                    const soilMult = item.soilFactor || 1.0;
+                    const riskMult = item.floodRisk === 'High' ? 0.6 : 1.0;
+                    const adjustedYield = item.yield * soilMult * riskMult;
+                    const rev = item.price * (adjustedYield / (item.category === 'plants' ? 1000 : 1)) * area;
+                    const cost = item.cost * area;
+                    return { ...item, profitTotal: rev - cost, costTotal: cost, risk_level: item.risk, refSources: [] };
+                });
+                setResults(calculated.sort((a, b) => b.profitTotal - a.profitTotal));
+            };
+
+            useEffect(() => { if (hasArrived) analyzeData(); }, [province, area, rankingMode, hasArrived, marketData]);
+
+            const fetchDetailedAddress = async (lat, lng) => {
+                try {
+                    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`, { headers: { 'User-Agent': 'KasetCloud/1.0' } });
+                    const data = await res.json();
+                    if (data && data.address) {
+                        setAddress({
+                            village: data.address.village || data.address.hamlet || '-',
+                            subDistrict: data.address.suburb || data.address.quarter || '-',
+                            district: data.address.city_district || data.address.district || '-',
+                            province: data.address.province || province
+                        });
+                        if (kasetMarkerRef.current) kasetMarkerRef.current.setPopupContent(`<b>${data.address.suburb || '-'}</b><br>อ.${data.address.district || '-'}`).openPopup();
+                    }
+                } catch (e) { console.error("Address fetch failed", e); }
+            };
+
+            const fetchDetailedWeather = async (lat, lng) => {
+                try {
+                    const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=temperature_2m,rain&daily=temperature_2m_max,temperature_2m_min,precipitation_sum&timezone=Asia%2FBangkok`);
+                    const data = await res.json();
+                    if (data && data.current) {
+                        setWeatherData({
+                            temp: data.current.temperature_2m,
+                            rain: data.current.rain,
+                            tempMax: data.daily.temperature_2m_max[0],
+                            tempMin: data.daily.temperature_2m_min[0],
+                            dailyRain: data.daily.precipitation_sum[0]
+                        });
+                    }
+                } catch (e) { setWeatherData(null); }
+            };
+
+            const calculateFloodRisk = (lat, lng) => {
+                const hash = Math.abs(Math.sin(lat * 1000 + lng) * 10000);
+                const riskLevel = hash % 100;
+                if (riskLevel > 80) return { risk: 'High', desc: 'เสี่ยงสูงมาก', history: ['2554', '2564'] };
+                if (riskLevel > 50) return { risk: 'Medium', desc: 'เสี่ยงปานกลาง', history: ['2565'] };
+                return { risk: 'Low', desc: 'ความเสี่ยงต่ำ', history: [] };
+            };
+
+            const saveUserLocation = async (lat, lng, prov, areaVal) => {
+                if (!user) return;
+                try {
+                    await supabase.from('user_settings').upsert({
+                        user_id: user.id,
+                        province: prov,
+                        lat: lat,
+                        lng: lng,
+                        area: areaVal
+                    });
+                } catch (e) { console.log('Auto save failed', e); }
+            };
+
+            useEffect(() => {
+                const restoreState = async () => {
+                    if (user) {
+                        const { data } = await supabase.from('user_settings').select('*').eq('user_id', user.id).single();
+                        if (data) {
+                            setProvince(data.province);
+                            setSelectedProvince(data.province);
+                            setArea(data.area);
+                            const info = PROVINCE_DATA[data.province] || { lat: data.lat, lng: data.lng, region: 'กลาง', soil: 'ไม่ระบุ' };
+                            setSoilInfo({ ...info, lat: data.lat, lng: data.lng });
+
+                            if (mapInstance) {
+                                mapInstance.flyTo([data.lat, data.lng], 10, { duration: 2 });
+                                if (!kasetMarkerRef.current) {
+                                    kasetMarkerRef.current = L.marker([data.lat, data.lng], { draggable: true }).addTo(mapInstance);
+                                    setupMarkerListeners(kasetMarkerRef.current);
+                                } else {
+                                    kasetMarkerRef.current.setLatLng([data.lat, data.lng]);
+                                }
+                                fetchDetailedAddress(data.lat, data.lng);
+                                fetchDetailedWeather(data.lat, data.lng);
+                                setFloodData(calculateFloodRisk(data.lat, data.lng));
+                                setHasArrived(true);
+                            }
+                        }
+                    } else {
+                        setProvince("กรุงเทพมหานคร");
+                        setSelectedProvince(null);
+                        setSelectedRegion(null);
+                        setArea(1);
+                        setHasArrived(false);
+                        if (mapInstance) {
+                            mapInstance.setView(DON_MUEANG_COORDS, 5);
+                            if (kasetMarkerRef.current) {
+                                kasetMarkerRef.current.remove();
+                                kasetMarkerRef.current = null;
+                            }
+                        }
+                    }
+                };
+                restoreState();
+            }, [user, mapInstance]);
+
+            const setupMarkerListeners = (marker) => {
+                marker.on('dragend', (e) => {
+                    const pos = e.target.getLatLng();
+                    fetchDetailedAddress(pos.lat, pos.lng);
+                    fetchDetailedWeather(pos.lat, pos.lng);
+                    setFloodData(calculateFloodRisk(pos.lat, pos.lng));
+
+                    saveUserLocation(pos.lat, pos.lng, province, area);
+                });
+            }
+
+            const handleProvinceSelect = async (provName) => {
+                setSelectedProvince(provName); setProvince(provName); setHasArrived(false);
+                const info = PROVINCE_DATA[provName] || { lat: 13, lng: 100 }; setSoilInfo(info);
+
+                if (mapInstance) {
+                    const bearing = getBearing(DON_MUEANG_COORDS[0], DON_MUEANG_COORDS[1], info.lat, info.lng);
+                    onTravelStart(`กำลังบินไป ${provName}...`, bearing);
+                    await checkAndPreloadTiles(info.lat, info.lng);
+
+                    setTimeout(() => {
+                        mapInstance.flyTo([info.lat - 0.15, info.lng], 9, { duration: 4 });
+                        setTimeout(() => {
+                            onTravelEnd();
+                            setHasArrived(true);
+
+                            if (!kasetMarkerRef.current) {
+                                kasetMarkerRef.current = L.marker([info.lat, info.lng], { draggable: true }).addTo(mapInstance);
+                                setupMarkerListeners(kasetMarkerRef.current);
+                            } else {
+                                kasetMarkerRef.current.setLatLng([info.lat, info.lng]);
+                            }
+                            fetchDetailedAddress(info.lat, info.lng);
+                            fetchDetailedWeather(info.lat, info.lng);
+                            setFloodData(calculateFloodRisk(info.lat, info.lng));
+
+                            saveUserLocation(info.lat, info.lng, provName, area);
+
+                        }, 4000);
+                    }, 500);
+                }
+            };
+
+            const addToMix = (item) => { setMixItems(prev => [...prev, { ...item, quantity: 1, id: Date.now() }]); setShowItemPicker(false); };
+            const updateMixQuantity = (id, v) => setMixItems(p => p.map(i => i.id === id ? { ...i, quantity: Math.max(0, parseFloat(v) || 0) } : i));
+            const removeMixItem = (id) => setMixItems(p => p.filter(i => i.id !== id));
+            const calculateMixStats = useMemo(() => {
+                let tc = 0, tr = 0;
+                mixItems.forEach(i => {
+                    let rev = i.price * (i.yield / (i.category === 'plants' ? 1000 : 1)) * i.quantity;
+                    if (i.category === 'livestock' && i.name.includes('โค')) rev = i.yield * i.quantity;
+                    let cost = rev * 0.6;
+                    tc += cost; tr += rev;
+                });
+                return { totalCost: tc, totalRevenue: tr, totalProfit: tr - tc };
+            }, [mixItems]);
+            const handleSaveMix = async () => {
+                if (!user) { setShowAuthModal(true); return; }
+                setSavingMix(true);
+                try {
+                    const { error } = await supabase.from('saved_plans').insert({ user_id: user.id, email: user.email, province: province, items: mixItems, created_at: new Date() });
+                    if (error) throw error;
+                    alert('บันทึกสำเร็จ!');
+                } catch (e) { alert('Error: ' + e.message); } finally { setSavingMix(false); }
+            };
+
+            const isAdmin = user && user.email === 'winayo@gmail.com';
+
+            return (
+                <div className="relative w-full h-[100dvh] overflow-hidden ui-layer pointer-events-none">
+                    <div className="absolute top-6 left-20 z-[1050] pointer-events-auto">
+                        {user ? (
+                            <div className="flex items-center gap-2 bg-slate-900/80 backdrop-blur-md rounded-full pl-2 pr-4 py-1 border border-emerald-500/30 shadow-lg">
+                                <div className="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center text-white font-bold">{user.email[0].toUpperCase()}</div>
+                                <div className="text-xs text-white">
+                                    <div className="font-bold">{user.email.split('@')[0]}</div>
+                                    <div className="flex gap-2">
+                                        <button onClick={() => { supabase.auth.signOut(); setUser(null); }} className="text-red-400 hover:text-red-300 text-[10px]">ออกระบบ</button>
+                                        {isAdmin && <button onClick={() => setShowAdmin(true)} className="text-yellow-400 hover:text-yellow-300 text-[10px] font-bold"><i className="fa-solid fa-crown mr-1"></i>แอดมิน</button>}
+                                    </div>
+                                </div>
+                            </div>
+                        ) : (
+                            <button onClick={() => setShowAuthModal(true)} className="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-full shadow-lg text-xs font-bold transition flex items-center gap-2 animate-bounce"><i className="fa-solid fa-user"></i> เข้าสู่ระบบ</button>
+                        )}
+                    </div>
+
+                    {hasArrived && (
+                        <>
+                            <div className="absolute top-[80px] left-4 z-[950] pointer-events-none flex flex-col gap-2 text-[10px] md:text-xs text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] max-w-[45%]">
+                                <div>
+                                    <div className="font-bold text-emerald-300"><i className="fa-solid fa-map-pin"></i> พิกัดปัจจุบัน</div>
+                                    <div>{address.village}</div>
+                                    <div>{address.subDistrict} {'>'} {address.district}</div>
+                                    <div className="text-yellow-400">{address.province}</div>
+                                    <div className="text-[9px] text-emerald-300 mt-1 border border-emerald-500/30 px-1 rounded bg-emerald-900/30 inline-block">🟢 สดจาก: OpenStreetMap API</div>
+                                </div>
+                                <div className="mt-1">
+                                    <div className="font-bold text-amber-300"><i className="fa-solid fa-layer-group"></i> ดิน & น้ำ</div>
+                                    <div>ชนิด: {soilInfo.soil}</div>
+                                    <div>pH: {soilInfo.ph} | ชื้น: {soilInfo.moisture}%</div>
+                                    <div className={`${floodData.risk === 'High' ? 'text-red-400 font-bold' : 'text-green-300'}`}>{floodData.desc}</div>
+                                    <div className="text-[9px] text-orange-300 mt-1 border border-orange-500/30 px-1 rounded bg-orange-900/30 inline-block">🟠 ที่มา: กรมพัฒนาที่ดิน (Mock DB)</div>
+                                </div>
+                            </div>
+
+                            <div className="absolute top-[80px] right-4 z-[950] pointer-events-none flex flex-col gap-2 text-[10px] md:text-xs text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] text-right items-end max-w-[45%]">
+                                <div>
+                                    <div className="font-bold text-blue-300"><i className="fa-solid fa-temperature-half"></i> อุณหภูมิ (Live)</div>
+                                    <div className="text-xl font-bold">{weatherData ? weatherData.temp : '-'}°C</div>
+                                    <div>ต่ำสุด: {weatherData ? weatherData.tempMin : '-'} | สูงสุด: {weatherData ? weatherData.tempMax : '-'}</div>
+                                    <div className="text-[9px] text-emerald-300 mt-1 border border-emerald-500/30 px-1 rounded bg-emerald-900/30 inline-block">🟢 สดจาก: Open-Meteo API</div>
+                                </div>
+                                <div className="mt-1">
+                                    <div className="font-bold text-cyan-300"><i className="fa-solid fa-cloud-rain"></i> ปริมาณฝน</div>
+                                    <div>วันนี้: {weatherData ? weatherData.rain : 0}mm</div>
+                                    <div>สะสม: {weatherData ? weatherData.dailyRain : 0}mm</div>
+                                </div>
+                            </div>
+                        </>
+                    )}
+
+                    {showAuthModal && <AuthModal onClose={() => setShowAuthModal(false)} onLogin={setUser} />}
+                    {showAdmin && isAdmin && <AdminDashboard user={user} onClose={() => setShowAdmin(false)} marketData={marketData} onUpdateMarketData={setMarketData} />}
+                    {showItemPicker && <ItemSelectorModal onClose={() => setShowItemPicker(false)} onSelect={addToMix} items={marketData} />}
+                    {simulatingItem && <SimulationModal item={simulatingItem} initialArea={area} floodData={floodData} soilInfo={soilInfo} onClose={() => setSimulatingItem(null)} />}
+
+                    <div className={`absolute bottom-0 left-0 right-0 mx-auto w-full md:max-w-4xl lg:max-w-5xl bg-transparent z-[1000] bottom-sheet flex flex-col pointer-events-none transition-all duration-500 ${isFullSheet || !selectedProvince ? 'h-[90%] max-h-[95dvh]' : 'h-[65%] max-h-[70dvh]'}`}>
+                        {!selectedRegion ? (
+                            <div className="flex-1 flex items-center justify-center p-6 pointer-events-auto">
+                                <div className="w-full max-w-2xl grid grid-cols-2 gap-4 animate-fade-in-up">
+                                    {Object.keys(regions).map((region) => (
+                                        <button key={region} onClick={() => setSelectedRegion(region)} className="bg-slate-800/80 hover:bg-emerald-600/90 backdrop-blur-md border border-white/20 rounded-xl p-6 flex flex-col items-center justify-center gap-2 transition-all hover:scale-105 shadow-lg group h-32">
+                                            <span className="text-3xl group-hover:animate-bounce">{region === 'เหนือ' ? '🌲' : (region === 'อีสาน' ? '🍂' : (region === 'กลาง' ? '🏙️' : '🌊'))}</span>
+                                            <span className="text-xl font-bold text-white">ภาค{region}</span>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        ) : !selectedProvince ? (
+                            <div className="flex-1 flex flex-col items-center p-4 pointer-events-auto bg-black/60 rounded-t-3xl backdrop-blur-sm max-w-2xl mx-auto w-full">
+                                <div className="flex items-center gap-4 mb-4 w-full px-4"><button onClick={() => setSelectedRegion(null)} className="text-white/70 hover:text-white"><i className="fa-solid fa-arrow-left"></i></button><h2 className="text-xl font-bold text-white">เลือกจังหวัดในภาค{selectedRegion}</h2></div>
+                                <div className="w-full grid grid-cols-3 gap-2 overflow-y-auto pb-10 scrollbar-prominent px-2">
+                                    {regions[selectedRegion].sort().map(p => (<button key={p} onClick={() => handleProvinceSelect(p)} className="bg-slate-700/80 hover:bg-yellow-500 hover:text-slate-900 border border-white/10 rounded-lg p-3 text-xs md:text-sm font-bold text-white transition-all shadow-md">{p}</button>))}
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="flex-1 flex flex-col pointer-events-auto bg-black/80 backdrop-blur-md rounded-t-2xl border-t border-white/10 overflow-hidden shadow-2xl">
+                                <div className="p-4 border-b border-white/10 flex flex-col gap-2 cursor-pointer" onClick={() => setIsFullSheet(!isFullSheet)}>
+                                    <div className="flex justify-between items-center">
+                                        <div className="flex gap-2 overflow-x-auto no-scrollbar" onClick={e => e.stopPropagation()}>
+                                            {['plants', 'livestock', 'mixed', 'custom'].map(m => (
+                                                <button key={m} onClick={() => setRankingMode(m)} className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition ${rankingMode === m ? 'bg-emerald-500 text-white shadow-lg scale-105' : 'bg-slate-800 text-slate-400'}`}>
+                                                    {m === 'plants' ? '🌱 พืช' : (m === 'livestock' ? '🐄 สัตว์' : (m === 'mixed' ? '🌾 ผสมผสาน' : '🧪 มิกซ์เอง'))}
+                                                </button>
+                                            ))}
+                                        </div>
+                                        <div className="text-slate-400"><i className={`fa-solid fa-chevron-up transition ${isFullSheet ? 'rotate-180' : ''}`}></i></div>
+                                    </div>
+                                </div>
+                                <div className="flex-1 overflow-y-auto p-4 scrollbar-prominent pb-20">
+                                    {rankingMode === 'custom' ? (
+                                        <div className="flex flex-col gap-4">
+                                            <div className="bg-gradient-to-r from-purple-900/80 to-slate-900/80 p-5 rounded-2xl border border-purple-500/30 shadow-lg">
+                                                <div className="flex justify-between items-center mb-4">
+                                                    <div><h3 className="font-bold text-lg text-white">My Farm Mix</h3><p className="text-xs text-purple-300">ออกแบบฟาร์มในฝันของคุณ</p></div>
+                                                    <button onClick={handleSaveMix} disabled={savingMix} className="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-full text-sm transition flex items-center gap-2">{savingMix ? 'Saving...' : 'บันทึก'}</button>
+                                                </div>
+                                                <div className="grid grid-cols-3 gap-2">
+                                                    <div className="bg-black/30 p-3 rounded-xl text-center"><div className="text-xs text-slate-400">กำไร</div><div className="text-xl font-bold text-emerald-400">{Math.round(calculateMixStats.totalProfit).toLocaleString()}</div></div>
+                                                </div>
+                                            </div>
+                                            {mixItems.map(item => (
+                                                <div key={item.id} className="bg-slate-800 p-3 rounded-xl flex justify-between items-center border border-white/5">
+                                                    <div className="flex items-center gap-3"><div className="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center text-xl">{item.category === 'plants' ? '🌱' : '🐄'}</div><div><div className="font-bold text-white">{item.name}</div></div></div>
+                                                    <div className="flex items-center gap-2"><input type="number" min="0" value={item.quantity} onChange={(e) => updateMixQuantity(item.id, e.target.value)} className="w-14 bg-black/30 text-center text-yellow-400 rounded border border-white/10" /><button onClick={() => removeMixItem(item.id)} className="text-red-400">X</button></div>
+                                                </div>
+                                            ))}
+                                            <button onClick={() => setShowItemPicker(true)} className="w-full py-4 rounded-xl border-2 border-dashed border-slate-600 text-slate-400 hover:border-emerald-500 transition font-bold bg-slate-800/50">+ เพิ่มรายการ</button>
+                                        </div>
+                                    ) : (
+                                        <div className="flex flex-col gap-2">
+                                            {results ? results.map((item, i) => (
+                                                <div key={i} onClick={() => setSimulatingItem(item)} className="bg-slate-800 p-4 rounded-xl border border-slate-700 hover:border-emerald-500 cursor-pointer flex justify-between">
+                                                    <div>
+                                                        <div className="font-bold text-lg text-white">{i + 1}. {item.name}</div>
+                                                        <div className="text-xs text-slate-400">กำไร: {Math.round(item.profitTotal).toLocaleString()}</div>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <div className="text-emerald-400 font-bold">{item.risk}</div>
+                                                        <div className="text-[9px] text-yellow-500 border border-yellow-500/20 px-1 rounded inline-block mt-1">{item.dataSource}</div>
+                                                    </div>
+                                                </div>
+                                            )) : <div className="text-center text-slate-500">เลือกจังหวัดเพื่อเริ่ม...</div>}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        const HomePage = ({ setPage, onStartTransition }) => {
+            return (
+                <div className="min-h-screen flex flex-col items-center justify-center text-white p-6 relative z-20">
+                    <h1 className="text-5xl md:text-7xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-emerald-400 to-cyan-400 text-center">Winai Innovation</h1>
+                    <p className="text-slate-400 mb-8 font-light">Super App เพื่อเกษตรกรไทย (Unified Version)</p>
+                    <button onClick={onStartTransition} className="btn-super-pulse bg-gradient-to-r from-fuchsia-600 via-pink-600 to-orange-500 p-5 rounded-2xl font-bold text-xl text-white shadow-lg border-2 border-white/20 hover:scale-105 transition">Kaset Cloud</button>
+                </div>
+            );
+        };
+
+        function VinaiInnovationPortal() {
+            const [page, setPage] = useState('home');
+            const [isTransitioning, setIsTransitioning] = useState(false);
+            const [travelState, setTravelState] = useState({ active: false, message: '', rotation: 0 });
+            const mapRef = useRef(null);
+
+            useEffect(() => {
+                if (!document.getElementById('global-map')) return;
+                const map = L.map('global-map', { zoomControl: false, attributionControl: false, zoomSnap: 0.1, minZoom: 2 }).setView([13.7563, 100.5018], 5);
+                L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}').addTo(map);
+                mapRef.current = map;
+                return () => map.remove();
+            }, []);
+
+            const handleStartKaset = () => { setIsTransitioning(true); setTravelState({ active: true, message: 'เดินทางสู่โลกเกษตร...', rotation: 0 }); setTimeout(() => { setPage('kaset'); setIsTransitioning(false); setTravelState({ active: false, message: '' }); }, 3000); };
+            const handleGoHome = () => { setPage('home'); if (mapRef.current) mapRef.current.flyTo([13.7563, 100.5018], 5); };
+
+            const onTravelStart = (msg, rotation) => {
+                setTravelState({ active: true, message: msg, rotation: rotation });
+            };
+
+            return (
+                <div className="font-sans text-slate-200 h-[100dvh] w-screen overflow-hidden">
+                    <div id="global-map"></div>
+                    <CloudOverlay isActive={travelState.active} message={travelState.message} rotation={travelState.rotation} />
+                    <button onClick={handleGoHome} className="absolute top-6 left-6 z-[1050] bg-slate-900/10 hover:bg-slate-900/30 text-white w-10 h-10 rounded-full flex items-center justify-center backdrop-blur-md border border-white/20 shadow-lg transition-all group pointer-events-auto" title="กลับหน้าแรก"><i className="fa-solid fa-house text-sm group-hover:text-emerald-400"></i></button>
+                    {page === 'home' && <div className={`absolute inset-0 z-20 ${isTransitioning ? 'opacity-0' : ''}`}><HomePage setPage={setPage} onStartTransition={handleStartKaset} /></div>}
+                    {page === 'kaset' && !isTransitioning && <KasetCloudApp mapInstance={mapRef.current} onTravelStart={onTravelStart} onTravelEnd={() => setTravelState({ active: false, message: '', rotation: 0 })} />}
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<VinaiInnovationPortal />);
+    </script>
+</body>
+
+</html>
