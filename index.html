@@ -13,7 +13,10 @@
     <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- FIX: ใช้ unpkg เพื่อความเสถียร -->
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
@@ -34,72 +37,36 @@
             height: 100dvh;
         }
 
-        .leaflet-container {
-            cursor: grab !important;
-        }
+        .leaflet-container { cursor: grab !important; }
+        .leaflet-container:active { cursor: grabbing !important; }
+        .leaflet-interactive { cursor: pointer !important; }
 
-        .leaflet-container:active {
-            cursor: grabbing !important;
-        }
+        .animate-fade-in-up { animation: fadeInUp 0.5s ease-out forwards; }
+        .animate-slide-in-right { animation: slideInRight 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 
-        .leaflet-interactive {
-            cursor: pointer !important;
-        }
-
-        .animate-fade-in-up {
-            animation: fadeInUp 0.8s ease-out;
+        @keyframes slideInRight {
+            from { opacity: 0; transform: translateX(20px); }
+            to { opacity: 1; transform: translateX(0); }
         }
 
         @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         @keyframes pulse-glow {
-
-            0%,
-            100% {
-                box-shadow: 0 0 15px rgba(236, 72, 153, 0.6);
-                transform: scale(1);
-            }
-
-            50% {
-                box-shadow: 0 0 30px rgba(236, 72, 153, 1);
-                transform: scale(1.05);
-            }
+            0%, 100% { box-shadow: 0 0 15px rgba(236, 72, 153, 0.6); transform: scale(1); }
+            50% { box-shadow: 0 0 30px rgba(236, 72, 153, 1); transform: scale(1.05); }
         }
 
-        .btn-super-pulse {
-            animation: pulse-glow 2s infinite;
-        }
+        .btn-super-pulse { animation: pulse-glow 2s infinite; }
 
         @keyframes flag-wave-left {
-            0% {
-                transform: perspective(400px) rotateY(-5deg) skewY(0deg) translateY(0);
-            }
-
-            25% {
-                transform: perspective(400px) rotateY(-15deg) skewY(2deg) translateY(-2px);
-            }
-
-            50% {
-                transform: perspective(400px) rotateY(-5deg) skewY(0deg) translateY(0);
-            }
-
-            75% {
-                transform: perspective(400px) rotateY(5deg) skewY(-2deg) translateY(2px);
-            }
-
-            100% {
-                transform: perspective(400px) rotateY(-5deg) skewY(0deg) translateY(0);
-            }
+            0% { transform: perspective(400px) rotateY(-5deg) skewY(0deg) translateY(0); }
+            25% { transform: perspective(400px) rotateY(-15deg) skewY(2deg) translateY(-2px); }
+            50% { transform: perspective(400px) rotateY(-5deg) skewY(0deg) translateY(0); }
+            75% { transform: perspective(400px) rotateY(5deg) skewY(-2deg) translateY(2px); }
+            100% { transform: perspective(400px) rotateY(-5deg) skewY(0deg) translateY(0); }
         }
 
         .animate-flag-wave {
@@ -108,296 +75,136 @@
             filter: drop-shadow(0 10px 10px rgba(0, 0, 0, 0.5));
         }
 
-        .scrollbar-prominent {
-            scrollbar-width: thin;
-            scrollbar-color: #fbbf24 #0f172a;
-        }
+        .scrollbar-prominent { scrollbar-width: thin; scrollbar-color: rgba(251, 191, 36, 0.5) transparent; }
+        .scrollbar-prominent::-webkit-scrollbar { width: 6px; height: 6px; display: block; -webkit-appearance: none; }
+        .scrollbar-prominent::-webkit-scrollbar-track { background: transparent; }
+        .scrollbar-prominent::-webkit-scrollbar-thumb { background: rgba(251, 191, 36, 0.5); border-radius: 10px; }
+        .scrollbar-prominent::-webkit-scrollbar-thumb:hover { background: rgba(251, 191, 36, 0.8); }
 
-        .scrollbar-prominent::-webkit-scrollbar {
-            width: 12px;
-            height: 12px;
-            display: block;
-            -webkit-appearance: none;
-        }
+        .bottom-sheet { transition: all 0.5s cubic-bezier(0.32, 0.72, 0, 1); }
 
-        .scrollbar-prominent::-webkit-scrollbar-track {
-            background: #0f172a;
-            border-radius: 0;
-            border-left: 1px solid #334155;
-            box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.3);
-        }
-
-        .scrollbar-prominent::-webkit-scrollbar-thumb {
-            background: linear-gradient(180deg, #fbbf24, #d97706, #b45309);
-            border-radius: 6px;
-            border: 2px solid #0f172a;
-            min-height: 40px;
-        }
-
-        .scrollbar-prominent::-webkit-scrollbar-thumb:hover {
-            background: linear-gradient(180deg, #fcd34d, #fbbf24, #f59e0b);
-        }
-
-        .bottom-sheet {
-            transition: all 0.5s cubic-bezier(0.32, 0.72, 0, 1);
-        }
-
-        #global-map {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 0;
-        }
-
-        .ui-layer {
-            position: relative;
-            z-index: 10;
-        }
+        #global-map { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; }
+        .ui-layer { position: relative; z-index: 10; }
 
         .cloud-container {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 50;
-            opacity: 0;
-            transition: opacity 1.5s ease-in-out;
-            overflow: hidden;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 50;
+            opacity: 0; transition: opacity 1.5s ease-in-out; overflow: hidden; display: flex; align-items: center; justify-content: center;
         }
-
-        .cloud-container.active {
-            opacity: 1;
-            pointer-events: auto;
-        }
+        .cloud-container.active { opacity: 1; pointer-events: auto; }
 
         .cloud-layer {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 200%;
-            height: 100%;
-            background:
-                radial-gradient(circle at 10% 20%, rgba(255, 255, 255, 0.5) 0%, transparent 20%),
-                radial-gradient(circle at 30% 80%, rgba(255, 255, 255, 0.4) 0%, transparent 25%),
-                radial-gradient(circle at 50% 30%, rgba(255, 255, 255, 0.5) 0%, transparent 15%),
-                radial-gradient(circle at 70% 60%, rgba(255, 255, 255, 0.4) 0%, transparent 20%),
-                radial-gradient(circle at 90% 10%, rgba(255, 255, 255, 0.5) 0%, transparent 25%);
-
-            background-size: 100% 100%;
-            filter: blur(40px);
-            opacity: 0.6;
-            animation: cloudFly 20s linear infinite;
+            position: absolute; top: 0; left: 0; width: 200%; height: 100%;
+            background: radial-gradient(circle at 10% 20%, rgba(255, 255, 255, 0.5) 0%, transparent 20%),
+                        radial-gradient(circle at 30% 80%, rgba(255, 255, 255, 0.4) 0%, transparent 25%),
+                        radial-gradient(circle at 50% 30%, rgba(255, 255, 255, 0.5) 0%, transparent 15%),
+                        radial-gradient(circle at 70% 60%, rgba(255, 255, 255, 0.4) 0%, transparent 20%),
+                        radial-gradient(circle at 90% 10%, rgba(255, 255, 255, 0.5) 0%, transparent 25%);
+            background-size: 100% 100%; filter: blur(40px); opacity: 0.6; animation: cloudFly 20s linear infinite;
         }
 
         .cloud-layer:nth-child(2) {
-            top: 10%;
-            width: 250%;
-            background:
-                radial-gradient(circle at 15% 50%, rgba(255, 255, 255, 0.3) 0%, transparent 25%),
-                radial-gradient(circle at 45% 10%, rgba(255, 255, 255, 0.4) 0%, transparent 20%),
-                radial-gradient(circle at 75% 80%, rgba(255, 255, 255, 0.3) 0%, transparent 25%);
-            animation: cloudFly 25s linear infinite reverse;
-            opacity: 0.4;
-            filter: blur(50px);
+            top: 10%; width: 250%;
+            background: radial-gradient(circle at 15% 50%, rgba(255, 255, 255, 0.3) 0%, transparent 25%),
+                        radial-gradient(circle at 45% 10%, rgba(255, 255, 255, 0.4) 0%, transparent 20%),
+                        radial-gradient(circle at 75% 80%, rgba(255, 255, 255, 0.3) 0%, transparent 25%);
+            animation: cloudFly 25s linear infinite reverse; opacity: 0.4; filter: blur(50px);
         }
 
         .cloud-layer:nth-child(3) {
-            top: -10%;
-            width: 300%;
-            background:
-                radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.2) 0%, transparent 40%);
-            animation: cloudFly 35s linear infinite;
-            opacity: 0.3;
-            filter: blur(60px);
+            top: -10%; width: 300%;
+            background: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.2) 0%, transparent 40%);
+            animation: cloudFly 35s linear infinite; opacity: 0.3; filter: blur(60px);
         }
 
         @keyframes cloudFly {
-            from {
-                transform: translateX(-20%);
-            }
-
-            to {
-                transform: translateX(-60%);
-            }
+            from { transform: translateX(-20%); }
+            to { transform: translateX(-60%); }
         }
 
         .travel-message {
-            position: relative;
-            z-index: 60;
-            text-align: center;
-            color: #0f172a;
+            position: relative; z-index: 60; text-align: center; color: #0f172a;
             text-shadow: 0 2px 10px rgba(255, 255, 255, 0.9), 0 0 20px rgba(255, 255, 255, 0.5);
-            transform: scale(0.9);
-            transition: transform 0.5s;
+            transform: scale(0.9); transition: transform 0.5s;
         }
-
-        .cloud-container.active .travel-message {
-            transform: scale(1);
-        }
+        .cloud-container.active .travel-message { transform: scale(1); }
     </style>
 </head>
 
-<body class="bg-slate-900 text-slate-100">
+<body>
 
     <div id="root"></div>
 
     <script type="text/babel">
         const { useState, useEffect, useRef } = React;
 
+        // --- SUPABASE SETUP ---
+        const SUPABASE_URL = 'https://ldsysxczitmkxmukmwri.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxkc3lzeGN6aXRta3htdWttd3JpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYxNzI4NDAsImV4cCI6MjA4MTc0ODg0MH0.1rHQug1PlhgNE6lsy3RllAQC36k0BoY6KqjeeQvAVhc';
+        
+        let dbClient = null;
+
+        const tryInitSupabase = () => {
+            if (window.supabase && typeof window.supabase.createClient === 'function') {
+                return window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+            }
+            return null;
+        };
+
         // --- GLOBAL CONSTANTS & DATA ---
         Chart.defaults.color = '#cbd5e1';
-        Chart.defaults.borderColor = '#334155';
+        Chart.defaults.borderColor = 'rgba(255, 255, 255, 0.1)';
         Chart.defaults.font.family = 'Sarabun';
 
         const DON_MUEANG_COORDS = [13.9133, 100.6042];
 
-        const PROVINCE_COORDS = {
-            "เชียงราย": [19.9502, 99.8826], "เชียงใหม่": [18.7677, 98.9640], "น่าน": [18.8077, 100.7834],
-            "พะเยา": [19.1662, 99.9022], "แพร่": [18.1301, 100.1623], "แม่ฮ่องสอน": [19.3005, 97.9706],
-            "ลำปาง": [18.2764, 99.5028], "ลำพูน": [18.5772, 99.0087], "อุตรดิตถ์": [17.6201, 100.0993],
-            "สุโขทัย": [17.2384, 99.8295], "พิษณุโลก": [16.7797, 100.2741], "พิจิตร": [16.4418, 100.3488],
-            "เพชรบูรณ์": [16.7628, 101.1894], "กำแพงเพชร": [16.4834, 99.5215], "ตาก": [16.8974, 99.2541],
-            "นครสวรรค์": [15.6667, 100.1333], "อุทัยธานี": [15.3835, 100.0246], "กาฬสินธุ์": [16.4328, 103.5069],
-            "ขอนแก่น": [16.4643, 102.7872], "ชัยภูมิ": [15.8105, 102.0288], "นครพนม": [17.3833, 104.6433],
-            "นครราชสีมา": [14.9392, 102.1119], "บึงกาฬ": [18.3612, 103.6461], "บุรีรัมย์": [15.2294, 103.2533],
-            "มหาสารคาม": [16.1858, 103.3015], "มุกดาหาร": [16.5436, 104.7046], "ยโสธร": [15.7924, 104.1451],
-            "ร้อยเอ็ด": [16.1507, 103.7745], "เลย": [17.4411, 101.7225], "สกลนคร": [17.1897, 104.1186],
-            "สุรินทร์": [14.8829, 103.4937], "ศรีสะเกษ": [15.1186, 104.3227], "หนองคาย": [17.8785, 102.7413],
-            "หนองบัวลำภู": [17.2044, 102.4413], "อุดรธานี": [17.3859, 102.7880], "อุบลราชธานี": [15.2514, 104.8703],
-            "อำนาจเจริญ": [15.8587, 104.6258], "กรุงเทพมหานคร": [13.9133, 100.6042], "กาญจนบุรี": [14.0205, 99.5304],
-            "จันทบุรี": [12.6114, 102.1039], "ฉะเชิงเทรา": [13.6904, 101.0779], "ชลบุรี": [13.3611, 100.9847],
-            "ชัยนาท": [15.1852, 100.1251], "ตราด": [12.2703, 102.3217], "นครนายก": [14.2069, 101.2130],
-            "นครปฐม": [13.8188, 100.0373], "นนทบุรี": [13.8591, 100.5217], "ปทุมธานี": [14.0208, 100.5250],
-            "ประจวบคีรีขันธ์": [11.7916, 99.8037], "ปราจีนบุรี": [14.0620, 101.3783], "พระนครศรีอยุธยา": [14.3532, 100.5684],
-            "เพชรบุรี": [13.1163, 99.9392], "ระยอง": [12.6800, 101.0050], "ราชบุรี": [13.5282, 99.8144],
-            "ลพบุรี": [14.7995, 100.6533], "สมุทรปราการ": [13.6900, 100.7501], "สมุทรสงคราม": [13.4098, 100.0023],
-            "สมุทรสาคร": [13.5475, 100.2736], "สระแก้ว": [13.8240, 102.0649], "สระบุรี": [14.5289, 100.9101],
-            "สิงห์บุรี": [14.8910, 100.3958], "สุพรรณบุรี": [14.4745, 100.1177], "อ่างทอง": [14.5896, 100.4550],
-            "กระบี่": [8.0991, 98.9850], "ชุมพร": [10.7119, 99.3636], "ตรัง": [7.5097, 99.6158],
-            "นครศรีธรรมราช": [8.5408, 99.9442], "นราธิวาส": [6.5239, 101.7431], "ปัตตานี": [6.7867, 101.1578],
-            "พังงา": [8.4501, 98.5255], "พัทลุง": [7.6172, 100.0708], "ภูเก็ต": [8.1132, 98.3169],
-            "ยะลา": [6.5412, 101.2804], "ระนอง": [9.7777, 98.5853], "สงขลา": [6.9333, 100.3933],
-            "สตูล": [6.6238, 100.0674], "สุราษฎร์ธานี": [9.1328, 99.1356]
+        // --- MOCK DATA ---
+        const MOCK_PROVINCE_DATA = {
+            "กรุงเทพมหานคร": { lat: 13.9133, lng: 100.6042, ph: 7.0, moisture: 70, soil: "ดินเหนียว (ชุดดินราชบุรี)", region: "กลาง" }
         };
 
-        const PROVINCE_DATA = {};
-        const regions = {
-            "เหนือ": ["เชียงราย", "เชียงใหม่", "น่าน", "พะเยา", "แพร่", "แม่ฮ่องสอน", "ลำปาง", "ลำพูน", "อุตรดิตถ์", "สุโขทัย", "พิษณุโลก", "พิจิตร", "เพชรบูรณ์", "กำแพงเพชร", "นครสวรรค์", "อุทัยธานี"],
-            "อีสาน": ["กาฬสินธุ์", "ขอนแก่น", "ชัยภูมิ", "นครพนม", "นครราชสีมา", "บึงกาฬ", "บุรีรัมย์", "มหาสารคาม", "มุกดาหาร", "ยโสธร", "ร้อยเอ็ด", "เลย", "สกลนคร", "สุรินทร์", "ศรีสะเกษ", "หนองคาย", "หนองบัวลำภู", "อุดรธานี", "อุบลราชธานี", "อำนาจเจริญ"],
-            "กลาง": ["กรุงเทพมหานคร", "ชัยนาท", "นครนายก", "นครปฐม", "นนทบุรี", "ปทุมธานี", "พระนครศรีอยุธยา", "ลพบุรี", "สมุทรปราการ", "สมุทรสงคราม", "สมุทรสาคร", "สระบุรี", "สิงห์บุรี", "สุพรรณบุรี", "อ่างทอง"],
-            "ตะวันออก": ["จันทบุรี", "ฉะเชิงเทรา", "ชลบุรี", "ตราด", "ปราจีนบุรี", "ระยอง", "สระแก้ว"],
-            "ตะวันตก": ["ตาก", "กาญจนบุรี", "ประจวบคีรีขันธ์", "เพชรบุรี", "ราชบุรี"],
-            "ใต้": ["กระบี่", "ชุมพร", "ตรัง", "นครศรีธรรมราช", "นราธิวาส", "ปัตตานี", "พังงา", "พัทลุง", "ภูเก็ต", "ยะลา", "ระนอง", "สงขลา", "สตูล", "สุราษฎร์ธานี"]
+        const MOCK_REGIONS = {
+            "กลาง": ["กรุงเทพมหานคร"]
         };
 
-        Object.keys(regions).forEach(region => {
-            regions[region].forEach(prov => {
-                let ph = 6.5, moisture = 60, soil = "ดินร่วน";
-                if (region === "อีสาน") { ph = 5.5; moisture = 40; soil = "ดินทราย (ชุดดินร้อยเอ็ด)"; }
-                if (region === "เหนือ") { ph = 6.0; moisture = 55; soil = "ดินร่วนปนทราย (ชุดดินแม่ริม)"; }
-                if (region === "กลาง") { ph = 7.0; moisture = 70; soil = "ดินเหนียว (ชุดดินราชบุรี)"; }
-                if (region === "ใต้") { ph = 5.0; moisture = 80; soil = "ดินร่วนปนดินเหนียว (ชุดดินคอหงส์)"; }
-                if (region === "ตะวันออก") { ph = 5.5; moisture = 75; soil = "ดินร่วนปนทราย (ผลไม้)"; }
-                if (region === "ตะวันตก") { ph = 6.5; moisture = 50; soil = "ดินร่วนปนทราย"; }
+        const MOCK_CROPS = [
+            {
+                name: "ข้าวหอมมะลิ 105 (Mock)", category: "พืชไร่", price: 16500, yield: 780, cost: 5200, risk: "Low", primarySource: "RICE", market: "โรงสีข้าวท้องถิ่น / สกต.", marketLocation: "ทั่วประเทศ",
+                density: "ใชเมล็ดพันธุ์ 15-20 กก.", yieldUnit: "ข้าวเปลือก (ความชื้น 15%)",
+                costStructure: { fertilizer: 25, labor: 35, seeds: 15, water: 15, misc: 10 },
+                farmingSteps: [
+                    { title: 'เตรียมดิน', desc: 'ไถดะตากดิน 7-14 วัน แล้วไถแปรเพื่อกำจัดวัชพืช' },
+                    { title: 'เพาะปลูก', desc: 'หว่านเมล็ดพันธุ์ (15-20 กก./ไร่) หรือปักดำ' },
+                    { title: 'ดูแลรักษา', desc: 'ใส่ปุ๋ยครั้งแรกหลังปลูก 20 วัน และครั้งที่ 2 ระยะกำเนิดช่อดอก' },
+                    { title: 'เก็บเกี่ยว', desc: 'เก็บเกี่ยวเมื่อรวงเหลือง 80-90% (ประมาณ 100-120 วัน)' }
+                ],
+                lifecycle: { type: 'annual', lifespan: 1, advice: 'ℹ️ (ข้อมูลจำลอง) ควรปลูกพืชตระกูลถั่วสลับ' }
+            }
+        ];
 
-                let lat, lng;
-                if (PROVINCE_COORDS[prov]) {
-                    [lat, lng] = PROVINCE_COORDS[prov];
-                } else {
-                    lat = 13.7563; lng = 100.5018; // Fallback
-                }
-                PROVINCE_DATA[prov] = { ph, moisture, soil, region, lat, lng };
-            });
-        });
-
-        const COST_STRUCTURE = {
-            'ข้าวหอมมะลิ': { fertilizer: 25, labor: 35, seeds: 15, water: 15, misc: 10 },
-            'ข้าวหอมมะลิ 105': { fertilizer: 25, labor: 35, seeds: 15, water: 15, misc: 10 },
-            'ทุเรียน': { fertilizer: 35, labor: 30, seeds: 10, water: 15, misc: 10 },
-            'ทุเรียนหมอนทอง': { fertilizer: 35, labor: 30, seeds: 10, water: 15, misc: 10 },
-            'ผักสลัดไฮโดร': { fertilizer: 40, labor: 20, seeds: 20, water: 10, misc: 10 },
-            'ผักสลัดไฮโดรฯ': { fertilizer: 40, labor: 20, seeds: 20, water: 10, misc: 10 },
-            'มันสำปะหลัง': { fertilizer: 20, labor: 40, seeds: 20, water: 10, misc: 10 },
-            'ยางพารา': { fertilizer: 25, labor: 50, seeds: 10, water: 5, misc: 10 },
-            'ปาล์มน้ำมัน': { fertilizer: 30, labor: 40, seeds: 10, water: 10, misc: 10 },
-            'อ้อยโรงงาน': { fertilizer: 30, labor: 40, seeds: 10, water: 15, misc: 5 },
-            'ข้าวโพดเลี้ยงสัตว์': { fertilizer: 35, labor: 30, seeds: 15, water: 15, misc: 5 },
-            'มะพร้าวน้ำหอม': { fertilizer: 20, labor: 40, seeds: 10, water: 20, misc: 10 },
-            'default': { fertilizer: 30, labor: 30, seeds: 20, water: 10, misc: 10 }
-        };
-
-        const FARMING_STEPS = {
-            'ข้าว': [
-                { title: 'เตรียมดิน', desc: 'ไถดะตากดิน 7-14 วัน แล้วไถแปรเพื่อกำจัดวัชพืช' },
-                { title: 'เพาะปลูก', desc: 'หว่านเมล็ดพันธุ์ (15-20 กก./ไร่) หรือปักดำ' },
-                { title: 'ดูแลรักษา', desc: 'ใส่ปุ๋ยครั้งแรกหลังปลูก 20 วัน และครั้งที่ 2 ระยะกำเนิดช่อดอก' },
-                { title: 'เก็บเกี่ยว', desc: 'เก็บเกี่ยวเมื่อรวงเหลือง 80-90% (ประมาณ 100-120 วัน)' }
-            ],
-            'ทุเรียน': [
-                { title: 'เตรียมพื้นที่', desc: 'ยกโคกสูง 50-80 ซม. กว้าง 4-6 เมตร วางระบบน้ำเหวี่ยง' },
-                { title: 'ลงปลูก', desc: 'ขุดหลุมขนาดเท่าถุงชำ รองก้นหลุมด้วยปุ๋ยคอก ปลูกเสมอระดับดินเดิม' },
-                { title: 'ตัดแต่งกิ่ง', desc: 'ตัดกิ่งแขนงในทรงพุ่มออกเพื่อให้แสงส่องถึง' },
-                { title: 'ทำดอก/ผล', desc: 'งดน้ำกระตุ้นดอกเมื่อใบแก่จัด ผสมเกสรช่วงค่ำ' }
-            ],
-            'มันสำปะหลัง': [
-                { title: 'เตรียมท่อนพันธุ์', desc: 'ตัดท่อนพันธุ์ยาว 20 ซม. แช่น้ำยาเร่งราก 10 นาที' },
-                { title: 'เตรียมดิน', desc: 'ยกร่องสูงเพื่อให้หัวขยายตัวได้ดี' },
-                { title: 'การปลูก', desc: 'ปักท่อนพันธุ์ลึก 2 ใน 3 ของท่อน ระยะห่าง 80x80 ซม.' },
-                { title: 'เก็บเกี่ยว', desc: 'ขุดเมื่ออายุ 8-12 เดือน (เช็คเปอร์เซ็นต์แป้ง)' }
-            ],
-            'ยางพารา': [
-                { title: 'วางแนวปลูก', desc: 'ระยะ 3x7 เมตร (76 ต้น/ไร่) ขุดหลุม 50x50x50 ซม.' },
-                { title: 'ปลูกซ่อม', desc: 'ควรปลูกซ่อมให้เสร็จภายในปีแรก' },
-                { title: 'ใส่ปุ๋ย', desc: 'ใส่ตามสูตรบำรุงต้น จนกว่าจะเปิดกรีด (ประมาณ 7 ปี)' },
-                { title: 'เปิดกรีด', desc: 'เมื่อต้นมีเส้นรอบวง 50 ซม. ที่ความสูง 150 ซม.' }
-            ],
-            'default': [
-                { title: 'เตรียมพื้นที่', desc: 'ไถพรวนปรับสภาพดินและกำจัดวัชพืช' },
-                { title: 'ปรับปรุงดิน', desc: 'ตรวจ pH และใส่ปูนขาวหรือปุ๋ยคอกตามความจำเป็น' },
-                { title: 'ดูแลรักษา', desc: 'ให้น้ำสม่ำเสมอและป้องกันแมลงศัตรูพืช' },
-                { title: 'เก็บเกี่ยว', desc: 'เก็บผลผลิตในช่วงเวลาที่เหมาะสมเพื่อคุณภาพสูงสุด' }
-            ]
-        };
-
-        const CROP_LIFECYCLE = {
-            'ทุเรียน': { type: 'tree', wait_years: 5, peak_start: 10, decline_start: 20, lifespan: 25, advice: '⚠️ ต้นทุเรียนเริ่มแก่...' },
-            'ทุเรียนหมอนทอง': { type: 'tree', wait_years: 5, peak_start: 10, decline_start: 20, lifespan: 25, advice: '⚠️ ต้นทุเรียนเริ่มแก่...' },
-            'ยางพารา': { type: 'tree', wait_years: 7, peak_start: 12, decline_start: 20, lifespan: 25, advice: '⚠️ หน้าเริ่มตาย น้ำยางลดลง...' },
-            'ปาล์มน้ำมัน': { type: 'tree', wait_years: 3, peak_start: 7, decline_start: 18, lifespan: 22, advice: '⚠️ ต้นสูงเก็บเกี่ยวยาก...' },
-            'มะพร้าวน้ำหอม': { type: 'tree', wait_years: 3, peak_start: 5, decline_start: 30, lifespan: 40, advice: '⚠️ ต้นสูงเก็บเกี่ยวยาก...' },
-            'มังคุด': { type: 'tree', wait_years: 5, peak_start: 10, decline_start: 30, lifespan: 50, advice: '⚠️ โตช้าแต่อายุยืน...' },
-            'ลำไย': { type: 'tree', wait_years: 3, peak_start: 5, decline_start: 20, lifespan: 30, advice: '⚠️ ต้องราดสาร...' },
-            'default': { type: 'annual', lifespan: 1, advice: 'ℹ️ ควรปลูกพืชตระกูลถั่วสลับ...' }
-        };
+        const DEFAULT_COST_STRUCTURE = { fertilizer: 30, labor: 30, seeds: 20, water: 10, misc: 10 };
+        const DEFAULT_STEPS = [
+            { title: 'เตรียมพื้นที่', desc: 'ไถพรวนปรับสภาพดินและกำจัดวัชพืช' },
+            { title: 'ปรับปรุงดิน', desc: 'ตรวจ pH และใส่ปูนขาวหรือปุ๋ยคอกตามความจำเป็น' },
+            { title: 'ดูแลรักษา', desc: 'ให้น้ำสม่ำเสมอและป้องกันแมลงศัตรูพืช' },
+            { title: 'เก็บเกี่ยว', desc: 'เก็บผลผลิตในช่วงเวลาที่เหมาะสมเพื่อคุณภาพสูงสุด' }
+        ];
+        const DEFAULT_LIFECYCLE = { type: 'annual', lifespan: 1, advice: 'ℹ️ ควรศึกษาข้อมูลเพิ่มเติมจากเกษตรอำเภอ' };
 
         const GOV_SOURCES = {
-            OAE: { id: 'oae', name: 'สศก. (เศรษฐกิจการเกษตร)', icon: 'fa-chart-line', color: 'text-blue-400', borderColor: 'border-blue-500/30', bg: 'bg-blue-500/10' },
-            LDD: { id: 'ldd', name: 'กรมพัฒนาที่ดิน (Agri-Map)', icon: 'fa-layer-group', color: 'text-amber-400', borderColor: 'border-amber-500/30', bg: 'bg-amber-500/10' },
-            TMD: { id: 'tmd', name: 'กรมอุตุนิยมวิทยา', icon: 'fa-cloud-bolt', color: 'text-cyan-400', borderColor: 'border-cyan-500/30', bg: 'bg-cyan-500/10' },
-            GISTDA: { id: 'gistda', name: 'GISTDA (ดาวเทียม)', icon: 'fa-satellite', color: 'text-purple-400', borderColor: 'border-purple-500/30', bg: 'bg-purple-500/10' },
-            MARKET: { id: 'market', name: 'ตลาดไท/สี่มุมเมือง', icon: 'fa-shop', color: 'text-green-400', borderColor: 'border-green-500/30', bg: 'bg-green-500/10' },
-            DOA: { id: 'doa', name: 'กรมวิชาการเกษตร', icon: 'fa-seedling', color: 'text-pink-400', borderColor: 'border-pink-500/30', bg: 'bg-pink-500/10' },
+            OAE: { id: 'oae', name: 'สศก.', icon: 'fa-chart-line', color: 'text-blue-400', borderColor: 'border-blue-500/30', bg: 'bg-blue-500/10' },
+            LDD: { id: 'ldd', name: 'พัฒนาที่ดิน', icon: 'fa-layer-group', color: 'text-amber-400', borderColor: 'border-amber-500/30', bg: 'bg-amber-500/10' },
+            TMD: { id: 'tmd', name: 'อุตุฯ', icon: 'fa-cloud-bolt', color: 'text-cyan-400', borderColor: 'border-cyan-500/30', bg: 'bg-cyan-500/10' },
+            GISTDA: { id: 'gistda', name: 'GISTDA', icon: 'fa-satellite', color: 'text-purple-400', borderColor: 'border-purple-500/30', bg: 'bg-purple-500/10' },
+            MARKET: { id: 'market', name: 'ตลาดไท', icon: 'fa-shop', color: 'text-green-400', borderColor: 'border-green-500/30', bg: 'bg-green-500/10' },
+            DOA: { id: 'doa', name: 'วิชาการเกษตร', icon: 'fa-seedling', color: 'text-pink-400', borderColor: 'border-pink-500/30', bg: 'bg-pink-500/10' },
             RICE: { id: 'rice', name: 'กรมการข้าว', icon: 'fa-bowl-rice', color: 'text-yellow-200', borderColor: 'border-yellow-200/30', bg: 'bg-yellow-200/10' }
         };
 
-        // --- HELPER FUNCTIONS ---
         const long2tile = (lon, zoom) => (Math.floor((lon + 180) / 360 * Math.pow(2, zoom)));
         const lat2tile = (lat, zoom) => (Math.floor((1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, zoom)));
-
-        // ... (ต่อจาก lat2tile) ...
-
-        // ฟังก์ชันแปลงองศาเป็นเรเดียน
         const toRad = (deg) => deg * (Math.PI / 180);
         const toDeg = (rad) => rad * (180 / Math.PI);
 
-        // ฟังก์ชันคำนวณทิศทาง (Bearing) จากจุด A ไป B
         const getBearing = (startLat, startLng, destLat, destLng) => {
             const startLatRad = toRad(startLat);
             const startLngRad = toRad(startLng);
@@ -410,7 +217,7 @@
 
             let brng = Math.atan2(y, x);
             brng = toDeg(brng);
-            return (brng + 360) % 360; // แปลงให้อยู่ในช่วง 0-360 องศา
+            return (brng + 360) % 360;
         };
 
         const checkAndPreloadTiles = (lat, lng, zoom = 9) => {
@@ -439,9 +246,8 @@
             return Promise.all(promises);
         };
 
-        // --- SUB COMPONENTS ---
-        // แก้ไขบรรทัดรับ props และ style ของ icon
-        // --- CloudOverlay (แก้เครื่องบินกระเด้ง) ---
+        // --- COMPONENTS ---
+
         const CloudOverlay = ({ isActive, message, rotation }) => {
             return (
                 <div className={`cloud-container ${isActive ? 'active' : ''}`}>
@@ -450,11 +256,9 @@
                     <div className="cloud-layer"></div>
                     {isActive && (
                         <div className="travel-message">
-                            {/* ▼▼▼ ลบ animate-bounce ออกจากบรรทัดนี้ ▼▼▼ */}
                             <div className="text-4xl md:text-6xl text-emerald-600 mb-4 drop-shadow-2xl transition-all duration-1000">
                                 <i
                                     className="fa-solid fa-plane-up"
-                                    // เพิ่ม transition ให้การหมุนนุ่มนวลขึ้น
                                     style={{
                                         transform: `rotate(${rotation || 0}deg)`,
                                         display: 'inline-block',
@@ -462,45 +266,41 @@
                                     }}
                                 ></i>
                             </div>
-                            <h2 className="text-2xl md:text-4xl font-bold bg-white/80 backdrop-blur-md px-6 py-3 rounded-full shadow-lg border-2 border-emerald-400 text-emerald-800">
+                            <h2 className="text-2xl md:text-4xl font-bold bg-white/60 backdrop-blur-md px-6 py-3 rounded-full shadow-lg border-white/50 text-emerald-900">
                                 {message}
                             </h2>
-                            <p className="mt-2 text-slate-800 font-bold bg-white/50 inline-block px-3 py-1 rounded-full shadow-sm">กำลังดาวน์โหลดข้อมูลแผนที่...</p>
                         </div>
                     )}
                 </div>
             );
         };
 
-        // --- SimulationModal (เพิ่มเครดิต + ปุ่มปิดขวาบน) ---
-        const SimulationModal = ({ item, onClose, initialArea, floodData, soilInfo }) => {
+        const SimulationPanel = ({ item, onClose, initialArea, floodData, soilInfo, knowledgeData }) => {
             const [localArea, setLocalArea] = useState(initialArea);
             const [yearCount, setYearCount] = useState(10);
-            const [isFullscreen, setIsFullscreen] = useState(false);
-            const [activeTab, setActiveTab] = useState('analysis');
-
+            const [panelTab, setPanelTab] = useState('overview'); 
             const [customCosts, setCustomCosts] = useState(null);
 
-            const isTree = CROP_LIFECYCLE[item.name]?.type === 'tree';
-            const lifeInfo = CROP_LIFECYCLE[item.name] || CROP_LIFECYCLE['default'];
-
-            const cropKey = Object.keys(FARMING_STEPS).find(k => item.name.includes(k)) || 'default';
-            const plantingSteps = FARMING_STEPS[cropKey];
+            const lifeInfo = item.lifecycle || DEFAULT_LIFECYCLE;
+            const isTree = lifeInfo.type === 'tree';
+            const plantingSteps = item.farmingSteps || item.farming_steps || DEFAULT_STEPS;
+            const isLivestock = item.category === 'ปศุสัตว์' || item.category === 'livestock' || item.name.includes('สุกร') || item.name.includes('โค') || item.name.includes('ไก่');
 
             const donutCanvasRef = useRef(null);
             const donutChartRef = useRef(null);
             const lineCanvasRef = useRef(null);
             const lineChartRef = useRef(null);
 
-            const calculateTotalPlants = () => {
+            const calculateTotalOutput = () => {
                 if (!item.density) return "-";
                 const densityNum = parseInt(item.density.replace(/,/g, ''));
                 if (isNaN(densityNum)) return item.density;
-                return Math.floor(densityNum * localArea).toLocaleString() + " ต้น (โดยประมาณ)";
+                const unit = isLivestock ? "ตัว" : "ต้น";
+                return Math.floor(densityNum * localArea).toLocaleString() + " " + unit;
             };
 
             useEffect(() => {
-                const costStructure = COST_STRUCTURE[item.name] || COST_STRUCTURE['default'];
+                const costStructure = item.costStructure || item.cost_structure || DEFAULT_COST_STRUCTURE;
                 const defaultTotalCost = (item.costTotal / initialArea) * localArea;
 
                 setCustomCosts({
@@ -519,39 +319,39 @@
 
             const simulationData = [];
             let totalProfit = 0;
-            const currentTotalCostPerYear = customCosts ? Object.values(customCosts).reduce((a, b) => a + b, 0) : 0;
             let grandTotalCost = 0;
-
+            const currentTotalCostPerYear = customCosts ? Object.values(customCosts).reduce((a, b) => a + b, 0) : 0;
             const currentYearBE = new Date().getFullYear() + 543;
-            const startYearBE = currentYearBE;
 
             if (customCosts) {
                 const unitRev = (item.profitTotal + item.costTotal) / initialArea;
                 const baseYearlyRev = unitRev * localArea;
 
                 for (let i = 0; i < yearCount; i++) {
-                    const yearBE = startYearBE + i;
+                    const yearBE = currentYearBE + i;
                     const age = i + 1;
                     let yearlyCost = currentTotalCostPerYear;
                     let yearlyRev = baseYearlyRev;
 
                     if (isTree) {
-                        if (age <= lifeInfo.wait_years) {
+                        if (age <= (lifeInfo.wait_years || 0)) {
                             yearlyRev = 0;
                             yearlyCost = yearlyCost * 0.5;
-                        } else if (age < lifeInfo.peak_start) {
+                        } else if (age < (lifeInfo.peak_start || 5)) {
                             yearlyRev = yearlyRev * 0.6;
                         }
                     }
 
                     let eventNote = "-";
                     let statusColor = "text-slate-400";
-                    const floodMatch = floodData.history.find(h => h.includes(yearBE.toString()));
-                    if (floodMatch) {
-                        eventNote = `🌊 น้ำท่วม (${floodMatch})`;
-                        statusColor = "text-red-400 font-bold";
-                        yearlyCost *= 1.5;
-                        yearlyRev *= 0.2;
+                    
+                    const localFlood = floodData.risk === 'High' && i % 4 === 0;
+                    
+                    if (localFlood) {
+                         eventNote = `🌊 น้ำท่วม (ความเสี่ยงสูง)`;
+                         statusColor = "text-red-400 font-bold";
+                         yearlyCost *= 1.5;
+                         yearlyRev *= 0.2;
                     }
 
                     const yearlyProfit = yearlyRev - yearlyCost;
@@ -569,19 +369,20 @@
             useEffect(() => {
                 if (!customCosts) return;
 
-                if (donutCanvasRef.current) {
+                if (panelTab === 'overview' && donutCanvasRef.current) {
                     if (donutChartRef.current) donutChartRef.current.destroy();
                     const ctx = donutCanvasRef.current.getContext('2d');
-                    const labels = ['ปุ๋ย/ยา', 'แรงงาน', 'พันธุ์', 'น้ำ/ไฟ', 'เบ็ดเตล็ด'];
-                    const data = [customCosts.fertilizer, customCosts.labor, customCosts.seeds, customCosts.water, customCosts.misc];
-                    const colors = ['#34d399', '#facc15', '#f87171', '#60a5fa', '#94a3b8'];
                     donutChartRef.current = new Chart(ctx, {
                         type: 'doughnut',
-                        data: { labels: labels, datasets: [{ data: data, backgroundColor: colors, borderWidth: 0 }] },
+                        data: {
+                            labels: isLivestock ? ['อาหารสัตว์', 'แรงงาน', 'พันธุ์สัตว์', 'น้ำ/ไฟ', 'เบ็ดเตล็ด'] : ['ปุ๋ย/ยา', 'แรงงาน', 'พันธุ์พืช', 'น้ำ/ไฟ', 'เบ็ดเตล็ด'],
+                            datasets: [{ data: [customCosts.fertilizer, customCosts.labor, customCosts.seeds, customCosts.water, customCosts.misc], backgroundColor: ['#34d399', '#facc15', '#f87171', '#60a5fa', '#94a3b8'], borderWidth: 0 }]
+                        },
                         options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { color: '#cbd5e1', font: { size: 10 } } }, title: { display: false } } }
                     });
                 }
-                if (lineCanvasRef.current) {
+                
+                if (panelTab === 'financial' && lineCanvasRef.current) {
                     if (lineChartRef.current) lineChartRef.current.destroy();
                     const ctx = lineCanvasRef.current.getContext('2d');
                     lineChartRef.current = new Chart(ctx, {
@@ -589,164 +390,241 @@
                         data: {
                             labels: simulationData.map(d => d.year),
                             datasets: [
-                                { label: 'กำไรสะสม', data: simulationData.map(d => d.accumulatedProfit), borderColor: '#34d399', backgroundColor: 'rgba(52, 211, 153, 0.2)', fill: true, tension: 0.4 },
-                                { label: 'รายรับรายปี', data: simulationData.map(d => d.revenue), borderColor: '#60a5fa', borderDash: [2, 2], tension: 0.4, fill: false }
+                                { label: 'กำไรสะสม', data: simulationData.map(d => d.accumulatedProfit), borderColor: '#34d399', backgroundColor: 'rgba(52, 211, 153, 0.1)', fill: true, tension: 0.4 },
+                                { label: 'รายรับ', data: simulationData.map(d => d.revenue), borderColor: '#60a5fa', borderDash: [5, 5], fill: false, tension: 0.1 },
                             ]
                         },
-                        options: { responsive: true, maintainAspectRatio: false, scales: { x: { ticks: { color: '#94a3b8' }, grid: { color: '#334155' } }, y: { ticks: { color: '#94a3b8' }, grid: { color: '#334155' } } }, plugins: { legend: { labels: { color: '#cbd5e1' } } } }
+                        options: { responsive: true, maintainAspectRatio: false, scales: { x: { ticks: { color: '#94a3b8' }, grid: { display: false } }, y: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.05)' } } }, plugins: { legend: { labels: { color: '#cbd5e1' } } } }
                     });
                 }
+
                 return () => {
                     if (donutChartRef.current) donutChartRef.current.destroy();
                     if (lineChartRef.current) lineChartRef.current.destroy();
                 };
-            }, [customCosts, yearCount, simulationData]);
+            }, [customCosts, yearCount, simulationData, panelTab, isLivestock]);
 
-            const toggleModalFullscreen = () => setIsFullscreen(!isFullscreen);
-            const modalClass = isFullscreen
-                ? "fixed inset-0 z-[3000] bg-slate-900 w-screen h-screen flex flex-col p-4 pt-16 md:p-6 animate-fade-in-up overflow-hidden pointer-events-auto"
-                : "bg-slate-800 border-2 border-emerald-500 rounded-2xl w-full max-w-6xl p-6 pt-12 relative shadow-[0_0_50px_rgba(16,185,129,0.3)] flex flex-col max-h-[95vh] h-[90vh] z-[2000] pointer-events-auto";
-
-            if (!customCosts) return <div className="fixed inset-0 z-[3000] flex items-center justify-center text-white">Loading...</div>;
+            if (!customCosts) return <div className="p-10 text-center text-slate-400">Loading Simulation...</div>;
 
             return (
-                <div className={isFullscreen ? "" : "fixed inset-0 z-[2000] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in-up pointer-events-auto"} onClick={(e) => e.stopPropagation()}>
-                    <div className={modalClass} onClick={(e) => e.stopPropagation()}>
-
-                        <div className="absolute top-3 right-3 md:top-4 md:right-4 flex items-center gap-3 z-[3050]">
-                            <button onClick={(e) => { e.stopPropagation(); toggleModalFullscreen(); }} className="w-10 h-10 rounded-full bg-slate-700 text-white flex items-center justify-center border border-white/20 hover:bg-slate-600 transition shadow-lg"><i className={`fa-solid ${isFullscreen ? 'fa-compress' : 'fa-expand'}`}></i></button>
-                            <button onClick={(e) => { e.stopPropagation(); onClose(); }} className="w-10 h-10 rounded-full bg-red-500 hover:bg-red-600 text-white border-2 border-red-300 flex items-center justify-center transition shadow-lg hover:scale-110 active:scale-95"><i className="fa-solid fa-times text-lg"></i></button>
-                        </div>
-
-                        {/* Header with Credit */}
-                        <div className="flex flex-wrap items-center justify-between mb-4 border-b border-slate-700 pb-2 shrink-0 relative mt-2 pr-24">
-                            <div className="flex items-center gap-3 mb-2 md:mb-0">
-                                <div className="bg-yellow-500 p-2 md:p-3 rounded-full text-slate-900 text-lg md:text-xl shadow-lg"><i className="fa-solid fa-calculator"></i></div>
-                                <div>
-                                    <h3 className="text-lg md:text-2xl font-bold text-white flex items-center gap-2">
-                                        {item.name}
-                                        <span className={`text-xs px-2 py-0.5 rounded-full border ${item.risk === 'High' ? 'border-red-500 text-red-400 bg-red-500/10' : 'border-green-500 text-green-400 bg-green-500/10'}`}>Risk: {item.risk}</span>
-                                    </h3>
-
-                                    {/* ★★★ เครดิตในหน้าจำลอง ★★★ */}
-                                    <div className="mt-1 p-1 bg-white/5 rounded border border-white/10 w-fit">
-                                        <div className="text-[10px] text-slate-300 font-bold">ผลิตโดย: Mr.Winai Phanarkat เพื่อคนไทย</div>
-                                        <div className="text-[9px] text-slate-400">ไลน์/เบอร์โทร: 0926533228 | อีเมล์: winayo@gmail.com</div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="flex items-center gap-2 flex-wrap mt-2 md:mt-0">
-                                <div className="flex bg-slate-700 rounded-lg p-1">
-                                    <button onClick={() => setActiveTab('analysis')} className={`px-2 md:px-3 py-1 rounded-md text-xs transition ${activeTab === 'analysis' ? 'bg-emerald-500 text-white shadow' : 'text-slate-400 hover:text-white'}`}><i className="fa-solid fa-chart-line mr-1"></i> วิเคราะห์</button>
-                                    <button onClick={() => setActiveTab('steps')} className={`px-2 md:px-3 py-1 rounded-md text-xs transition ${activeTab === 'steps' ? 'bg-emerald-500 text-white shadow' : 'text-slate-400 hover:text-white'}`}><i className="fa-solid fa-list-check mr-1"></i> ขั้นตอนปลูก</button>
-                                </div>
-                                <div className="flex items-center gap-1 bg-slate-700/50 rounded-lg px-2 py-1 border border-slate-600">
-                                    <span className="text-xs text-slate-400">พื้นที่:</span>
-                                    <input type="number" step="0.1" min="0" value={localArea} onChange={(e) => { const val = parseFloat(e.target.value); setLocalArea(isNaN(val) ? 0 : Math.max(0, val)); }} className="w-12 bg-transparent text-center font-bold text-emerald-400 focus:outline-none" />
-                                    <span className="text-xs text-slate-400">ไร่</span>
-                                </div>
-                                <div className="flex items-center gap-1 bg-slate-700/50 rounded-lg px-2 py-1 border border-slate-600">
-                                    <span className="text-xs text-slate-400">เวลา:</span>
-                                    <input type="number" value={yearCount} onChange={(e) => setYearCount(Math.max(1, Math.min(50, parseInt(e.target.value) || 1)))} className="w-8 bg-transparent text-center font-bold text-yellow-400 focus:outline-none" />
-                                    <span className="text-xs text-slate-400">ปี</span>
+                <div className="flex flex-col h-full w-full animate-slide-in-right px-2 pb-6">
+                    <div className="flex items-center justify-between mb-2 pb-2 border-b border-white/5">
+                        <div className="flex items-center gap-3">
+                            <button onClick={onClose} className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition">
+                                <i className="fa-solid fa-arrow-left"></i>
+                            </button>
+                            <div>
+                                <h3 className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 to-teal-200">
+                                    {isLivestock && <i className="fa-solid fa-cow mr-2"></i>}
+                                    {!isLivestock && <i className="fa-solid fa-seedling mr-2"></i>}
+                                    {item.name}
+                                </h3>
+                                <div className="flex items-center gap-2 text-[10px] text-slate-400">
+                                    <span>ความเสี่ยง: {item.risk}</span>
+                                    <span>•</span>
+                                    <span>ROI: {grandTotalCost > 0 ? ((totalProfit / grandTotalCost) * 100).toFixed(0) : 0}%</span>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="flex-1 overflow-y-auto overflow-x-hidden scrollbar-prominent pb-4">
-                            {activeTab === 'analysis' && (
-                                <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-                                    <div className="lg:col-span-4 flex flex-col gap-4">
-                                        <div className="bg-emerald-900/30 p-4 rounded-xl border border-emerald-500/30">
-                                            <h4 className="text-sm font-bold text-emerald-400 mb-2 border-b border-emerald-500/20 pb-1 flex items-center gap-2">
-                                                <i className="fa-solid fa-seedling"></i> ข้อมูลการเพาะปลูก
-                                            </h4>
-                                            <div className="grid grid-cols-1 gap-2 text-xs text-slate-300">
-                                                <div className="flex justify-between items-center">
-                                                    <span>ความหนาแน่น/ไร่:</span>
-                                                    <span className="text-white font-bold">{item.density || '-'}</span>
-                                                </div>
-                                                <div className="flex justify-between items-center bg-white/5 p-1 rounded">
-                                                    <span>จำนวนต้นรวม ({localArea} ไร่):</span>
-                                                    <span className="text-yellow-400 font-bold text-sm">{calculateTotalPlants()}</span>
-                                                </div>
-                                                <div className="mt-1 pt-1 border-t border-white/10">
-                                                    <div className="text-slate-400 mb-1">ผลผลิตคาดการณ์/หน่วย:</div>
-                                                    <div className="text-white pl-2 border-l-2 border-emerald-500">{item.yieldUnit || '-'}</div>
-                                                </div>
-                                            </div>
-                                        </div>
+                        <div className="flex gap-2">
+                             <div className="flex items-center gap-2 bg-black/20 rounded-lg px-3 py-1">
+                                <span className="text-xs text-slate-400">พื้นที่</span>
+                                <input type="number" step="0.1" min="0" value={localArea} onChange={(e) => { const val = parseFloat(e.target.value); setLocalArea(isNaN(val) ? 0 : Math.max(0, val)); }} className="w-10 bg-transparent text-center font-bold text-emerald-400 focus:outline-none" />
+                                <span className="text-xs text-slate-400">ไร่</span>
+                            </div>
+                            <div className="flex items-center gap-2 bg-black/20 rounded-lg px-3 py-1">
+                                <span className="text-xs text-slate-400">เวลา</span>
+                                <input type="number" value={yearCount} onChange={(e) => setYearCount(Math.max(1, Math.min(50, parseInt(e.target.value) || 1)))} className="w-8 bg-transparent text-center font-bold text-yellow-400 focus:outline-none" />
+                                <span className="text-xs text-slate-400">ปี</span>
+                            </div>
+                        </div>
+                    </div>
 
-                                        <div className="bg-slate-900/50 p-4 rounded-xl border border-slate-700 shadow-inner">
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <div>
-                                                    <span className="text-xs text-slate-400 block">กำไรสุทธิ ({yearCount} ปี)</span>
-                                                    <span className={`text-xl md:text-2xl font-bold ${totalProfit > 0 ? 'text-emerald-400' : 'text-red-400'}`}>{totalProfit.toLocaleString(undefined, { maximumFractionDigits: 0 })} ฿</span>
-                                                </div>
-                                                <div className="text-right">
-                                                    <span className="text-xs text-slate-400 block">ROI (ผลตอบแทน)</span>
-                                                    <span className="text-xl md:text-2xl font-bold text-blue-400">{grandTotalCost > 0 ? ((totalProfit / grandTotalCost) * 100).toFixed(1) : 0}%</span>
-                                                </div>
-                                            </div>
-                                        </div>
+                    <div className="flex p-1 bg-black/20 rounded-lg mb-3 gap-1">
+                        <button onClick={() => setPanelTab('overview')} className={`flex-1 py-1.5 text-xs rounded-md transition flex items-center justify-center gap-2 ${panelTab === 'overview' ? 'bg-emerald-600 text-white shadow' : 'text-slate-400 hover:bg-white/5'}`}><i className="fa-solid fa-chart-pie"></i> ภาพรวม</button>
+                        <button onClick={() => setPanelTab('financial')} className={`flex-1 py-1.5 text-xs rounded-md transition flex items-center justify-center gap-2 ${panelTab === 'financial' ? 'bg-emerald-600 text-white shadow' : 'text-slate-400 hover:bg-white/5'}`}><i className="fa-solid fa-table-list"></i> การเงิน</button>
+                        <button onClick={() => setPanelTab('guide')} className={`flex-1 py-1.5 text-xs rounded-md transition flex items-center justify-center gap-2 ${panelTab === 'guide' ? 'bg-emerald-600 text-white shadow' : 'text-slate-400 hover:bg-white/5'}`}><i className="fa-solid fa-book-open"></i> คู่มือ/ความรู้</button>
+                    </div>
 
-                                        <div className="bg-slate-900/50 p-4 rounded-xl border border-slate-700 flex-1 flex flex-col">
-                                            <h4 className="text-sm font-bold text-yellow-400 mb-2 flex justify-between items-center"><span><i className="fa-solid fa-pen-to-square"></i> ปรับแก้ต้นทุน (ต่อปี)</span><span className="text-[10px] text-slate-400 font-normal">คลิกตัวเลขเพื่อแก้ไข</span></h4>
-                                            <div className="overflow-y-auto flex-1">
-                                                <table className="w-full text-xs text-left text-slate-300">
-                                                    <tbody>
-                                                        {[{ key: 'fertilizer', label: 'ปุ๋ย/ยา', color: '#34d399' }, { key: 'labor', label: 'แรงงาน', color: '#facc15' }, { key: 'seeds', label: 'พันธุ์', color: '#f87171' }, { key: 'water', label: 'น้ำ/ไฟ', color: '#60a5fa' }, { key: 'misc', label: 'อื่นๆ', color: '#94a3b8' }].map((c) => (
-                                                            <tr key={c.key} className="border-b border-slate-800 hover:bg-slate-800/30">
-                                                                <td className="py-2 pl-2 flex items-center gap-2"><div className="w-2 h-2 rounded-full" style={{ backgroundColor: c.color }}></div>{c.label}</td>
-                                                                <td className="py-2 pr-2 text-right"><input type="number" value={Math.round(customCosts[c.key])} onChange={(e) => handleCostChange(c.key, e.target.value)} className="bg-slate-800 border border-slate-600 rounded px-1 w-20 text-right text-emerald-300 focus:border-emerald-500 focus:outline-none" /> ฿</td>
-                                                            </tr>
-                                                        ))}
-                                                        <tr className="bg-slate-800/50 font-bold text-white"><td className="py-2 pl-2">รวมต้นทุน/ปี</td><td className="py-2 pr-2 text-right text-red-300">{currentTotalCostPerYear.toLocaleString()} ฿</td></tr>
-                                                    </tbody>
-                                                </table>
-                                            </div>
-                                            <div className="h-[120px] mt-2 relative"><canvas ref={donutCanvasRef}></canvas></div>
-                                        </div>
+                    <div className="flex-1 overflow-y-auto overflow-x-hidden scrollbar-prominent pr-1">
+                        {panelTab === 'overview' && (
+                            <div className="flex flex-col gap-3 animate-fade-in-up">
+                                <div className="bg-emerald-900/10 backdrop-blur-none p-4 rounded-xl border border-emerald-500/10 relative overflow-hidden">
+                                     <div className="absolute top-0 right-0 w-20 h-20 bg-emerald-500/5 rounded-full blur-2xl"></div>
+                                    <div className="flex justify-between items-end mb-2">
+                                        <span className="text-sm text-slate-300">กำไรสุทธิ ({yearCount} ปี)</span>
+                                        <span className={`text-3xl font-bold ${totalProfit > 0 ? 'text-emerald-400' : 'text-red-400'}`}>{totalProfit.toLocaleString(undefined, { maximumFractionDigits: 0 })} ฿</span>
                                     </div>
-
-                                    <div className="lg:col-span-8 flex flex-col gap-4">
-                                        <div className="bg-slate-900/50 p-4 rounded-xl border border-slate-700 h-[300px] flex flex-col">
-                                            <h4 className="text-sm font-bold text-slate-300 mb-2">แนวโน้มกำไรสะสม {yearCount} ปี (Real-time Simulation)</h4>
-                                            <div className="flex-1 relative"><canvas ref={lineCanvasRef}></canvas></div>
-                                        </div>
-                                        <div className="bg-slate-900/50 p-4 rounded-xl border border-slate-700 h-[200px] overflow-hidden flex flex-col">
-                                            <h4 className="text-sm font-bold text-slate-300 mb-2">ตารางกระแสเงินสดรายปี</h4>
-                                            <div className="overflow-y-auto scrollbar-prominent flex-1">
-                                                <table className="w-full text-xs text-left text-slate-300">
-                                                    <thead className="bg-slate-800/50 sticky top-0"><tr><th className="px-2 py-1">ปี (อายุ)</th><th className="px-2 py-1 text-right">รายรับ</th><th className="px-2 py-1 text-right">รายจ่าย</th><th className="px-2 py-1 text-right">กำไรสุทธิ</th></tr></thead>
-                                                    <tbody>{simulationData.map(d => (<tr key={d.year} className="border-b border-slate-800 hover:bg-white/5"><td className="px-2 py-1"><span className="text-yellow-500">{d.year}</span> <span className="text-slate-500 ml-1">({d.age} ปี)</span>{d.note !== '-' && <div className="text-[9px] text-red-400">{d.note}</div>}</td><td className="px-2 py-1 text-right text-green-400">{d.revenue.toLocaleString()}</td><td className="px-2 py-1 text-right text-red-400">{d.cost.toLocaleString()}</td><td className={`px-2 py-1 text-right font-bold ${d.profit > 0 ? 'text-emerald-400' : 'text-red-500'}`}>{d.profit.toLocaleString()}</td></tr>))}</tbody>
-                                                </table>
-                                            </div>
-                                        </div>
+                                    <div className="flex justify-between items-end border-t border-white/5 pt-2 mt-2">
+                                        <span className="text-xs text-slate-400">ปริมาณการผลิตโดยประมาณ</span>
+                                        <span className="text-sm font-bold text-slate-200">{calculateTotalOutput()}</span>
                                     </div>
                                 </div>
-                            )}
-
-                            {activeTab === 'steps' && (
-                                <div className="animate-fade-in-up">
-                                    <div className="bg-gradient-to-r from-emerald-900/40 to-slate-900/40 p-6 rounded-xl border border-emerald-500/30 mb-4">
-                                        <h2 className="text-2xl font-bold text-emerald-300 mb-2"><i className="fa-solid fa-seedling mr-2"></i>ขั้นตอนการปลูก: {item.name}</h2>
-                                        <p className="text-slate-400 text-sm">คู่มือเบื้องต้นสำหรับการเพาะปลูกในพื้นที่ {localArea} ไร่</p>
+                                <div className="bg-black/10 p-4 rounded-xl backdrop-blur-none border border-white/5 flex flex-col gap-2">
+                                    <h4 className="text-xs font-bold text-slate-400 mb-1 flex justify-between">
+                                        <span>โครงสร้างต้นทุน (ต่อปี)</span>
+                                        <span className="text-red-300">{currentTotalCostPerYear.toLocaleString()} ฿</span>
+                                    </h4>
+                                    <div className="flex gap-4 h-[140px] items-center">
+                                         <div className="w-1/2 h-full relative"><canvas ref={donutCanvasRef}></canvas></div>
+                                         <div className="flex-1 overflow-y-auto pr-1 h-full">
+                                            <table className="w-full text-[10px] text-slate-300">
+                                                <tbody>
+                                                    {[{ key: 'fertilizer', label: isLivestock ? 'อาหารสัตว์' : 'ปุ๋ย/ยา' }, { key: 'labor', label: 'แรงงาน' }, { key: 'seeds', label: isLivestock ? 'พันธุ์สัตว์' : 'พันธุ์พืช' }, { key: 'water', label: 'น้ำ/ไฟ' }, { key: 'misc', label: 'อื่นๆ' }].map((c) => (
+                                                        <tr key={c.key} className="border-b border-white/5 last:border-0">
+                                                            <td className="py-1.5">{c.label}</td>
+                                                            <td className="py-1.5 text-right"><input type="number" value={Math.round(customCosts[c.key])} onChange={(e) => handleCostChange(c.key, e.target.value)} className="bg-white/5 rounded px-1 text-right text-emerald-300 w-16 focus:outline-none focus:bg-white/10" /></td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                         </div>
                                     </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                                        {plantingSteps.map((step, idx) => (
-                                            <div key={idx} className="bg-slate-800/50 p-4 rounded-xl border border-slate-700 hover:border-emerald-500/50 transition relative overflow-hidden group">
-                                                <div className="absolute -right-4 -top-4 text-6xl font-bold text-white/5 group-hover:text-emerald-500/10 transition">{idx + 1}</div>
-                                                <div className="w-10 h-10 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold mb-3 border border-emerald-500/30 relative z-10">{idx + 1}</div>
-                                                <h3 className="text-lg font-bold text-white mb-2 relative z-10">{step.title}</h3>
-                                                <p className="text-sm text-slate-300 leading-relaxed relative z-10">{step.desc}</p>
+                                </div>
+                            </div>
+                        )}
+                        {panelTab === 'financial' && (
+                            <div className="flex flex-col gap-3 animate-fade-in-up">
+                                 <div className="bg-black/10 p-3 rounded-xl border border-white/5 h-[200px] flex flex-col">
+                                    <h4 className="text-xs text-slate-400 mb-1">แนวโน้มกำไรสะสม</h4>
+                                    <div className="flex-1 relative"><canvas ref={lineCanvasRef}></canvas></div>
+                                </div>
+                                <div className="bg-black/10 p-0 rounded-xl border border-white/5 overflow-hidden flex flex-col h-full min-h-[300px]">
+                                    <div className="bg-white/5 px-3 py-2 text-xs font-bold text-slate-300 flex justify-between">
+                                        <span>ตารางกระแสเงินสด</span>
+                                        <span className="text-[10px] font-normal text-slate-500">หน่วย: บาท</span>
+                                    </div>
+                                    <div className="overflow-y-auto flex-1 scrollbar-prominent">
+                                        <table className="w-full text-xs text-left text-slate-300">
+                                            <thead className="text-[10px] text-slate-500 bg-black/20 sticky top-0 backdrop-blur-none">
+                                                <tr><th className="px-3 py-2">ปี</th><th className="px-3 py-2 text-right">รายรับ</th><th className="px-3 py-2 text-right">รายจ่าย</th><th className="px-3 py-2 text-right">กำไร</th></tr>
+                                            </thead>
+                                            <tbody>
+                                                {simulationData.map(d => (
+                                                    <tr key={d.year} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+                                                        <td className="px-3 py-2">
+                                                            <div className="text-yellow-500 font-bold">{d.year}</div>
+                                                            {d.note !== '-' && <div className="text-[9px] text-red-400">{d.note}</div>}
+                                                        </td>
+                                                        <td className="px-3 py-2 text-right text-emerald-300/80">{d.revenue.toLocaleString()}</td>
+                                                        <td className="px-3 py-2 text-right text-red-300/80">{d.cost.toLocaleString()}</td>
+                                                        <td className={`px-3 py-2 text-right font-bold ${d.profit > 0 ? 'text-emerald-400' : 'text-red-500'}`}>{d.profit.toLocaleString()}</td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                        {panelTab === 'guide' && (
+                            <div className="flex flex-col gap-3 animate-fade-in-up">
+                                <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-xl flex items-start gap-3">
+                                    <i className="fa-solid fa-lightbulb text-yellow-500 mt-1"></i>
+                                    <div>
+                                        <h4 className="font-bold text-yellow-500 text-sm">คำแนะนำจากระบบ</h4>
+                                        <p className="text-xs text-yellow-100/80 mt-1">{lifeInfo.advice}</p>
+                                        <p className="text-xs text-slate-400 mt-1">สภาพดินปัจจุบัน: {soilInfo.soil || soilInfo.soil_type} (ควรตรวจ pH ก่อนปลูก)</p>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-3">
+                                    <h4 className="text-xs font-bold text-white border-b border-white/10 pb-1">ขั้นตอนการดำเนินการ</h4>
+                                    {plantingSteps.map((step, idx) => (
+                                         <div key={idx} className="bg-black/20 p-4 rounded-xl border border-white/5 flex gap-4">
+                                             <div className="w-8 h-8 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-sm shrink-0 border border-emerald-500/30">
+                                                {idx+1}
+                                             </div>
+                                             <div>
+                                                 <div className="text-emerald-400 font-bold text-sm mb-1">{step.title}</div>
+                                                 <div className="text-xs text-slate-300 leading-relaxed">{step.desc}</div>
+                                             </div>
+                                         </div>
+                                     ))}
+                                </div>
+
+                                {knowledgeData && knowledgeData.length > 0 && (
+                                    <div className="space-y-3 mt-4">
+                                        <h4 className="text-xs font-bold text-white border-b border-white/10 pb-1">เกร็ดความรู้เพิ่มเติม (Live Data)</h4>
+                                        {knowledgeData.map((k, idx) => (
+                                            <div key={idx} className="bg-blue-900/20 p-3 rounded-lg border border-blue-500/30">
+                                                <div className="font-bold text-blue-300 text-xs mb-1">{k.title}</div>
+                                                <div className="text-[10px] text-slate-400">{k.content}</div>
+                                                <div className="text-[9px] text-slate-500 mt-1 text-right">ที่มา: {k.source}</div>
                                             </div>
                                         ))}
                                     </div>
-                                    <div className="mt-6 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-xl flex items-start gap-3"><i className="fa-solid fa-circle-exclamation text-yellow-500 mt-1"></i><div><h4 className="font-bold text-yellow-500">คำแนะนำเพิ่มเติม</h4><p className="text-sm text-yellow-200/80">ข้อมูลข้างต้นเป็นแนวทางมาตรฐาน ควรปรับเปลี่ยนตามสภาพดิน ({soilInfo.soil}) และปริมาณน้ำฝนในพื้นที่ ({soilInfo.region}) ของท่าน</p></div></div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        const HomePage = ({ setPage, onStartTransition }) => {
+            const [isFullscreen, setIsFullscreen] = useState(false);
+            const toggleFullScreen = () => {
+                if (!document.fullscreenElement) {
+                    document.documentElement.requestFullscreen().then(() => setIsFullscreen(true));
+                } else {
+                    if (document.exitFullscreen) {
+                        document.exitFullscreen().then(() => setIsFullscreen(false));
+                    }
+                }
+            };
+
+            useEffect(() => {
+                checkAndPreloadTiles(13.9133, 100.6042, 10);
+            }, []);
+
+            return (
+                <div className="min-h-screen relative flex flex-col items-center justify-center text-white p-6 overflow-hidden ui-layer">
+                    <div className="absolute inset-0 w-full h-full pointer-events-none z-0 overflow-hidden">
+                        <div className="cloud-layer opacity-30 mix-blend-screen"></div>
+                        <div className="cloud-layer opacity-20 mix-blend-screen" style={{ animationDirection: 'reverse', animationDuration: '60s' }}></div>
+                    </div>
+
+                    <button onClick={toggleFullScreen} className="absolute top-6 right-6 z-50 bg-white/5 backdrop-blur-md border border-white/10 text-white w-10 h-10 rounded-full flex items-center justify-center hover:bg-white/10 transition-all shadow-lg group">
+                        <i className={`fa-solid ${isFullscreen ? 'fa-compress' : 'fa-expand'} text-sm group-hover:text-emerald-400`}></i>
+                    </button>
+
+                    <div className="z-20 text-center animate-fade-in-up relative flex flex-col items-center">
+                        <div className="relative mb-4 pr-2">
+                            <div className="absolute top-0 right-[-3px] w-2 h-2 bg-yellow-400 rounded-full shadow-[0_0_5px_rgba(250,204,21,0.8)] z-20"></div>
+                            <div className="absolute top-0 right-[-1px] w-1 h-20 bg-slate-400 rounded-b-full shadow-sm z-0"></div>
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/a/a9/Flag_of_Thailand.svg" alt="Thai Flag" className="w-24 h-auto animate-flag-wave relative z-10" style={{ transformOrigin: 'center right' }} />
+                        </div>
+
+                        <h1 className="text-5xl md:text-7xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-emerald-400 to-cyan-400 drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)]">
+                            Winai Innovation
+                        </h1>
+                        <p className="text-slate-200 text-lg md:text-xl mb-2 drop-shadow-md font-light bg-black/30 px-4 py-1 rounded-full inline-block backdrop-blur-sm border border-white/10">
+                            Super App เพื่อเกษตรกรไทย
+                        </p>
+
+                        <div className="flex flex-col gap-6 w-full max-w-sm mx-auto">
+                            <button onClick={onStartTransition} className="btn-super-pulse bg-gradient-to-r from-emerald-600 to-teal-600 p-5 rounded-2xl font-bold text-xl text-white hover:scale-105 transition transform shadow-[0_0_20px_rgba(16,185,129,0.4)] border border-emerald-400/30 relative overflow-hidden group">
+                                <div className="absolute inset-0 bg-white/20 group-hover:bg-white/30 transition"></div>
+                                <div className="relative flex items-center justify-center gap-3">
+                                    <i className="fa-solid fa-globe text-2xl animate-spin-slow"></i>
+                                    <span>เข้าสู่ Kaset Cloud</span>
                                 </div>
-                            )}
+                            </button>
+
+                            <div className="bg-white/5 px-6 py-4 rounded-xl backdrop-blur-md border border-white/5 flex flex-col items-center w-full">
+                                <div className="flex flex-wrap justify-center gap-3 mb-3">
+                                    <a href="https://line.me/ti/p/-M5tBwhz9j" target="_blank" className="inline-flex items-center justify-center gap-2 bg-[#06C755] hover:bg-[#05a546] text-white py-1 px-3 rounded-full text-xs font-bold shadow-sm transition hover:scale-105">
+                                        <i className="fa-brands fa-line text-lg"></i>
+                                        ติดต่อ Admin
+                                    </a>
+                                </div>
+                                <div className="text-[10px] md:text-xs text-slate-400">
+                                    <p className="mb-1 font-bold text-slate-300">ผลิตโดย: Mr.Winai Phanarkat</p>
+                                    <p>ไลน์: 0926533228 | อีเมล์: winayo@gmail.com</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -760,27 +638,120 @@
             const [area, setArea] = useState(1);
             const [analyzing, setAnalyzing] = useState(false);
             const [results, setResults] = useState(null);
-            const [soilInfo, setSoilInfo] = useState(PROVINCE_DATA["กรุงเทพมหานคร"]);
-            const [isFullSheet, setIsFullSheet] = useState(false);
-            const [isResultsUpdated, setIsResultsUpdated] = useState(false);
-            const [hasArrived, setHasArrived] = useState(false);
+            
+            const [appData, setAppData] = useState({
+                regions: MOCK_REGIONS,
+                provinceData: MOCK_PROVINCE_DATA,
+                crops: MOCK_CROPS,
+                floodAlerts: [],
+                knowledge: [],
+                isLoading: true,
+                isOnline: false,
+                isCssOnline: false
+            });
 
+            const [connectionError, setConnectionError] = useState(null);
+            const [soilInfo, setSoilInfo] = useState(MOCK_PROVINCE_DATA["กรุงเทพมหานคร"]);
+            const [isFullSheet, setIsFullSheet] = useState(false);
+            const [hasArrived, setHasArrived] = useState(false);
             const [itemsPerPage, setItemsPerPage] = useState(5);
             const [currentPage, setCurrentPage] = useState(1);
             const listContainerRef = useRef(null);
-
             const [weatherData, setWeatherData] = useState(null);
             const [address, setAddress] = useState({
                 village: '-', subDistrict: '-', district: '-', province: 'กรุงเทพมหานคร', postcode: '-'
             });
             const [floodData, setFloodData] = useState({ risk: 'Low', history: [], desc: 'ปกติ' });
-
             const [userHasInteracted, setUserHasInteracted] = useState(false);
             const [simulatingItem, setSimulatingItem] = useState(null);
             const [isFullscreen, setIsFullscreen] = useState(false);
-
             const kasetMarkerRef = useRef(null);
             const debounceRef = useRef(null);
+
+            useEffect(() => {
+                const fetchMasterData = async () => {
+                    let retryCount = 0;
+                    while (!window.supabase && retryCount < 10) {
+                        await new Promise(r => setTimeout(r, 500));
+                        retryCount++;
+                    }
+
+                    if (!dbClient && window.supabase) {
+                        dbClient = tryInitSupabase();
+                    }
+
+                    if (!dbClient) {
+                        setConnectionError("❌ Supabase Client ยังไม่ถูกสร้าง");
+                        setAppData(prev => ({ ...prev, isLoading: false, isOnline: false }));
+                        return;
+                    }
+
+                    try {
+                        const [provRes, cropRes, floodRes, knowRes] = await Promise.all([
+                            dbClient.from('provinces').select('*'),
+                            dbClient.from('crops').select('*'),
+                            dbClient.from('flood_alerts').select('*'),
+                            dbClient.from('crop_knowledge').select('*')
+                        ]);
+
+                        if (provRes.error || cropRes.error) throw new Error("DB Error");
+
+                        if (provRes.data && provRes.data.length > 0) {
+                            const newRegions = {};
+                            const newProvinceData = {};
+                            provRes.data.forEach(p => {
+                                if (!newRegions[p.region]) newRegions[p.region] = [];
+                                newRegions[p.region].push(p.name);
+                                newProvinceData[p.name] = { lat: p.lat, lng: p.lng, ph: p.ph, moisture: p.moisture, soil: p.soil_type, region: p.region };
+                            });
+
+                            const newCrops = cropRes.data.map(c => ({
+                                ...c,
+                                primarySource: c.primary_source,
+                                marketLocation: c.market_location,
+                                yieldUnit: c.yield_unit,
+                                costStructure: c.cost_structure, 
+                                farmingSteps: c.farming_steps,
+                                lifecycle: c.lifecycle,
+                                profitTotal: 0, 
+                                costTotal: 0 
+                            }));
+
+                            setAppData({ 
+                                regions: newRegions, 
+                                provinceData: newProvinceData, 
+                                crops: newCrops, 
+                                floodAlerts: floodRes.data || [], 
+                                knowledge: knowRes.data || [],
+                                isLoading: false, 
+                                isOnline: true 
+                            });
+                            setConnectionError(null);
+                            if(newProvinceData["กรุงเทพมหานคร"]) setSoilInfo(newProvinceData["กรุงเทพมหานคร"]);
+                        } else {
+                            throw new Error("Data empty");
+                        }
+                    } catch (error) {
+                        setConnectionError(error.message);
+                        setAppData(prev => ({ ...prev, isLoading: false, isOnline: false }));
+                    }
+                };
+                fetchMasterData();
+            }, []);
+
+            const checkFloodAlert = (prov) => {
+                const alert = appData.floodAlerts.find(f => f.province === prov);
+                if (alert) {
+                    return { risk: alert.risk_level, history: [], desc: alert.description || `มีแจ้งเตือนภัย: ${alert.risk_level}` };
+                }
+                return calculateFloodRisk(0, 0); 
+            };
+            
+            useEffect(() => {
+                if (hasArrived) {
+                    setFloodData(checkFloodAlert(province));
+                }
+            }, [province, hasArrived, appData.floodAlerts]);
 
             const toggleFullScreen = () => {
                 if (!document.fullscreenElement) {
@@ -792,105 +763,35 @@
                 }
             };
 
+            useEffect(() => {
+                if (simulatingItem) setIsFullSheet(true);
+            }, [simulatingItem]);
+
             const analyzeData = () => {
-                let baseData = [
-                    {
-                        name: "ข้าวหอมมะลิ 105", category: "พืชไร่", price: 16500, yield: 780, cost: 5200, risk: "Low", primarySource: "RICE", market: "โรงสีข้าวท้องถิ่น / สกต.", marketLocation: "ทั่วประเทศ",
-                        density: "ใชเมล็ดพันธุ์ 15-20 กก.", yieldUnit: "ข้าวเปลือก (ความชื้น 15%)"
-                    },
-                    {
-                        name: "มันสำปะหลัง", category: "พืชไร่", price: 3200, yield: 3600, cost: 3800, risk: "High", primarySource: "OAE", market: "ลานมันเอกชน / โรงแป้ง", marketLocation: "นครราชสีมา, กำแพงเพชร",
-                        density: "1,600-2,500 ต้น", yieldUnit: "หัวมันสด (คละเกรด)"
-                    },
-                    {
-                        name: "ทุเรียนหมอนทอง", category: "ผลไม้", price: 140000, yield: 2200, cost: 32000, risk: "High", primarySource: "MARKET", market: "ตลาดไท / ตลาดอัยยรา", marketLocation: "ปทุมธานี (14.07, 100.62)",
-                        density: "20-25 ต้น", yieldUnit: "ประมาณ 600-700 ลูก (3-4 กก./ลูก)"
-                    },
-                    {
-                        name: "ยางพารา (แผ่นดิบ)", category: "ไม้ยืนต้น", price: 62000, yield: 240, cost: 4500, risk: "Medium", primarySource: "OAE", market: "ตลาดกลางยางพารา", marketLocation: "สงขลา, สุราษฎร์ธานี",
-                        density: "76-80 ต้น", yieldUnit: "แผ่นยางดิบคุณภาพ 3"
-                    },
-                    {
-                        name: "ปาล์มน้ำมัน", category: "พืชไร่", price: 5800, yield: 3200, cost: 4200, risk: "Low", primarySource: "OAE", market: "ลานรับซื้อปาล์ม", marketLocation: "กระบี่, สุราษฎร์ธานี",
-                        density: "22 ต้น", yieldUnit: "ทะลายสด"
-                    },
-                    {
-                        name: "ข้าวโพดเลี้ยงสัตว์", category: "พืชไร่", price: 10500, yield: 1250, cost: 6500, risk: "Medium", primarySource: "OAE", market: "โรงงานอาหารสัตว์", marketLocation: "สระบุรี, ลพบุรี",
-                        density: "10,000-12,000 ต้น", yieldUnit: "เมล็ดความชื้น 14.5%"
-                    },
-                    {
-                        name: "อ้อยโรงงาน", category: "พืชไร่", price: 1250, yield: 12500, cost: 6500, risk: "Low", primarySource: "OAE", market: "โรงงานน้ำตาล", marketLocation: "กาญจนบุรี, อุดรธานี",
-                        density: "10,000-16,000 ลำ", yieldUnit: "ตันอ้อย (10-12 C.C.S)"
-                    },
-                    {
-                        name: "พริกจินดาแดง", category: "ผัก", price: 80000, yield: 2000, cost: 35000, risk: "High", primarySource: "MARKET", market: "ตลาดสี่มุมเมือง", marketLocation: "ปทุมธานี (13.96, 100.62)",
-                        density: "3,000-4,000 ต้น", yieldUnit: "ผลสด (คัดเกรด)"
-                    },
-                    {
-                        name: "มะนาว (เบอร์ใหญ่)", category: "ผัก", price: 75000, yield: 1500, cost: 20000, risk: "Medium", primarySource: "MARKET", market: "ตลาดไท", marketLocation: "ปทุมธานี",
-                        density: "50-80 ต้น", yieldUnit: "ประมาณ 30,000-40,000 ลูก"
-                    },
-                    {
-                        name: "คะน้า (คัดพิเศษ)", category: "ผัก", price: 45000, yield: 2500, cost: 18000, risk: "Medium", primarySource: "MARKET", market: "ตลาดสี่มุมเมือง", marketLocation: "ปทุมธานี",
-                        density: "หว่านเมล็ด", yieldUnit: "ต้นสด (ตัดแต่ง)"
-                    },
-                    {
-                        name: "ผักสลัดไฮโดรฯ", category: "ผัก", price: 90000, yield: 2200, cost: 35000, risk: "Low", primarySource: "MARKET", market: "Talaad Thai Select", marketLocation: "ปทุมธานี",
-                        density: "4,000-6,000 ต้น (ตามราง)", yieldUnit: "ต้นสด (กรีนโอ๊ค/เรดโอ๊ค)"
-                    },
-                    {
-                        name: "มังคุด", category: "ผลไม้", price: 45000, yield: 1600, cost: 15000, risk: "Medium", primarySource: "DOA", market: "ตลาดผลไม้เนินสูง", marketLocation: "จันทบุรี",
-                        density: "20-25 ต้น", yieldUnit: "ประมาณ 16,000-20,000 ลูก"
-                    },
-                    {
-                        name: "มะพร้าวน้ำหอม", category: "ผลไม้", price: 160000, yield: 2200, cost: 32000, risk: "Low", primarySource: "MARKET", market: "ตลาดดำเนินสะดวก", marketLocation: "ราชบุรี",
-                        density: "40-45 ต้น", yieldUnit: "ประมาณ 2,500-3,000 ลูก"
-                    }
-                ];
+                const baseData = appData.crops;
                 const calculated = baseData.map(item => {
                     let y = item.yield, c = item.cost;
-                    if (item.name.includes("ทุเรียน")) {
-                        const priceFactor = 0.85;
-                        item.price = item.price * priceFactor;
-                        item.risk = "High";
-                    }
-                    if (item.name.includes("มันสำปะหลัง")) {
-                        y *= 0.85;
-                        item.price *= 1.1;
-                    }
-
-                    if (floodData.risk === 'High') {
-                        c *= 1.3;
-                        if (!item.name.includes("ข้าว")) y *= 0.5;
-                    }
-                    if (soilInfo.soil.includes("ทราย") && item.name.includes("ข้าว")) {
-                        y *= 0.8;
-                    }
-                    if (weatherData && weatherData.dailyRain < 2 && item.name.includes("ข้าว")) {
-                        y *= 0.9;
-                    }
+                    if (item.name.includes("ทุเรียน")) item.price *= 0.85;
+                    if (item.name.includes("มันสำปะหลัง")) { y *= 0.85; item.price *= 1.1; }
+                    if (floodData.risk === 'High') { c *= 1.3; if (!item.name.includes("ข้าว")) y *= 0.5; }
+                    
+                    const soilType = soilInfo.soil || soilInfo.soil_type || "";
+                    if (soilType.includes("ทราย") && item.name.includes("ข้าว")) y *= 0.8;
+                    if (weatherData && weatherData.dailyRain < 2 && item.name.includes("ข้าว")) y *= 0.9;
+                    
                     const rev = item.price * (y / 1000) * area;
                     const cost = c * area;
+                    
                     const usedSources = [];
                     if (GOV_SOURCES[item.primarySource]) usedSources.push(GOV_SOURCES[item.primarySource]);
                     if (floodData.risk !== 'Low') usedSources.push(GOV_SOURCES.GISTDA);
-                    if (soilInfo.soil !== 'ดินร่วน') usedSources.push(GOV_SOURCES.LDD);
+                    if (soilType !== 'ดินร่วน') usedSources.push(GOV_SOURCES.LDD);
 
-                    return {
-                        ...item,
-                        profitTotal: rev - cost,
-                        costTotal: cost,
-                        risk_level: item.risk,
-                        history: [],
-                        refSources: usedSources
-                    };
+                    return { ...item, profitTotal: rev - cost, costTotal: cost, risk_level: item.risk, history: [], refSources: usedSources };
                 });
-
                 setResults(calculated.sort((a, b) => b.profitTotal - a.profitTotal));
                 setAnalyzing(false);
-                setIsResultsUpdated(true);
                 setCurrentPage(1);
-                setTimeout(() => setIsResultsUpdated(false), 5000);
             };
 
             useEffect(() => {
@@ -906,15 +807,12 @@
                 handleResize();
                 const timer = setTimeout(handleResize, 600);
                 window.addEventListener('resize', handleResize);
-                return () => {
-                    window.removeEventListener('resize', handleResize);
-                    clearTimeout(timer);
-                };
+                return () => { window.removeEventListener('resize', handleResize); clearTimeout(timer); };
             }, [isFullSheet, results, province]);
 
             useEffect(() => {
-                if (mapInstance) {
-                    const targetInfo = PROVINCE_DATA[province];
+                if (mapInstance && appData.provinceData[province]) {
+                    const targetInfo = appData.provinceData[province];
                     mapInstance.dragging.enable();
                     mapInstance.touchZoom.enable();
                     mapInstance.doubleClickZoom.enable();
@@ -941,18 +839,11 @@
                         marker.on('mouseout', () => { mapInstance.getContainer().style.cursor = 'grab'; });
                         kasetMarkerRef.current = marker;
                     } else {
-                        if (!userHasInteracted || selectedRegion) {
-                            kasetMarkerRef.current.setLatLng([targetInfo.lat, targetInfo.lng]);
-                        }
+                        if (!userHasInteracted || selectedRegion) kasetMarkerRef.current.setLatLng([targetInfo.lat, targetInfo.lng]);
                     }
                 }
-                return () => {
-                    if (kasetMarkerRef.current) {
-                        kasetMarkerRef.current.remove();
-                        kasetMarkerRef.current = null;
-                    }
-                };
-            }, [mapInstance, province]);
+                return () => { if (kasetMarkerRef.current) { kasetMarkerRef.current.remove(); kasetMarkerRef.current = null; } };
+            }, [mapInstance, province, appData.provinceData]);
 
             const fetchDetailedAddress = async (lat, lng) => {
                 try {
@@ -966,11 +857,7 @@
                             province: data.address.province || data.address.state || province,
                             postcode: data.address.postcode || '-'
                         });
-                        if (kasetMarkerRef.current) {
-                            kasetMarkerRef.current.setPopupContent(
-                                `<b>📍 พิกัด:</b> ${data.address.suburb || '-'}<br>อ.${data.address.district || '-'}`
-                            ).openPopup();
-                        }
+                        if (kasetMarkerRef.current) kasetMarkerRef.current.setPopupContent(`<b>📍 พิกัด:</b> ${data.address.suburb || '-'}<br>อ.${data.address.district || '-'}`).openPopup();
                     }
                 } catch (e) { console.error("Address fetch failed", e); }
             };
@@ -1014,78 +901,43 @@
                 setAnalyzing(true);
                 debounceRef.current = setTimeout(analyzeData, 800);
                 return () => clearTimeout(debounceRef.current);
-            }, [province, area, weatherData, floodData]);
+            }, [province, area, weatherData, floodData, appData.crops]);
 
-            const handleRegionSelect = (regionName) => {
-                setSelectedRegion(regionName);
-            };
+            const handleRegionSelect = (regionName) => setSelectedRegion(regionName);
 
             const handleProvinceSelect = async (provName) => {
                 setSelectedProvince(provName);
                 setProvince(provName);
                 setHasArrived(false);
-
-                const info = PROVINCE_DATA[provName];
+                const info = appData.provinceData[provName];
                 setSoilInfo(info);
                 setUserHasInteracted(true);
                 if (mapInstance) {
-                    // กำหนดจุดเริ่มและสิ้นสุด
-                    const startLat = DON_MUEANG_COORDS[0];
-                    const startLng = DON_MUEANG_COORDS[1];
-                    const endLat = info.lat;
-                    const endLng = info.lng;
-
-                    // ★★★ คำนวณองศาหัวเครื่องบิน ★★★
+                    const startLat = DON_MUEANG_COORDS[0], startLng = DON_MUEANG_COORDS[1], endLat = info.lat, endLng = info.lng;
                     const bearing = getBearing(startLat, startLng, endLat, endLng);
-
-                    // ส่งค่า bearing ไปด้วย (Param ตัวที่ 2)
                     onTravelStart(`กำลังเตรียมการบิน...`, bearing);
-
-                    const midLat = (startLat + endLat) / 2;
-                    const midLng = (startLng + endLng) / 2;
-                    const slowNetTimer = setTimeout(() => {
-                        onTravelStart(`มีการใช้งานอินเตอร์เน็ตเยอะโปรดรอสักครู่...`, bearing);
-                    }, 2000);
-
-                    const cacheTasks = [
-                        checkAndPreloadTiles(startLat, startLng, 9),
-                        checkAndPreloadTiles(midLat, midLng, 9),
-                        checkAndPreloadTiles(endLat, endLng, 9)
-                    ];
-
+                    const midLat = (startLat + endLat) / 2, midLng = (startLng + endLng) / 2;
+                    const slowNetTimer = setTimeout(() => onTravelStart(`มีการใช้งานอินเตอร์เน็ตเยอะโปรดรอสักครู่...`, bearing), 2000);
+                    const cacheTasks = [checkAndPreloadTiles(startLat, startLng, 9), checkAndPreloadTiles(midLat, midLng, 9), checkAndPreloadTiles(endLat, endLng, 9)];
                     await Promise.all(cacheTasks);
                     clearTimeout(slowNetTimer);
-
-                    onTravelStart(`พร้อมออกเดินทางไป ${provName}!`, bearing); // ส่ง bearing อีกรอบเพื่อความชัวร์
-
+                    onTravelStart(`พร้อมออกเดินทางไป ${provName}!`, bearing);
                     setTimeout(() => {
                         const offsetLat = info.lat - 0.15;
                         mapInstance.flyTo([offsetLat, info.lng], 9, { duration: 8, easeLinearity: 0.25 });
                         setTimeout(() => {
-                            onTravelEnd();
-                            setHasArrived(true);
-                            if (kasetMarkerRef.current) {
-                                kasetMarkerRef.current.setLatLng([info.lat, info.lng]);
-                            }
+                            onTravelEnd(); setHasArrived(true);
+                            if (kasetMarkerRef.current) kasetMarkerRef.current.setLatLng([info.lat, info.lng]);
                         }, 8000);
                     }, 500);
                 }
             };
 
-            const resetRegion = () => {
-                setSelectedRegion(null);
-                setSelectedProvince(null);
-                if (mapInstance) mapInstance.flyTo(DON_MUEANG_COORDS, 10, { duration: 4 });
-            };
+            const resetRegion = () => { setSelectedRegion(null); setSelectedProvince(null); if (mapInstance) mapInstance.flyTo(DON_MUEANG_COORDS, 10, { duration: 4 }); };
 
             const handleProvinceChange = (e) => {
-                const p = e.target.value;
-                setProvince(p);
-                setHasArrived(true);
-
-                const info = PROVINCE_DATA[p];
-                setSoilInfo(info);
-                setUserHasInteracted(true);
+                const p = e.target.value; setProvince(p); setHasArrived(true);
+                const info = appData.provinceData[p]; setSoilInfo(info); setUserHasInteracted(true);
                 if (mapInstance && kasetMarkerRef.current) {
                     const offsetLat = info.lat - 0.15;
                     mapInstance.flyTo([offsetLat, info.lng], 10, { duration: 3 });
@@ -1094,14 +946,26 @@
             };
 
             const inputContainerClass = !userHasInteracted
-                ? "bg-slate-900/40 backdrop-blur-xl p-2 rounded-full border-2 border-yellow-400 shadow-[0_0_20px_rgba(250,204,21,0.5)] animate-attention transition-all duration-300 transform scale-105"
-                : "bg-slate-900/10 backdrop-blur-xl px-4 py-1.5 rounded-full border border-white/20 shadow-lg transition-all duration-300";
+                ? "bg-slate-900/40 backdrop-blur-xl p-2 rounded-full border border-yellow-400/50 shadow-[0_0_20px_rgba(250,204,21,0.5)] animate-attention transition-all duration-300 transform scale-105"
+                : "bg-slate-900/30 backdrop-blur-xl px-4 py-1.5 rounded-full border border-white/10 shadow-lg transition-all duration-300";
 
-            const resultHeaderClass = "w-full min-h-14 flex flex-col justify-center px-4 py-2 bg-black/80 text-white cursor-pointer pointer-events-auto rounded-t-xl border-t border-white/10 backdrop-blur-md";
-
+            // ปรับ background ของ Header Bar ให้ "ใส" เท่ากับ Dashboard (ใช้ bg-slate-900/60 และ backdrop-blur-none)
+            const resultHeaderClass = "w-full min-h-14 flex flex-col justify-center px-4 py-2 bg-slate-900/60 backdrop-blur-none text-white cursor-pointer pointer-events-auto rounded-t-2xl border-t border-white/10 shadow-[0_-5px_20px_rgba(0,0,0,0.3)]";
             const totalPages = results ? Math.ceil(results.length / itemsPerPage) : 0;
             const paginatedResults = results ? results.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage) : [];
-            const bottomSheetClass = `absolute bottom-0 left-0 right-0 mx-auto w-full md:max-w-4xl lg:max-w-5xl bg-transparent z-[1000] bottom-sheet flex flex-col pointer-events-none transition-all duration-500 ${isFullSheet || !selectedProvince ? 'h-[90%] max-h-[95dvh]' : 'h-[65%] max-h-[70dvh] landscape:h-[80%]'}`;
+            // FIX: เพิ่ม max-height และ overflow-hidden ให้ bottomSheetClass เพื่อป้องกันเนื้อหาหลุดจอ
+            const bottomSheetClass = `absolute bottom-0 left-0 right-0 mx-auto w-full md:max-w-4xl lg:max-w-5xl bg-transparent z-[1000] bottom-sheet flex flex-col pointer-events-none transition-all duration-500 overflow-hidden ${isFullSheet || !selectedProvince ? 'h-[90%] max-h-[95dvh]' : 'h-[60%] max-h-[70dvh] landscape:h-[80%]'}`;
+
+            if (appData.isLoading) {
+                return (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-[2000] text-white backdrop-blur-sm">
+                        <div className="text-center">
+                            <i className="fa-solid fa-cloud-arrow-down fa-spin text-4xl mb-4 text-emerald-400"></i>
+                            <p>กำลังเชื่อมต่อฐานข้อมูล...</p>
+                        </div>
+                    </div>
+                );
+            }
 
             return (
                 <div className="relative w-full h-[100dvh] overflow-hidden ui-layer pointer-events-none">
@@ -1109,36 +973,41 @@
                         <i className={`fa-solid ${isFullscreen ? 'fa-compress' : 'fa-expand'} text-sm`}></i>
                     </button>
 
+                    {/* Status Indicator */}
+                    <div className="absolute top-20 right-6 z-[1050] flex flex-col items-end gap-2 pointer-events-auto">
+                        {appData.isOnline ? (
+                            <div className="bg-emerald-500/80 backdrop-blur-md px-3 py-1 rounded-full text-[10px] text-white shadow-lg flex items-center gap-2 border border-emerald-400">
+                                <i className="fa-solid fa-database"></i> Online Data (Supabase)
+                            </div>
+                        ) : (
+                            <>
+                                <div className="bg-red-500/80 backdrop-blur-md px-3 py-1 rounded-full text-[10px] text-white shadow-lg flex items-center gap-2 border border-red-400">
+                                    <i className="fa-solid fa-wifi-slash"></i> Offline Mode (ข้อมูลจำลอง)
+                                </div>
+                                {connectionError && (
+                                    <div className="bg-black/80 backdrop-blur-md p-3 rounded-lg text-[10px] text-red-300 shadow-xl border border-red-500/30 max-w-[250px]">
+                                        <div className="font-bold mb-1 text-red-400"><i className="fa-solid fa-circle-exclamation"></i> พบปัญหาการเชื่อมต่อ:</div>
+                                        {connectionError}
+                                    </div>
+                                )}
+                            </>
+                        )}
+                    </div>
+
                     {selectedProvince && (
                         <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[990] w-full pointer-events-auto">
                             <div className={inputContainerClass + " flex flex-row items-center gap-2 justify-center w-fit mx-auto"}>
-                                <button onClick={resetRegion} className="w-8 h-8 rounded-full bg-slate-700 hover:bg-slate-600 text-white flex items-center justify-center border border-white/20 transition mr-1" title="เปลี่ยนภูมิภาค">
+                                <button onClick={resetRegion} className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition mr-1" title="เปลี่ยนภูมิภาค">
                                     <i className="fa-solid fa-arrow-left"></i>
                                 </button>
                                 <div className="relative group">
                                     <i className={`fa-solid fa-location-dot absolute left-2 top-2 text-xs z-10 ${!userHasInteracted ? 'text-yellow-400 animate-bounce' : 'text-emerald-300'}`}></i>
-                                    <select className={`w-[140px] py-1.5 pl-7 pr-4 text-xs rounded-full text-white focus:outline-none appearance-none cursor-pointer font-bold ${!userHasInteracted ? 'bg-yellow-500/20 border-yellow-500' : 'bg-transparent border border-white/30'}`}
-                                        value={province} onChange={handleProvinceChange}>
-                                        {regions[selectedRegion].sort().map(p => (
-                                            <option key={p} value={p} className="text-white bg-slate-800">{p}</option>
-                                        ))}
+                                    <select className={`w-[140px] py-1.5 pl-7 pr-4 text-xs rounded-full text-white focus:outline-none appearance-none cursor-pointer font-bold ${!userHasInteracted ? 'bg-yellow-500/20 border-yellow-500' : 'bg-transparent border border-white/30'}`} value={province} onChange={handleProvinceChange}>
+                                        {(appData.regions[selectedRegion] || []).sort().map(p => (<option key={p} value={p} className="text-white bg-slate-800">{p}</option>))}
                                     </select>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <input
-                                        type="number"
-                                        step="0.1" // 👈 เพิ่ม
-                                        min="0"    // 👈 เพิ่ม
-                                        value={area}
-                                        onChange={(e) => {
-                                            // 👈 แก้: รองรับทศนิยม และห้ามติดลบ
-                                            const val = parseFloat(e.target.value);
-                                            setArea(isNaN(val) ? 0 : Math.max(0, val));
-                                            setUserHasInteracted(true);
-                                        }}
-                                        className={`w-[50px] py-1.5 text-xs text-center rounded-full text-white focus:outline-none font-bold ${!userHasInteracted ? 'bg-yellow-500/20 border border-yellow-500 placeholder-yellow-200' : 'bg-transparent border border-white/30'}`}
-                                        placeholder="ไร่"
-                                    />
+                                    <input type="number" step="0.1" min="0" value={area} onChange={(e) => { const val = parseFloat(e.target.value); setArea(isNaN(val) ? 0 : Math.max(0, val)); setUserHasInteracted(true); }} className={`w-[50px] py-1.5 text-xs text-center rounded-full text-white focus:outline-none font-bold ${!userHasInteracted ? 'bg-yellow-500/20 border border-yellow-500 placeholder-yellow-200' : 'bg-transparent border border-white/30'}`} placeholder="ไร่" />
                                     <span className={`text-[10px] font-bold ${!userHasInteracted ? 'text-yellow-300' : 'text-white/80'}`}>ไร่</span>
                                 </div>
                             </div>
@@ -1148,272 +1017,89 @@
                     {selectedProvince && (
                         <>
                             <div className="absolute top-[80px] left-4 z-[950] pointer-events-none flex flex-col gap-2 text-[10px] md:text-xs text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] max-w-[45%]">
-                                <div>
-                                    <div className="font-bold text-emerald-300"><i className="fa-solid fa-map-pin"></i> พิกัดปัจจุบัน</div>
-                                    <div>{address.village}</div>
-                                    <div>{address.subDistrict} {'>'} {address.district}</div>
-                                    <div className="text-yellow-400">{address.province}</div>
-                                </div>
-                                <div className="mt-1">
-                                    <div className="font-bold text-amber-300"><i className="fa-solid fa-layer-group"></i> ดิน & น้ำ</div>
-                                    <div>ชนิด: {soilInfo.soil}</div>
-                                    <div>pH: {soilInfo.ph} | ชื้น: {soilInfo.moisture}%</div>
-                                    {(floodData.risk === 'High' || floodData.risk === 'Medium') && (
-                                        <div className="mt-1 bg-red-500/20 border border-red-500/50 p-1 rounded text-[9px] text-red-100 animate-pulse w-fit">
-                                            <div className="font-bold flex items-center gap-1">
-                                                <i className="fa-solid fa-clock-rotate-left"></i> เคยท่วม: {floodData.history.join(', ')}
-                                            </div>
-                                        </div>
-                                    )}
-                                    <div className={`${floodData.risk === 'High' ? 'text-red-400 font-bold' : (floodData.risk === 'Medium' ? 'text-orange-400 font-bold' : 'text-green-300')}`}>
-                                        {floodData.desc}
-                                    </div>
-                                </div>
+                                <div><div className="font-bold text-emerald-300"><i className="fa-solid fa-map-pin"></i> พิกัดปัจจุบัน</div><div className="text-white/80">{address.village}</div><div className="text-white/80">{address.subDistrict} {'>'} {address.district}</div></div>
                             </div>
-
                             <div className="absolute top-[80px] right-4 z-[950] pointer-events-none flex flex-col gap-2 text-[10px] md:text-xs text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] text-right items-end max-w-[45%]">
-                                <div>
-                                    <div className="font-bold text-blue-300"><i className="fa-solid fa-temperature-half"></i> อุณหภูมิ (Live)</div>
-                                    <div className="text-xl font-bold">{weatherData ? weatherData.temp : '-'}°C</div>
-                                    <div>ต่ำสุด: {weatherData ? weatherData.tempMin : '-'} | สูงสุด: {weatherData ? weatherData.tempMax : '-'}</div>
-                                </div>
-                                <div className="mt-1">
-                                    <div className="font-bold text-cyan-300"><i className="fa-solid fa-cloud-rain"></i> ปริมาณฝน</div>
-                                    <div>วันนี้: {weatherData ? weatherData.rain : 0}mm</div>
-                                    <div>สะสม 24ชม: {weatherData ? weatherData.dailyRain : 0}mm</div>
-                                    <div>ทั้งปี: ~{weatherData ? weatherData.seasonalAvgRain : '-'}mm</div>
-                                </div>
+                                <div><div className="font-bold text-blue-300"><i className="fa-solid fa-temperature-half"></i> อุณหภูมิ</div><div className="text-xl font-bold">{weatherData ? weatherData.temp : '-'}°C</div></div>
                             </div>
                         </>
                     )}
 
                     <div className={bottomSheetClass}>
                         {!selectedRegion ? (
-                            <div className="flex-1 flex items-center justify-center p-6 pointer-events-auto">
+                            // ปรับธีมหน้าเลือกภูมิภาคให้ใส (Transparent)
+                            <div className="flex-1 flex items-center justify-center p-6 pointer-events-auto bg-slate-900/60 backdrop-blur-none rounded-t-3xl border-t border-white/10">
                                 <div className="w-full max-w-2xl grid grid-cols-2 gap-4 animate-fade-in-up">
-                                    {Object.keys(regions).map((region) => (
-                                        <button
-                                            key={region}
-                                            onClick={() => handleRegionSelect(region)}
-                                            className="bg-slate-800/80 hover:bg-emerald-600/90 backdrop-blur-md border border-white/20 rounded-xl p-6 flex flex-col items-center justify-center gap-2 transition-all hover:scale-105 shadow-lg group h-32"
-                                        >
-                                            <span className="text-3xl group-hover:animate-bounce">
-                                                {region === 'เหนือ' && '🌲'}
-                                                {region === 'อีสาน' && '🍂'}
-                                                {region === 'กลาง' && '🏙️'}
-                                                {region === 'ตะวันออก' && '🏭'}
-                                                {region === 'ตะวันตก' && '⛰️'}
-                                                {region === 'ใต้' && '🌊'}
-                                            </span>
-                                            <span className="text-xl font-bold text-white">ภาค{region}</span>
+                                    {Object.keys(appData.regions).map((region) => (
+                                        <button key={region} onClick={() => handleRegionSelect(region)} className="bg-slate-900/40 hover:bg-emerald-900/60 backdrop-blur-sm border border-white/10 rounded-xl p-6 flex flex-col items-center justify-center gap-2 transition-all hover:scale-105 shadow-lg group h-32">
+                                            <span className="text-3xl group-hover:animate-bounce">{region === 'เหนือ' && '🌲'}{region === 'อีสาน' && '🍂'}{region === 'กลาง' && '🏙️'}{region === 'ตะวันออก' && '🏭'}{region === 'ตะวันตก' && '⛰️'}{region === 'ใต้' && '🌊'}</span><span className="text-xl font-bold text-white">ภาค{region}</span>
                                         </button>
                                     ))}
                                 </div>
                             </div>
                         ) : !selectedProvince ? (
-                            <div className="flex-1 flex flex-col items-center p-4 pointer-events-auto bg-black/60 rounded-t-3xl backdrop-blur-sm max-w-2xl mx-auto w-full">
-                                <div className="flex items-center gap-4 mb-4 w-full px-4">
-                                    <button onClick={() => setSelectedRegion(null)} className="text-white/70 hover:text-white"><i className="fa-solid fa-arrow-left"></i></button>
-                                    <h2 className="text-xl font-bold text-white">เลือกจังหวัดในภาค{selectedRegion}</h2>
-                                </div>
+                            // ปรับธีมหน้าเลือกจังหวัดให้ใส (Transparent)
+                            <div className="flex-1 flex flex-col items-center p-4 pointer-events-auto bg-slate-900/60 rounded-t-3xl backdrop-blur-none max-w-2xl mx-auto w-full border-t border-white/10">
+                                <div className="flex items-center gap-4 mb-4 w-full px-4"><button onClick={() => setSelectedRegion(null)} className="text-white/70 hover:text-white"><i className="fa-solid fa-arrow-left"></i></button><h2 className="text-xl font-bold text-white">เลือกจังหวัดในภาค{selectedRegion}</h2></div>
                                 <div className="w-full grid grid-cols-3 gap-2 overflow-y-auto pb-10 scrollbar-prominent px-2">
-                                    {regions[selectedRegion].sort().map(p => (
-                                        <button
-                                            key={p}
-                                            onClick={() => handleProvinceSelect(p)}
-                                            className="bg-slate-700/80 hover:bg-yellow-500 hover:text-slate-900 border border-white/10 rounded-lg p-3 text-xs md:text-sm font-bold text-white transition-all shadow-md"
-                                        >
-                                            {p}
-                                        </button>
-                                    ))}
+                                    {(appData.regions[selectedRegion] || []).sort().map(p => (<button key={p} onClick={() => handleProvinceSelect(p)} className="bg-white/5 hover:bg-white/10 border border-white/5 rounded-lg p-3 text-xs md:text-sm font-bold text-white transition-all">{p}</button>))}
                                 </div>
                             </div>
                         ) : (
                             hasArrived && (
                                 <>
-                                    {isFullSheet && <button onClick={() => setIsFullSheet(false)} className="absolute top-4 right-4 z-[1010] text-white pointer-events-auto"><i className="fa-solid fa-times text-xl"></i></button>}
-
-                                    {/* ส่วน Header จัดอันดับพืชเศรษฐกิจ (เพิ่มเครดิต) */}
-                                    <div className={resultHeaderClass} onClick={() => setIsFullSheet(!isFullSheet)}>
-                                        <div className="flex flex-wrap justify-between items-center w-full gap-2">
-                                            <div className="flex flex-col items-start gap-1">
-                                                <div className={`font-bold text-base md:text-lg flex items-center gap-2 ${userHasInteracted ? 'text-emerald-200' : 'text-emerald-400'}`}>
-                                                    <i className="fa-solid fa-ranking-star"></i>
-                                                    <span className="truncate max-w-[200px] sm:max-w-none">จัดอันดับพืชเศรษฐกิจ ({selectedProvince})</span>
-                                                </div>
-
-                                                {/* ★★★ เครดิตในหน้าจัดอันดับ ★★★ */}
-                                                <div className="text-[10px] text-slate-400 font-light leading-tight">
-                                                    ผลิตโดย: Mr.Winai Phanarkat เพื่อคนไทย | ไลน์/โทร: 0926533228
-                                                </div>
-                                            </div>
-
-                                            <div className="flex items-center gap-3" onClick={(e) => e.stopPropagation()}>
-                                                {results && results.length > itemsPerPage && (
-                                                    <div className="flex items-center gap-2 text-xs bg-white/10 rounded-full px-2 py-1">
-                                                        <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className={`w-6 h-6 flex items-center justify-center rounded-full transition ${currentPage === 1 ? 'text-slate-500' : 'text-white hover:bg-white/20'}`}><i className="fa-solid fa-chevron-left"></i></button>
-                                                        <span className="font-mono text-yellow-400">{currentPage}/{totalPages}</span>
-                                                        <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className={`w-6 h-6 flex items-center justify-center rounded-full transition ${currentPage === totalPages ? 'text-slate-500' : 'text-white hover:bg-white/20'}`}><i className="fa-solid fa-chevron-right"></i></button>
+                                    {isFullSheet && !simulatingItem && <button onClick={() => setIsFullSheet(false)} className="absolute top-4 right-4 z-[1010] text-white/50 hover:text-white pointer-events-auto"><i className="fa-solid fa-chevron-down text-xl"></i></button>}
+                                    <div className={resultHeaderClass} onClick={() => !simulatingItem && setIsFullSheet(!isFullSheet)}>
+                                        {!simulatingItem ? (
+                                            <div className="flex flex-wrap justify-between items-center w-full gap-2">
+                                                <div className="flex flex-col items-start gap-1">
+                                                    <div className={`font-bold text-base md:text-lg flex items-center gap-2 ${userHasInteracted ? 'text-emerald-200' : 'text-emerald-400'}`}>
+                                                        <i className="fa-solid fa-ranking-star"></i>
+                                                        <span className="truncate max-w-[200px] sm:max-w-none">ฟาร์มเศรษฐกิจ ({selectedProvince})</span>
                                                     </div>
-                                                )}
-                                                <div className="text-slate-400 text-sm ml-2" onClick={() => setIsFullSheet(!isFullSheet)}>
-                                                    <i className={`fa-solid fa-chevron-up transition-transform ${isFullSheet ? 'rotate-180' : ''}`}></i>
+                                                    <div className="text-[10px] text-slate-400 font-light leading-tight">ผลิตโดย: Mr.Winai Phanarkat | ไลน์: 0926533228</div>
+                                                </div>
+                                                <div className="flex items-center gap-3" onClick={(e) => e.stopPropagation()}>
+                                                    {results && results.length > itemsPerPage && (<div className="flex items-center gap-2 text-xs bg-white/5 rounded-full px-2 py-1 border border-white/5"><button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className={`w-6 h-6 flex items-center justify-center rounded-full transition ${currentPage === 1 ? 'text-slate-500' : 'text-white hover:bg-white/20'}`}><i className="fa-solid fa-chevron-left"></i></button><span className="font-mono text-yellow-400">{currentPage}/{totalPages}</span><button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className={`w-6 h-6 flex items-center justify-center rounded-full transition ${currentPage === totalPages ? 'text-slate-500' : 'text-white hover:bg-white/20'}`}><i className="fa-solid fa-chevron-right"></i></button></div>)}
+                                                    <div className="text-slate-400 text-sm ml-2" onClick={() => setIsFullSheet(!isFullSheet)}><i className={`fa-solid fa-chevron-up transition-transform ${isFullSheet ? 'rotate-180' : ''}`}></i></div>
                                                 </div>
                                             </div>
-                                        </div>
-                                        {/* เครดิตเพิ่มเติมบรรทัดล่าง (แสดงเต็มเมื่อขยายจอ) */}
-                                        {isFullSheet && (
-                                            <div className="w-full text-[9px] text-slate-500 text-center mt-2 pt-2 border-t border-white/5">
-                                                อีเมล์: winayo@gmail.com
-                                            </div>
-                                        )}
+                                        ) : (<div className="w-full h-1"></div>)}
                                     </div>
-
-                                    <div className="flex-1 flex flex-col pointer-events-auto bg-black/60 border-x border-white/10 backdrop-filter-none">
-                                        <div
-                                            ref={listContainerRef}
-                                            className="flex-1 overflow-y-scroll scrollbar-prominent pb-10 pointer-events-auto overscroll-contain"
-                                            style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-y', isolation: 'isolate' }}
-                                            onWheel={(e) => { e.stopPropagation(); }}
-                                            onMouseDown={(e) => { e.stopPropagation(); }}
-                                            onTouchStart={(e) => { e.stopPropagation(); }}
-                                        >
-                                            {results ? paginatedResults.map((item, i) => {
-                                                const realIndex = (currentPage - 1) * itemsPerPage + i;
+                                    <div className="flex-1 flex flex-col pointer-events-auto bg-slate-900/60 border-t-0 border-white/10 backdrop-blur-none h-full overflow-hidden"> {/* FIX: เพิ่ม h-full และ overflow-hidden ที่ container หลัก */}
+                                        <div ref={listContainerRef} className="flex-1 overflow-y-auto scrollbar-prominent pb-20 pointer-events-auto relative" style={{ WebkitOverflowScrolling: 'touch' }} onWheel={(e) => { e.stopPropagation(); }} onMouseDown={(e) => { e.stopPropagation(); }} onTouchStart={(e) => { e.stopPropagation(); }}>
+                                            {simulatingItem ? (<SimulationPanel item={simulatingItem} initialArea={area} floodData={floodData} soilInfo={soilInfo} knowledgeData={appData.knowledge} onClose={() => setSimulatingItem(null)} />) : (results ? paginatedResults.map((item, i) => { 
+                                                const realIndex = (currentPage - 1) * itemsPerPage + i; 
+                                                const isAnimal = item.category === 'ปศุสัตว์' || item.name.includes('สุกร') || item.name.includes('โค') || item.name.includes('ไก่');
                                                 return (
-                                                    <div key={realIndex} onClick={() => setSimulatingItem(item)}
-                                                        className="group flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-white/10 p-4 cursor-pointer transition hover:bg-white/10 px-4 md:px-6 w-full gap-3">
+                                                    <div key={realIndex} onClick={() => setSimulatingItem(item)} className="group flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-white/5 p-4 cursor-pointer transition hover:bg-white/5 px-4 md:px-6 w-full gap-3">
                                                         <div className="flex items-start gap-3 w-full sm:w-auto">
-                                                            <div className="w-8 h-8 rounded-full bg-slate-700/50 flex items-center justify-center text-sm font-bold text-emerald-400 border border-emerald-500/30 shrink-0 shadow-lg mt-1 sm:mt-0">
-                                                                {realIndex + 1}
-                                                            </div>
+                                                            <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-sm font-bold text-emerald-400 border border-emerald-500/20 shrink-0 shadow-lg mt-1 sm:mt-0">{realIndex + 1}</div>
                                                             <div className="flex flex-col gap-1 w-full">
-                                                                <span className="text-base md:text-lg font-bold text-slate-100 leading-snug group-hover:text-yellow-400 transition break-words">{item.name}</span>
+                                                                <span className="text-base md:text-lg font-bold text-slate-100 leading-snug group-hover:text-yellow-400 transition break-words flex items-center gap-2">
+                                                                    {isAnimal ? '🐄' : '🌱'} {item.name}
+                                                                </span>
                                                                 <div className="flex flex-wrap items-center gap-2 opacity-80">
-                                                                    {item.refSources && item.refSources.map((src, idx) => (
-                                                                        <span key={idx} className={`text-[10px] px-2 py-0.5 rounded border ${src.color} ${src.borderColor} ${src.bg} flex items-center gap-1 whitespace-nowrap`}>
-                                                                            <i className={`fa-solid ${src.icon} text-[9px]`}></i>
-                                                                            {src.name}
-                                                                        </span>
-                                                                    ))}
+                                                                    {item.refSources && item.refSources.map((src, idx) => (<span key={idx} className={`text-[9px] px-1.5 py-0.5 rounded ${src.color} bg-white/5 border border-white/5 flex items-center gap-1 whitespace-nowrap`}><i className={`fa-solid ${src.icon} text-[8px]`}></i>{src.name}</span>))}
                                                                 </div>
-                                                                <div className="flex flex-col text-[10px] text-slate-300 mt-1">
-                                                                    <span>ราคา: {item.price.toLocaleString()} บาท/ตัน</span>
-                                                                    <span>Demand/Supply: {item.risk === 'High' ? 'Supply สูง/ราคาผันผวน' : (item.risk === 'Medium' ? 'สมดุล' : 'Demand สูง/ราคามั่นคง')}</span>
-                                                                </div>
+                                                                <div className="flex flex-col text-[10px] text-slate-400 mt-1"><span>ราคา: {item.price.toLocaleString()} ฿</span></div>
                                                             </div>
                                                         </div>
                                                         <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-4 pl-11 sm:pl-0 mt-2 sm:mt-0">
                                                             <div className="flex flex-col text-left sm:text-right">
-                                                                <span className="text-[10px] text-slate-400 leading-tight">กำไรสุทธิ</span>
-                                                                <span className={`text-base md:text-xl font-bold ${item.profitTotal > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                                                                    {item.profitTotal > 0 ? '+' : ''}{item.profitTotal.toLocaleString()}
-                                                                </span>
+                                                                <span className="text-[10px] text-slate-500 leading-tight">กำไรสุทธิ</span>
+                                                                <span className={`text-base md:text-xl font-bold ${item.profitTotal > 0 ? 'text-emerald-400' : 'text-red-400'}`}>{item.profitTotal > 0 ? '+' : ''}{item.profitTotal.toLocaleString()}</span>
                                                             </div>
-                                                            <div className="flex flex-col text-left sm:text-right w-[60px] sm:w-[80px]">
-                                                                <span className="text-[10px] text-slate-400 leading-tight">ความเสี่ยง</span>
-                                                                <span className={`text-xs font-bold ${item.risk_level === 'High' ? 'text-red-400' : (item.risk_level === 'Medium' ? 'text-orange-400' : 'text-green-400')}`}>
-                                                                    {item.risk_level}
-                                                                </span>
-                                                            </div>
-                                                            <button
-                                                                onClick={(e) => { e.stopPropagation(); setSimulatingItem(item); }}
-                                                                className="w-8 h-8 rounded-full bg-yellow-500 hover:bg-yellow-400 text-slate-900 flex items-center justify-center shadow-[0_0_10px_rgba(234,179,8,0.6)] animate-pulse group-hover:scale-110 transition shrink-0"
-                                                            >
-                                                                <i className="fa-solid fa-chevron-right text-xs"></i>
-                                                            </button>
+                                                            <button className="w-8 h-8 rounded-full bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500 hover:text-white flex items-center justify-center transition shrink-0 border border-emerald-500/30"><i className="fa-solid fa-chevron-right text-xs"></i></button>
                                                         </div>
                                                     </div>
-                                                );
-                                            }) : <div className="text-center p-10 text-slate-500">กำลังวิเคราะห์...</div>}
+                                                ); 
+                                            }) : <div className="text-center p-10 text-slate-500">กำลังวิเคราะห์...</div>)}
                                         </div>
                                     </div>
                                 </>
                             )
                         )}
-                    </div>
-
-                    {simulatingItem && (
-                        <SimulationModal
-                            item={simulatingItem}
-                            initialArea={area}
-                            floodData={floodData}
-                            soilInfo={soilInfo}
-                            onClose={() => setSimulatingItem(null)}
-                        />
-                    )}
-                </div>
-            );
-        };
-
-        const HomePage = ({ setPage, onStartTransition }) => {
-            const [isFullscreen, setIsFullscreen] = useState(false);
-            const toggleFullScreen = () => {
-                if (!document.fullscreenElement) {
-                    document.documentElement.requestFullscreen().then(() => setIsFullscreen(true));
-                } else {
-                    if (document.exitFullscreen) {
-                        document.exitFullscreen().then(() => setIsFullscreen(false));
-                    }
-                }
-            };
-
-            useEffect(() => {
-                checkAndPreloadTiles(13.9133, 100.6042, 10);
-            }, []);
-
-            return (
-                <div className="min-h-screen relative flex flex-col items-center justify-center text-white p-6 overflow-hidden ui-layer">
-                    <div className="absolute inset-0 w-full h-full pointer-events-none z-0 overflow-hidden">
-                        <div className="cloud-layer opacity-30 mix-blend-screen"></div>
-                        <div className="cloud-layer opacity-20 mix-blend-screen" style={{ animationDirection: 'reverse', animationDuration: '60s' }}></div>
-                    </div>
-
-                    <button onClick={toggleFullScreen} className="absolute top-6 right-6 z-50 bg-slate-800/40 backdrop-blur-md border border-white/10 text-white w-10 h-10 rounded-full flex items-center justify-center hover:bg-slate-700/60 hover:scale-110 transition-all shadow-[0_0_15px_rgba(255,255,255,0.1)] group">
-                        <i className={`fa-solid ${isFullscreen ? 'fa-compress' : 'fa-expand'} text-sm group-hover:text-emerald-400`}></i>
-                    </button>
-
-                    <div className="z-20 text-center animate-fade-in-up relative flex flex-col items-center">
-                        <div className="relative mb-4 pr-2">
-                            <div className="absolute top-0 right-[-3px] w-2 h-2 bg-yellow-400 rounded-full shadow-[0_0_5px_rgba(250,204,21,0.8)] z-20"></div>
-                            <div className="absolute top-0 right-[-1px] w-1 h-20 bg-slate-400 rounded-b-full shadow-sm z-0"></div>
-                            <img src="https://upload.wikimedia.org/wikipedia/commons/a/a9/Flag_of_Thailand.svg" alt="Thai Flag" className="w-24 h-auto animate-flag-wave relative z-10" style={{ transformOrigin: 'center right' }} />
-                        </div>
-
-                        <h1 className="text-5xl md:text-7xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-emerald-400 to-cyan-400 drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)]">
-                            Winai Innovation
-                        </h1>
-                        <p className="text-slate-200 text-lg md:text-xl mb-2 drop-shadow-md font-light bg-black/30 px-4 py-1 rounded-full inline-block backdrop-blur-sm border border-white/10">
-                            Super App เพื่อเกษตรกรไทย
-                        </p>
-
-                        <div className="flex flex-col gap-6 w-full max-w-sm mx-auto">
-                            <button onClick={onStartTransition} className="btn-super-pulse bg-gradient-to-r from-fuchsia-600 via-pink-600 to-orange-500 p-5 rounded-2xl font-bold text-xl text-white hover:scale-105 transition transform shadow-[0_0_20px_rgba(236,72,153,0.5)] border-2 border-white/20 relative overflow-hidden group">
-                                <div className="absolute inset-0 bg-white/20 group-hover:bg-white/30 transition"></div>
-                                <div className="relative flex items-center justify-center gap-3">
-                                    <i className="fa-solid fa-globe text-2xl animate-spin-slow"></i>
-                                    <span>Kaset Cloud</span>
-                                </div>
-                                <span className="text-xs font-normal opacity-90 block mt-1">(คำนวณความรวยแม่นยำ 99%)</span>
-                            </button>
-
-                            <div className="bg-black/40 px-6 py-4 rounded-xl backdrop-blur-sm border border-white/5 flex flex-col items-center w-full">
-                                <div className="flex flex-wrap justify-center gap-3 mb-3">
-                                    <a href="https://line.me/ti/p/-M5tBwhz9j" target="_blank" className="inline-flex items-center justify-center gap-2 bg-[#06C755] hover:bg-[#05a546] text-white py-1 px-3 rounded-full text-xs font-bold shadow-sm transition hover:scale-105">
-                                        <i className="fa-brands fa-line text-lg"></i>
-                                        Admin กลุ่มเกษตรกรไทยมั่งคั่ง
-                                    </a>
-                                    <a href="https://www.facebook.com/winayo1" target="_blank" className="inline-flex items-center justify-center gap-2 bg-[#1877F2] hover:bg-[#166fe5] text-white py-1 px-3 rounded-full text-xs font-bold shadow-sm transition hover:scale-105">
-                                        <i className="fa-brands fa-facebook text-lg"></i>
-                                        Facebook
-                                    </a>
-                                </div>
-                                <div className="text-[10px] md:text-xs text-slate-400">
-                                    <p className="mb-1 font-bold text-slate-300">ผลิตโดย: Mr.Winai Phanarkat เพื่อคนไทย</p>
-                                    <p>ไลน์/เบอร์โทร: 0926533228 | อีเมล์: winayo@gmail.com</p>
-                                </div>
-                            </div>
-                        </div>
                     </div>
                 </div>
             );
@@ -1422,7 +1108,6 @@
         const VinaiInnovationPortal = () => {
             const [page, setPage] = useState('home');
             const [isTransitioning, setIsTransitioning] = useState(false);
-            // 1. เพิ่ม rotation: 0 ใน state เริ่มต้น
             const [travelState, setTravelState] = useState({ active: false, message: '', rotation: 0 });
             const mapRef = useRef(null);
             const rotationInterval = useRef(null);
@@ -1460,11 +1145,10 @@
 
             useEffect(() => {
                 if (page === 'kaset') {
-                    stopRotation(); // สั่งหยุดหมุนโลกทันทีเมื่อเข้าหน้าเกษตร
+                    stopRotation();
                 }
             }, [page]);
 
-            // 2. แก้ฟังก์ชัน startTravel ให้รับ rotation
             const startTravel = (msg, rotation = 0) => {
                 playJetSound();
                 setTravelState({ active: true, message: msg, rotation: rotation });
@@ -1494,10 +1178,9 @@
             return (
                 <div className="font-sans text-slate-200 h-[100dvh] w-screen overflow-hidden">
                     <div id="global-map"></div>
-                    {/* 3. ส่ง rotation ไปให้ CloudOverlay */}
                     <CloudOverlay isActive={travelState.active} message={travelState.message} rotation={travelState.rotation} />
 
-                    <button onClick={handleGoHome} className="absolute top-6 left-6 z-[1050] bg-slate-900/10 hover:bg-slate-900/30 text-white w-10 h-10 rounded-full flex items-center justify-center backdrop-blur-md border border-white/20 shadow-lg transition-all group pointer-events-auto" title="กลับหน้าแรก">
+                    <button onClick={handleGoHome} className="absolute top-6 left-6 z-[1050] bg-white/10 hover:bg-white/20 text-white w-10 h-10 rounded-full flex items-center justify-center backdrop-blur-md border border-white/20 shadow-lg transition-all group pointer-events-auto" title="กลับหน้าแรก">
                         <i className="fa-solid fa-house text-sm group-hover:text-emerald-400"></i>
                     </button>
 
