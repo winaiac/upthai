@@ -587,6 +587,7 @@
             const lastProvinceRef = useRef(null);
             const provinceFeaturesRef = useRef(null);
             const tileLayerRef = useRef(null);
+            const labelLayerRef = useRef(null); // Added for Hybrid labels
 
             const [soilInfo, setSoilInfo] = useState(null);
             const [floodData, setFloodData] = useState({ risk: 'Low', desc: 'ปกติ' });
@@ -627,15 +628,32 @@
                 };
             }, [selectedProvince, appData.stats, appData.provinceData, appData.thaiPop]);
 
-            // -- Map Type Logic --
+            // -- Map Type Logic with Hybrid Support --
             useEffect(() => {
                 if (!mapInstance) return;
+                
+                // Remove existing
                 if (tileLayerRef.current) mapInstance.removeLayer(tileLayerRef.current);
-                if (mapType === 'satellite') {
+                if (labelLayerRef.current) mapInstance.removeLayer(labelLayerRef.current);
+
+                if (mapType === 'satellite' || mapType === 'hybrid') {
+                    // Base Satellite
                     tileLayerRef.current = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}').addTo(mapInstance);
+                    
+                    // Add labels on top if hybrid
+                    if (mapType === 'hybrid') {
+                        labelLayerRef.current = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}').addTo(mapInstance);
+                    }
                 } else {
+                    // Standard
                     tileLayerRef.current = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(mapInstance);
                 }
+
+                // Cleanup on unmount (e.g. going back to home)
+                return () => {
+                    if (tileLayerRef.current) mapInstance.removeLayer(tileLayerRef.current);
+                    if (labelLayerRef.current) mapInstance.removeLayer(labelLayerRef.current);
+                };
             }, [mapType, mapInstance]);
 
             // -- Marker & Features Logic --
@@ -708,7 +726,8 @@
             };
 
             const togglePin = () => setIsPinning(!isPinning);
-            const toggleMapType = () => setMapType(prev => prev === 'satellite' ? 'standard' : 'satellite');
+            // Toggle logic adjusted to include hybrid
+            const toggleMapType = () => setMapType(prev => prev === 'satellite' ? 'standard' : prev === 'standard' ? 'hybrid' : 'satellite');
 
             const handleRegionSelect = (r) => {
                 setSelectedRegion(r); setSelectedProvince(null); setResults(null); setIsPinning(false); lastProvinceRef.current = null;
@@ -736,6 +755,9 @@
             const handleProvinceSelect = (p) => {
                 setIsPinning(false);
                 setSelectedProvince(p);
+                // Switch to hybrid map when province selected
+                setMapType('hybrid'); 
+                
                 const info = appData.provinceData[p];
                 if (info) setSoilInfo(info);
 
@@ -756,6 +778,7 @@
                 if (simulatingItem) { setSimulatingItem(null); return; }
                 if (selectedProvince) {
                     setSelectedProvince(null); setResults(null); lastProvinceRef.current = null;
+                    setMapType('satellite'); // Reset to satellite when going back from province
                     if (mapInstance && mapInstance._container) mapInstance.flyTo(DON_MUEANG_COORDS, 6, { duration: 2 });
                     return;
                 }
@@ -822,7 +845,7 @@
                                 </button>
                             )}
                             <button onClick={toggleMapType} className="w-10 h-10 md:w-12 md:h-12 rounded-full glass-panel hover:bg-white/10 text-white flex items-center justify-center transition shadow-lg" title="เปลี่ยนแผนที่">
-                                <i className={`fa-solid ${mapType === 'satellite' ? 'fa-layer-group' : 'fa-earth-americas'} text-sm md:text-base`}></i>
+                                <i className={`fa-solid ${mapType === 'satellite' ? 'fa-layer-group' : mapType === 'hybrid' ? 'fa-map' : 'fa-earth-americas'} text-sm md:text-base`}></i>
                             </button>
                             <button onClick={handleFullscreen} className="w-10 h-10 md:w-12 md:h-12 rounded-full glass-panel hover:bg-white/10 text-white flex items-center justify-center transition shadow-lg" title="เต็มจอ">
                                 <i className={`fa-solid ${isFullscreen ? 'fa-compress' : 'fa-expand'} text-sm md:text-base`}></i>
@@ -830,9 +853,9 @@
                         </div>
                     </div>
 
-                    {/* --- PROVINCE INFO & STATS (Horizontal Bottom - No Background) --- */}
+                    {/* --- PROVINCE INFO & STATS (Horizontal Bottom - Always Visible when Province Selected) --- */}
                     {selectedProvince && !isTraveling && (
-                        <div className="absolute bottom-6 left-0 w-full z-[2050] flex flex-col md:flex-row items-end justify-between px-6 pb-2 pointer-events-none animate-fade-in-up">
+                        <div className="absolute bottom-6 left-0 w-full z-[3000] flex flex-col md:flex-row items-end justify-between px-6 pb-2 pointer-events-none animate-fade-in-up">
                             {/* Custom style for strong shadow */}
                             <style>{`.text-shadow-heavy { text-shadow: 0 2px 4px rgba(0,0,0,0.9); }`}</style>
 
