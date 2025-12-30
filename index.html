@@ -56,6 +56,13 @@
             z-index: 1000 !important;
         }
 
+        /* --- Custom Map Layer Filters --- */
+        /* ย้อมสีเส้นแผนที่ให้เป็นสีฟ้า/น้ำเงิน */
+        .blue-hybrid-labels {
+            filter: invert(1) sepia(1) saturate(30) hue-rotate(200deg) brightness(1.2);
+            opacity: 0.8; /* ปรับความเข้มจาง */
+        }
+
         /* Animations */
         .animate-fade-in-up {
             animation: fadeInUp 0.5s ease-out forwards;
@@ -642,7 +649,10 @@
                     
                     // Add labels on top if hybrid
                     if (mapType === 'hybrid') {
-                        labelLayerRef.current = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}').addTo(mapInstance);
+                        // FIX: Change to CartoDB Light Only Labels for thinner lines, and add blue filter
+                        labelLayerRef.current = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png', {
+                            className: 'blue-hybrid-labels' // Apply blue tint CSS
+                        }).addTo(mapInstance);
                     }
                 } else {
                     // Standard
@@ -923,7 +933,7 @@
                     {/* --- MAIN INTERFACE (Region Select -> Province Select -> Crops) --- */}
                     <div className={`w-full flex-1 flex flex-col items-center transition-all duration-700 ease-in-out transform ${isTraveling || isPinning ? '-translate-y-20 opacity-0' : 'translate-y-0 opacity-100'} ${isTraveling || isPinning ? 'pointer-events-none' : 'pointer-events-auto'}`}>
                         {!selectedRegion && (
-                            <div className={`w-full max-w-4xl mx-auto glass-panel-clear rounded-b-3xl p-6 animate-slide-down shadow-[0_10px_40px_rgba(0,0,0,0.5)] border-t-0 mt-4`}>
+                            <div className={`w-full max-w-5xl mx-auto glass-panel-clear rounded-b-3xl p-6 animate-slide-down shadow-[0_10px_40px_rgba(0,0,0,0.5)] border-t-0 mt-4`}>
                                 <h2 className="text-xl font-bold text-white mb-4 text-center">เลือกภูมิภาคของคุณ</h2>
                                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                                     {Object.keys(appData.regions).map(r => (
@@ -937,9 +947,9 @@
                         )}
 
                         {selectedRegion && !selectedProvince && (
-                            <div className={`w-full max-w-3xl mx-auto glass-panel-clear rounded-b-3xl p-6 animate-slide-down h-[50vh] flex flex-col border-t-0 mt-4`}>
+                            <div className={`w-full max-w-5xl mx-auto glass-panel-clear rounded-b-3xl p-6 animate-slide-down h-[80vh] flex flex-col border-t-0 mt-2`}>
                                 <h2 className="text-xl font-bold text-white mb-4 text-center">เลือกจังหวัดในภาค{selectedRegion}</h2>
-                                <div className="flex-1 overflow-y-auto grid grid-cols-3 gap-2 scrollbar-prominent pb-10">
+                                <div className="flex-1 overflow-y-auto grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 scrollbar-prominent pb-10">
                                     {(appData.regions[selectedRegion] || []).sort().map(p => (
                                         <button key={p} onClick={() => handleProvinceSelect(p)} className="bg-white/5 hover:bg-emerald-500/20 border border-white/20 rounded-lg p-3 text-sm font-bold text-slate-200 transition backdrop-blur-sm">
                                             {p}
@@ -950,9 +960,9 @@
                         )}
 
                         {selectedProvince && !simulatingItem && (
-                            <div className={`w-full max-w-5xl mx-auto flex flex-col h-[55vh] md:h-[50vh] animate-slide-down mt-2`}>
+                            <div className={`w-full max-w-5xl mx-auto flex flex-col h-[80vh] animate-slide-down mt-2`}>
                                 <div className="flex-1 glass-panel-clear rounded-b-3xl overflow-hidden flex flex-col shadow-xl border-t-0">
-                                    <div className="flex-1 overflow-y-auto scrollbar-prominent pb-20 pt-2">
+                                    <div className="flex-1 overflow-y-auto scrollbar-prominent pb-44 pt-2">
                                         {results ? results.map((item, idx) => (
                                             <div key={idx} onClick={() => setSimulatingItem(item)} className="p-4 border-b border-white/10 hover:bg-white/5 cursor-pointer flex items-center justify-between group transition">
                                                 <div className="flex items-center gap-4">
