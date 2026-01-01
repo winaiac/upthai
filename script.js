@@ -1210,7 +1210,6 @@ const KasetCloudApp = ({ mapInstance, onTravelStart, onTravelEnd, onGoHome, isTr
                         <div className="flex-1 glass-panel-clear rounded-b-3xl overflow-hidden flex flex-col shadow-xl border-t-0">
                             <div className="flex flex-wrap gap-2 p-3 border-b border-white/10 items-center justify-between bg-black/20">
                                 <div className="flex gap-1 overflow-x-auto scrollbar-prominent pb-1">
-                                    <button onClick={() => setCategoryFilter('all')} className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap ${categoryFilter === 'all' ? 'bg-emerald-500 text-white' : 'bg-white/10 text-slate-300'}`}>ทั้งหมด</button>
                                     <button onClick={() => setCategoryFilter('plant')} className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap ${categoryFilter === 'plant' ? 'bg-emerald-500 text-white' : 'bg-white/10 text-slate-300'}`}>พืชไร่/สวน</button>
                                     <button onClick={() => setCategoryFilter('animal')} className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap ${categoryFilter === 'animal' ? 'bg-orange-500 text-white' : 'bg-white/10 text-slate-300'}`}>ฟาร์มสัตว์</button>
                                     <button onClick={() => setCategoryFilter('integrated')} className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap ${categoryFilter === 'integrated' ? 'bg-blue-500 text-white' : 'bg-white/10 text-slate-300'}`}>เกษตรผสมผสาน</button>
@@ -1227,6 +1226,8 @@ const KasetCloudApp = ({ mapInstance, onTravelStart, onTravelEnd, onGoHome, isTr
                                     <button onClick={() => setCategoryFilter('business_ministry')} className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap ${categoryFilter === 'business_ministry' ? 'bg-purple-600 text-white shadow-[0_0_15px_rgba(168,85,247,0.6)]' : 'bg-white/10 text-slate-300'}`}>
                                         <i className="fa-solid fa-briefcase mr-1"></i>กระทรวงพี่เลี้ยงธุรกิจ
                                     </button>
+
+                                    <button onClick={() => setCategoryFilter('all')} className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap ${categoryFilter === 'all' ? 'bg-emerald-500 text-white' : 'bg-white/10 text-slate-300'}`}>ทั้งหมด</button>
                                 </div>
                                 <div className="flex gap-1">
                                     <button onClick={() => setSortType('profit')} className={`w-8 h-8 rounded-full flex items-center justify-center border ${sortType === 'profit' ? 'bg-yellow-500/20 border-yellow-500 text-yellow-400' : 'border-white/10 text-slate-400'}`} title="ผลตอบแทนสูง"><i className="fa-solid fa-sack-dollar"></i></button>
