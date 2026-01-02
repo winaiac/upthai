@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="th" class="scroll-smooth">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>นโยบายหวยคูณ 2: โมเดลสมบูรณ์ | Lottery x2 Complete Model</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+
+    <!-- Fonts & Icons -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;600;700&family=Sarabun:wght@300;400;500;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        body {
+            font-family: 'Sarabun', sans-serif;
+            background-color: #f8fafc;
+            color: #1e293b;
+        }
+
+        h1,
+        h2,
+        h3,
+        h4,
+        .font-head {
+            font-family: 'Prompt', sans-serif;
+        }
+
+        /* Step Arrow Design */
+        .step-card {
+            position: relative;
+            z-index: 10;
+            transition: transform 0.3s;
+        }
+
+        .step-card:hover {
+            transform: translateY(-5px);
+        }
+
+        @media (min-width: 768px) {
+            .arrow-connector::after {
+                content: "➜";
+                position: absolute;
+                right: -25px;
+                top: 50%;
+                transform: translateY(-50%);
+                font-size: 2rem;
+                color: #cbd5e1;
+                z-index: 1;
+            }
+        }
+
+        /* Section Dividers */
+        .section-header {
+            border-left: 6px solid;
+            padding-left: 1rem;
+            margin-bottom: 2rem;
+        }
+    </style>
+</head>
+
+<body class="pb-20">
+
+    <!-- HERO HEADER -->
+    <header
+        class="bg-gradient-to-r from-indigo-900 to-blue-800 text-white py-16 px-4 shadow-xl text-center relative overflow-hidden">
+        <div class="relative z-10 max-w-4xl mx-auto">
+            <span
+                class="bg-yellow-400 text-yellow-900 px-4 py-1 rounded-full text-xs font-bold uppercase mb-4 inline-block shadow-md">Complete
+                Policy Model</span>
+            <h1 class="text-4xl md:text-6xl font-bold font-head mb-4">นโยบาย "หวยคูณ 2"</h1>
+            <p class="text-blue-100 text-xl font-light">จากแนวคิด "เพิ่มรายได้ผู้สูงอายุ" สู่โมเดล
+                "อาชีพเสริมยุคดิจิทัล" ที่ยั่งยืน</p>
+        </div>
+    </header>
+
+    <!-- NAVIGATION (Quick Jump) -->
+    <div class="flex justify-center gap-4 -mt-8 relative z-20 px-4">
+        <a href="#concept"
+            class="bg-white px-6 py-3 rounded-xl shadow-lg font-bold text-indigo-600 hover:bg-indigo-50 transition border border-indigo-100">💡
+            ไอเดีย</a>
+        <a href="#risk"
+            class="bg-white px-6 py-3 rounded-xl shadow-lg font-bold text-rose-600 hover:bg-rose-50 transition border border-rose-100">⚠️
+            ความเสี่ยง</a>
+        <a href="#solution"
+            class="bg-white px-6 py-3 rounded-xl shadow-lg font-bold text-emerald-600 hover:bg-emerald-50 transition border border-emerald-100">✅
+            ทางออก</a>
+    </div>
+
+    <main class="max-w-6xl mx-auto px-4 mt-16 space-y-24">
+
+        <!-- PART 1: THE CORE CONCEPT -->
+        <section id="concept">
+            <div class="section-header border-indigo-500">
+                <h2 class="text-3xl font-bold text-indigo-900 font-head">1. หลักการและแนวคิด (The Concept)</h2>
+                <p class="text-slate-500">เปลี่ยน "เงินสงเคราะห์" เป็น "ทุนทำกำไร" เพื่อเพิ่มรายได้เป็น 2 เท่า</p>
+            </div>
+
+            <!-- 3 Steps Mechanism -->
+            <div class="bg-indigo-50/50 rounded-3xl p-8 border border-indigo-100">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <!-- Step 1 -->
+                    <div
+                        class="step-card arrow-connector bg-white p-6 rounded-2xl shadow-sm border-t-4 border-indigo-400 text-center">
+                        <div
+                            class="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center text-3xl mx-auto mb-4">
+                            👴</div>
+                        <h3 class="text-lg font-bold text-indigo-800">1. รับโควตา</h3>
+                        <p class="text-sm text-slate-600 mt-2">
+                            แทนรับเงิน 600 บาท<br>
+                            รับเป็น <strong>"สลาก 12 ใบ"</strong><br>
+                            (ราคาทุนใบละ 50 บาท)
+                        </p>
+                    </div>
+                    <!-- Step 2 -->
+                    <div
+                        class="step-card arrow-connector bg-white p-6 rounded-2xl shadow-sm border-t-4 border-indigo-500 text-center">
+                        <div
+                            class="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center text-3xl mx-auto mb-4">
+                            🛒</div>
+                        <h3 class="text-lg font-bold text-indigo-800">2. รัฐช่วยขาย</h3>
+                        <p class="text-sm text-slate-600 mt-2">
+                            นำสลากไปขายบน<br><strong>"แอปฯ เป๋าตัง"</strong><br>
+                            ขายราคาตลาด (100 บาท)
+                        </p>
+                    </div>
+                    <!-- Step 3 -->
+                    <div class="step-card bg-white p-6 rounded-2xl shadow-sm border-t-4 border-indigo-600 text-center">
+                        <div
+                            class="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center text-3xl mx-auto mb-4">
+                            💰</div>
+                        <h3 class="text-lg font-bold text-indigo-800">3. รับผลตอบแทน</h3>
+                        <div class="mt-3 text-sm space-y-1">
+                            <span class="block bg-emerald-100 text-emerald-800 px-2 py-1 rounded">✅ ขายได้: รับ 1,200
+                                บาท</span>
+                            <span class="block bg-orange-100 text-orange-800 px-2 py-1 rounded">❌ ขายไม่ได้:
+                                ได้ลุ้นหวยฟรี</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- PART 2: THE RISKS (ANALYSIS) -->
+        <section id="risk">
+            <div class="section-header border-rose-500">
+                <h2 class="text-3xl font-bold text-rose-900 font-head">2. วิเคราะห์ความเสี่ยง (Risk Assessment)</h2>
+                <p class="text-slate-500">หากทำทันทีโดยไม่มีมาตรการรองรับ จะเกิดผลกระทบ 3 ด้านหลัก</p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+                <!-- Risk List -->
+                <div class="space-y-4">
+                    <div class="bg-white p-5 rounded-xl shadow-md border-l-4 border-rose-500">
+                        <h3 class="text-lg font-bold text-rose-700 font-head mb-2"><i
+                                class="fa-solid fa-triangle-exclamation mr-2"></i> 1. เสี่ยงอดตาย (Liquidity Risk)</h3>
+                        <p class="text-sm text-slate-600">ผู้สูงอายุต้องกินต้องใช้ "วันนี้" การรอขายสลากมีความไม่แน่นอน
+                            หากขายไม่ได้และเปลี่ยนเป็นสลาก จะไม่มีเงินสดซื้อข้าวกิน</p>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl shadow-md border-l-4 border-orange-500">
+                        <h3 class="text-lg font-bold text-orange-700 font-head mb-2"><i
+                                class="fa-solid fa-chart-simple mr-2"></i> 2. สลากล้นตลาด (Supply Shock)</h3>
+                        <p class="text-sm text-slate-600">ความต้องการใช้สลากแจกผู้สูงอายุ (144 ล้านใบ)
+                            มากกว่ากำลังผลิตปัจจุบัน ทำให้ปริมาณสลากท่วมตลาด ราค่อาจตกต่ำ</p>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl shadow-md border-l-4 border-yellow-500">
+                        <h3 class="text-lg font-bold text-yellow-700 font-head mb-2"><i
+                                class="fa-solid fa-scale-unbalanced mr-2"></i> 3. ส่งเสริมการพนัน (Moral Hazard)</h3>
+                        <p class="text-sm text-slate-600">เปลี่ยน "รัฐสวัสดิการ" ให้เป็นเรื่องของ "ดวง"
+                            อาจถูกมองว่ารัฐมอมเมาประชาชน</p>
+                    </div>
+                </div>
+
+                <!-- Chart -->
+                <div class="bg-white p-6 rounded-2xl shadow-lg border border-slate-100">
+                    <h4 class="font-bold text-center text-slate-700 mb-4">ปริมาณสลากหากทำทันที (หน่วย: ล้านฉบับ)</h4>
+                    <div style="height: 300px;">
+                        <canvas id="riskChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- PART 3: THE SOLUTIONS (PROPOSAL) -->
+        <section id="solution">
+            <div class="section-header border-emerald-500">
+                <h2 class="text-3xl font-bold text-emerald-900 font-head">3. ข้อเสนอแนะและทางออก (Solutions)</h2>
+                <p class="text-slate-500">ปรับปรุงโมเดลเพื่อปิดจุดอ่อนและสร้างความยั่งยืน</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+                <!-- Solution 1 -->
+                <div class="bg-emerald-50 p-6 rounded-2xl border border-emerald-200 hover:shadow-lg transition">
+                    <div
+                        class="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600 text-xl mb-4">
+                        <i class="fa-solid fa-shield-halved"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-emerald-800 font-head mb-2">ระบบประกันรับซื้อคืน</h3>
+                    <p class="text-sm text-emerald-900 font-bold mb-2">(Guaranteed Buyback)</p>
+                    <p class="text-sm text-slate-600">
+                        แก้ปัญหาขาดสภาพคล่อง: รัฐการันตีว่าถ้าขายไม่ออก จะรับซื้อคืนในราคาทุน (50 บาท) ทันที
+                        ผู้สูงอายุจะมีรายได้ขั้นต่ำ 600 บาทเท่าเดิมแน่นอน ไม่มีความเสี่ยงขาดทุน
+                    </p>
+                </div>
+
+                <!-- Solution 2 -->
+                <div class="bg-blue-50 p-6 rounded-2xl border border-blue-200 hover:shadow-lg transition">
+                    <div
+                        class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 text-xl mb-4">
+                        <i class="fa-solid fa-mobile-screen"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-blue-800 font-head mb-2">ผลิตตามสั่ง (Digital)</h3>
+                    <p class="text-sm text-blue-900 font-bold mb-2">(On-Demand Production)</p>
+                    <p class="text-sm text-slate-600">
+                        แก้ปัญหาสลากล้น: ใช้สลากดิจิทัล 100% ไม่พิมพ์กระดาษ และจะ Gen เลขสลากออกมาเมื่อ "มีคนกดซื้อ"
+                        เท่านั้น ทำให้ไม่มีสลากเหลือค้างในระบบ (Zero Waste)
+                    </p>
+                </div>
+
+                <!-- Solution 3 -->
+                <div class="bg-purple-50 p-6 rounded-2xl border border-purple-200 hover:shadow-lg transition">
+                    <div
+                        class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center text-purple-600 text-xl mb-4">
+                        <i class="fa-solid fa-hand-pointer"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-purple-800 font-head mb-2">ระบบสมัครใจ</h3>
+                    <p class="text-sm text-purple-900 font-bold mb-2">(Voluntary Opt-in)</p>
+                    <p class="text-sm text-slate-600">
+                        แก้ปัญหาจริยธรรม: ให้สิทธิ์ผู้สูงอายุเลือกเอง 100% ว่าจะรับ "เงินสด" หรือ "โควตาทำเงิน"
+                        พร้อมเปลี่ยนนิยามเป็น "โครงการส่งเสริมอาชีพผู้สูงอายุยุคดิจิทัล"
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- SUMMARY TABLE -->
+        <section class="max-w-4xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-200">
+            <div class="bg-slate-800 text-white p-4 text-center">
+                <h3 class="text-xl font-bold font-head">ตารางเปรียบเทียบ: ก่อนและหลังปรับปรุง</h3>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead class="bg-slate-50 text-slate-500 font-head text-sm uppercase">
+                        <tr>
+                            <th class="p-4 w-1/4">ประเด็น</th>
+                            <th class="p-4 w-1/3 text-rose-600">โมเดลเดิม (มีความเสี่ยง)</th>
+                            <th class="p-4 w-1/3 text-emerald-600">โมเดลใหม่ (มีทางออก)</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 text-sm">
+                        <tr>
+                            <td class="p-4 font-bold text-slate-700">รูปแบบการรับ</td>
+                            <td class="p-4 text-slate-500">บังคับทุกคน (Mandatory)</td>
+                            <td class="p-4 font-bold text-emerald-700 bg-emerald-50">สมัครใจเลือกได้ (Opt-in)</td>
+                        </tr>
+                        <tr>
+                            <td class="p-4 font-bold text-slate-700">หากขายไม่ได้</td>
+                            <td class="p-4 text-slate-500">ได้กระดาษสลาก (อดข้าว)</td>
+                            <td class="p-4 font-bold text-emerald-700 bg-emerald-50">รับประกันซื้อคืน (ได้เงินแน่)</td>
+                        </tr>
+                        <tr>
+                            <td class="p-4 font-bold text-slate-700">ระบบสลาก</td>
+                            <td class="p-4 text-slate-500">พิมพ์เพิ่ม 144 ล้านใบ (ล้นตลาด)</td>
+                            <td class="p-4 font-bold text-emerald-700 bg-emerald-50">ดิจิทัล On-Demand (สมดุล)</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="bg-slate-900 text-slate-400 py-10 mt-20 text-center text-sm">
+        <div class="max-w-2xl mx-auto">
+            <p class="text-white font-bold mb-2">ข้อเสนอแนะเชิงนโยบายสาธารณะ</p>
+            <p>การผสมผสานสวัสดิการเข้ากับกลไกตลาดต้องทำอย่างรัดกุม เพื่อประโยชน์สูงสุดของกลุ่มเปราะบาง</p>
+        </div>
+    </footer>
+
+    <!-- Chart Script -->
+    <script>
+        Chart.register(ChartDataLabels);
+        const ctx = document.getElementById('riskChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['กำลังผลิตปัจจุบัน', 'ความต้องการใหม่ (ผู้สูงอายุ)', 'ยอดรวมทั้งหมด'],
+                datasets: [{
+                    label: 'จำนวนสลาก (ล้านฉบับ)',
+                    data: [100, 144, 244],
+                    backgroundColor: ['#94a3b8', '#f59e0b', '#ef4444'],
+                    borderRadius: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    datalabels: {
+                        color: '#1e293b',
+                        anchor: 'end',
+                        align: 'top',
+                        font: { weight: 'bold' },
+                        formatter: (val) => val + ' M'
+                    }
+                },
+                scales: {
+                    y: { beginAtZero: true, grid: { display: false } },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+    </script>
+</body>
+
+</html>
