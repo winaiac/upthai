@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ข้อเสนอโครงการ: น้ำดื่มชุมชน สวัสดิการเพื่อคุณภาพชีวิต</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Google Fonts -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&family=Prompt:wght@300;400;600;700&display=swap"
+        rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Sarabun', sans-serif;
+            background-color: #f0f9ff;
+            /* Light Blue Background */
+            color: #334155;
+        }
+
+        h1,
+        h2,
+        h3,
+        h4,
+        h5 {
+            font-family: 'Prompt', sans-serif;
+        }
+
+        /* Custom Palette: "Eco-Water" */
+        :root {
+            --color-primary: #0ea5e9;
+            /* Sky 500 */
+            --color-secondary: #0284c7;
+            /* Sky 600 */
+            --color-success: #22c55e;
+            /* Green 500 */
+            --color-cost: #ef4444;
+            /* Red 500 */
+        }
+
+        .chart-container {
+            position: relative;
+            width: 100%;
+            margin: 0 auto;
+            background: white;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .chart-height-md {
+            height: 400px;
+            max-height: 500px;
+        }
+
+        /* Card Hover Effect */
+        .info-card {
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s;
+        }
+
+        .info-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+
+    <!-- 
+    PLAN & NARRATIVE:
+    1. Header: Strong title emphasizing cost reduction and health.
+    2. Problem vs Solution: Contrast current burden (plastic/cost) with the proposal.
+    3. The Model (Model A): Details on implementation using icons/grid.
+    4. Economic Analysis (Bar Chart): Visually demonstrate the huge gap between small Gov cost vs huge Public benefit.
+    5. Sustainability: Checklist style.
+    6. Footer: Credits as requested.
+    -->
+</head>
+
+<body class="antialiased">
+
+    <!-- Header Section -->
+    <header class="bg-gradient-to-r from-cyan-600 to-blue-600 text-white py-16 px-4 shadow-xl">
+        <div class="max-w-6xl mx-auto text-center">
+            <div
+                class="inline-block bg-white/20 backdrop-blur-md rounded-full px-4 py-1 mb-4 text-sm font-semibold tracking-wide">
+                📢 ข้อเสนอโครงการเพื่อสังคม
+            </div>
+            <h1 class="text-3xl md:text-5xl font-bold mb-4 leading-tight shadow-sm">
+                น้ำดื่มชุมชน สวัสดิการเพื่อคุณภาพชีวิต
+            </h1>
+            <p class="text-xl md:text-2xl font-light text-blue-100 max-w-4xl mx-auto mt-4">
+                "ลดรายจ่าย สร้างสุขภาพ แก้ปัญหาสิ่งแวดล้อม"
+            </p>
+        </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto px-4 py-12 space-y-16">
+
+        <!-- Section 1: Rationale & Objectives -->
+        <section>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                <!-- Problem Statement -->
+                <div class="bg-white rounded-2xl p-8 shadow-lg border-l-8 border-red-500 info-card">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-4 flex items-center">
+                        <span class="text-3xl mr-3">⚠️</span> ปัญหาปัจจุบัน
+                    </h2>
+                    <ul class="space-y-4 text-gray-600 text-lg">
+                        <li class="flex items-start">
+                            <span class="text-red-500 font-bold mr-2">•</span>
+                            ภาระค่าครองชีพสูง: จ่ายค่าน้ำดื่ม 300-500 บาท/เดือน
+                        </li>
+                        <li class="flex items-start">
+                            <span class="text-red-500 font-bold mr-2">•</span>
+                            ปัญหาสิ่งแวดล้อม: ขยะพลาสติกมหาศาลจากขวดน้ำ
+                        </li>
+                        <li class="flex items-start">
+                            <span class="text-red-500 font-bold mr-2">•</span>
+                            ความเหลื่อมล้ำ: น้ำสะอาดควรเป็นสิทธิขั้นพื้นฐาน
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Solution/Objectives -->
+                <div class="bg-white rounded-2xl p-8 shadow-lg border-l-8 border-green-500 info-card">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-4 flex items-center">
+                        <span class="text-3xl mr-3">🎯</span> วัตถุประสงค์
+                    </h2>
+                    <ul class="space-y-4 text-gray-600 text-lg">
+                        <li class="flex items-start">
+                            <span class="text-green-500 font-bold mr-2">✓</span>
+                            ลดค่าครองชีพประชาชนในชุมชนทันที
+                        </li>
+                        <li class="flex items-start">
+                            <span class="text-green-500 font-bold mr-2">✓</span>
+                            น้ำดื่มสะอาด มาตรฐานกรมอนามัย (RO/UV)
+                        </li>
+                        <li class="flex items-start">
+                            <span class="text-green-500 font-bold mr-2">✓</span>
+                            ลดขยะพลาสติก ลดโลกร้อนอย่างยั่งยืน
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 2: Implementation Details (Model A) -->
+        <section class="bg-white rounded-3xl shadow-xl p-8 md:p-12">
+            <div class="text-center mb-10">
+                <h2 class="text-3xl font-bold text-blue-800 mb-2">⚙️ รายละเอียดการดำเนินงาน (โมเดล A)</h2>
+                <p class="text-gray-500">รูปแบบการบริหารจัดการที่มีประสิทธิภาพและต้นทุนต่ำ</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <!-- Step 1 -->
+                <div class="bg-blue-50 p-6 rounded-xl text-center hover:bg-blue-100 transition">
+                    <div class="text-5xl mb-4">🏗️</div>
+                    <h3 class="font-bold text-lg text-blue-900 mb-2">การก่อสร้าง</h3>
+                    <p class="text-sm text-gray-600">ติดตั้งตู้ RO/UV ขนาดใหญ่ ณ จุดศูนย์กลางชุมชน</p>
+                </div>
+                <!-- Step 2 -->
+                <div class="bg-blue-50 p-6 rounded-xl text-center hover:bg-blue-100 transition">
+                    <div class="text-5xl mb-4">💰</div>
+                    <h3 class="font-bold text-lg text-blue-900 mb-2">งบประมาณ</h3>
+                    <p class="text-sm text-gray-600">200,000 บาท/จุด (รวมเครื่อง โครงสร้าง มิเตอร์)</p>
+                </div>
+                <!-- Step 3 -->
+                <div class="bg-blue-50 p-6 rounded-xl text-center hover:bg-blue-100 transition">
+                    <div class="text-5xl mb-4">🏢</div>
+                    <h3 class="font-bold text-lg text-blue-900 mb-2">การบริหาร</h3>
+                    <p class="text-sm text-gray-600">เทศบาล/อบต. รับผิดชอบค่าน้ำ-ไฟ (ต้นทุนต่ำมาก)</p>
+                </div>
+                <!-- Step 4 -->
+                <div class="bg-blue-50 p-6 rounded-xl text-center hover:bg-blue-100 transition">
+                    <div class="text-5xl mb-4">🔧</div>
+                    <h3 class="font-bold text-lg text-blue-900 mb-2">บำรุงรักษา</h3>
+                    <p class="text-sm text-gray-600">จ้างเหมาเอกชนเข้าตรวจเช็ค/เปลี่ยนไส้กรอง ปีละ 2 ครั้ง</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 3: Cost-Benefit Analysis (Chart) -->
+        <section>
+            <div class="text-center mb-8">
+                <h2 class="text-3xl font-bold text-gray-800 mb-4">📊 ความคุ้มค่าทางเศรษฐศาสตร์ (ต่อ 1 จุดบริการ)</h2>
+                <p class="text-lg text-gray-600 max-w-3xl mx-auto">
+                    เปรียบเทียบเม็ดเงินลงทุนของภาครัฐ กับมูลค่าที่ประชาชนประหยัดได้จริงต่อปี (ครอบคลุม 200 ครัวเรือน)
+                    <br><span
+                        class="text-green-600 font-bold bg-green-100 px-2 py-1 rounded-md mt-2 inline-block">คืนทุนภายใน
+                        4 เดือนแรก!</span>
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-center">
+                <!-- Chart Container -->
+                <div class="lg:col-span-2">
+                    <div class="chart-container chart-height-md">
+                        <canvas id="costBenefitChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Key Stats -->
+                <div class="space-y-6">
+                    <div class="bg-green-100 rounded-xl p-6 border-l-8 border-green-500">
+                        <h3 class="text-sm font-bold text-green-800 uppercase tracking-wider mb-1">ผลประโยชน์ประชาชน
+                            (ต่อปี)</h3>
+                        <div class="text-4xl font-extrabold text-green-700">720,000 บาท</div>
+                        <p class="text-xs text-green-600 mt-2">ประหยัด 300 บ./เดือน x 200 ครัวเรือน</p>
+                    </div>
+
+                    <div class="bg-red-100 rounded-xl p-6 border-l-8 border-red-500">
+                        <h3 class="text-sm font-bold text-red-800 uppercase tracking-wider mb-1">ต้นทุนภาครัฐ (ปีแรก)
+                        </h3>
+                        <div class="text-4xl font-extrabold text-red-700">200,000 บาท</div>
+                        <p class="text-xs text-red-600 mt-2">ค่าก่อสร้างและติดตั้งระบบครั้งเดียว</p>
+                    </div>
+
+                    <div class="bg-orange-100 rounded-xl p-6 border-l-8 border-orange-500">
+                        <h3 class="text-sm font-bold text-orange-800 uppercase tracking-wider mb-1">ค่าดูแลรายปี
+                            (ปีถัดไป)</h3>
+                        <div class="text-3xl font-bold text-orange-700">30,000 บาท</div>
+                        <p class="text-xs text-orange-600 mt-2">ค่าไส้กรอง + ค่าไฟ + ค่าน้ำ</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 4: Sustainability -->
+        <section class="bg-gradient-to-br from-slate-800 to-slate-900 text-white rounded-3xl p-10 shadow-2xl">
+            <h2 class="text-3xl font-bold mb-8 text-center text-cyan-400">🌱 แนวทางความยั่งยืน</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="text-center">
+                    <div
+                        class="bg-white/10 rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-4 text-4xl backdrop-blur-sm">
+                        📱</div>
+                    <h3 class="text-xl font-bold mb-2">Smart Monitoring</h3>
+                    <p class="text-gray-400 text-sm">ใช้ระบบ QR Code ให้ประชาชนสแกนตรวจสอบประวัติการซ่อมบำรุงได้โปร่งใส
+                    </p>
+                </div>
+                <div class="text-center">
+                    <div
+                        class="bg-white/10 rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-4 text-4xl backdrop-blur-sm">
+                        🩺</div>
+                    <h3 class="text-xl font-bold mb-2">คุณภาพน้ำมั่นใจได้</h3>
+                    <p class="text-gray-400 text-sm">มีการสุ่มตรวจคุณภาพน้ำโดยเจ้าหน้าที่สาธารณสุขทุกเดือน</p>
+                </div>
+                <div class="text-center">
+                    <div
+                        class="bg-white/10 rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-4 text-4xl backdrop-blur-sm">
+                        ♻️</div>
+                    <h3 class="text-xl font-bold mb-2">Zero Waste</h3>
+                    <p class="text-gray-400 text-sm">รณรงค์ให้นำภาชนะมาเอง เพื่อลดขยะพลาสติกให้เป็นศูนย์ (100%)</p>
+                </div>
+            </div>
+            <div class="mt-10 text-center border-t border-gray-700 pt-6">
+                <p class="text-lg md:text-xl font-light text-gray-300">
+                    "เปลี่ยนเงินลงทุนก้อนเดียว เป็นสวัสดิการที่ยั่งยืน ลดรายจ่ายให้ประชาชนได้จริง"
+                </p>
+            </div>
+        </section>
+
+        <!-- Footer with Credits -->
+        <footer class="text-center text-gray-500 py-12">
+            <div class="mb-4">
+                <span class="block w-16 h-1 bg-blue-500 mx-auto rounded mb-4"></span>
+            </div>
+            <div class="bg-white inline-block px-8 py-6 rounded-xl shadow-sm border border-gray-200">
+                <p class="font-bold text-gray-800 text-lg mb-2">พัฒนาโดย: Mr.Winai Phanarkat</p>
+                <div class="flex flex-col md:flex-row gap-4 justify-center text-sm">
+                    <span class="flex items-center justify-center"><span class="mr-2">📱</span> Line: 0926533228</span>
+                    <span class="hidden md:inline text-gray-300">|</span>
+                    <span class="flex items-center justify-center"><span class="mr-2">✉️</span> Email:
+                        winayo@gmail.com</span>
+                </div>
+            </div>
+        </footer>
+
+    </main>
+
+    <!-- Script -->
+    <script>
+        // --- Tooltip Config ---
+        const commonTooltip = {
+            callbacks: {
+                title: function (tooltipItems) {
+                    const item = tooltipItems[0];
+                    let label = item.chart.data.labels[item.dataIndex];
+                    if (Array.isArray(label)) {
+                        return label.join(' ');
+                    } else {
+                        return label;
+                    }
+                },
+                label: function (context) {
+                    let label = context.dataset.label || '';
+                    if (label) {
+                        label += ': ';
+                    }
+                    if (context.parsed.y !== null) {
+                        label += new Intl.NumberFormat('th-TH').format(context.parsed.y) + ' บาท';
+                    }
+                    return label;
+                }
+            }
+        };
+
+        // --- Chart: Cost vs Benefit ---
+        const ctx = document.getElementById('costBenefitChart').getContext('2d');
+
+        // Data Preparation
+        const labels = ['ต้นทุนภาครัฐ (ปีแรก)', 'ต้นทุนภาครัฐ (ปีต่อๆไป)', 'ผลประโยชน์ประชาชน (ต่อปี)'];
+        // Wrap labels if needed (simple check)
+        const processedLabels = labels.map(l => l.length > 16 ? l.split(' ') : l);
+
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: processedLabels,
+                datasets: [{
+                    label: 'มูลค่า (บาท)',
+                    data: [200000, 30000, 720000],
+                    backgroundColor: [
+                        'rgba(239, 68, 68, 0.8)',   // Red for Initial Cost
+                        'rgba(249, 115, 22, 0.8)',  // Orange for Maintenance
+                        'rgba(34, 197, 94, 0.9)'    // Green for Benefit
+                    ],
+                    borderColor: [
+                        'rgba(239, 68, 68, 1)',
+                        'rgba(249, 115, 22, 1)',
+                        'rgba(34, 197, 94, 1)'
+                    ],
+                    borderWidth: 1,
+                    borderRadius: 8,
+                    barPercentage: 0.6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: commonTooltip,
+                    title: {
+                        display: true,
+                        text: 'เปรียบเทียบต้นทุน vs ผลตอบแทน (SROI)',
+                        font: { family: 'Prompt', size: 16 }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: '#f1f5f9' },
+                        ticks: { font: { family: 'Sarabun' } }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { font: { family: 'Prompt', size: 12, weight: 'bold' } }
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+
+</html>
