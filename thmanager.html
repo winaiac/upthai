@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="th" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบบริหารและพัฒนาประเทศ | Thailand Master Dashboard</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Chart.js & Datalabels Plugin -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;600;700&family=Sarabun:wght@300;400;600;800&display=swap" rel="stylesheet">
+    
+    <style>
+        /* Typography & Base */
+        body {
+            font-family: 'Sarabun', sans-serif;
+            background-color: #f1f5f9; /* Slate 100 */
+            color: #1e293b; /* Slate 800 */
+        }
+        h1, h2, h3, h4, .font-head {
+            font-family: 'Prompt', sans-serif;
+        }
+
+        /* --- Scrollbar --- */
+        ::-webkit-scrollbar { width: 10px; }
+        ::-webkit-scrollbar-track { background: #e2e8f0; }
+        ::-webkit-scrollbar-thumb { background: #64748b; border-radius: 5px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+        /* --- Components --- */
+        .chart-wrapper {
+            position: relative;
+            width: 100%;
+            height: 500px; /* สูงพอให้ตัวหนังสือในกราฟไม่เบียดกัน */
+            margin: 0 auto;
+        }
+
+        .chart-wrapper-polar {
+            position: relative;
+            width: 100%;
+            height: 400px;
+            margin: 0 auto;
+        }
+
+        /* Hover Effects */
+        .hover-card {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .hover-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Badge Styles */
+        .money-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 9999px;
+            font-family: 'Prompt', sans-serif;
+            font-weight: bold;
+            font-size: 0.8rem;
+            background-color: #f1f5f9;
+            color: #334155;
+            margin-top: 4px;
+        }
+
+        /* Animation */
+        .fade-in { animation: fadeIn 0.5s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="pb-24">
+
+    <!-- HERO HEADER -->
+    <header class="bg-gradient-to-r from-[#0f172a] to-[#1e293b] text-white pt-12 pb-32 px-4 shadow-2xl relative overflow-hidden">
+        <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
+        <div class="relative z-10 max-w-5xl mx-auto text-center">
+            <h1 class="text-3xl md:text-6xl font-bold mb-4 font-head leading-tight text-transparent bg-clip-text bg-gradient-to-r from-blue-200 to-cyan-200">
+                ระบบบริหารและพัฒนาประเทศ
+            </h1>
+            <p class="text-lg md:text-xl text-slate-300 font-light max-w-3xl mx-auto">
+                เจาะลึกโครงสร้างอำนาจ เส้นทางเงินภาษี (2.79 ล้านล้าน) การป้องกันคอรัปชั่น และการจัดสรรงบประมาณปี 2567
+            </p>
+        </div>
+    </header>
+
+    <!-- MAIN NAVIGATION (Big Buttons) -->
+    <div class="container mx-auto px-4 -mt-20 relative z-20 mb-16">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto">
+            
+            <!-- Button 1: Revenue -->
+            <a href="#revenue" class="hover-card bg-white p-6 rounded-2xl shadow-xl border-t-4 border-orange-500 flex flex-col items-center text-center cursor-pointer group">
+                <div class="w-16 h-16 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center text-3xl mb-3 group-hover:scale-110 transition">🍕</div>
+                <h3 class="text-xl font-bold text-gray-800 font-head">รายได้ประเทศ</h3>
+                <p class="text-sm text-gray-500">โมเดลพิซซ่า & ภาษี</p>
+            </a>
+
+            <!-- Button 2: Corruption -->
+            <a href="#corruption" class="hover-card bg-white p-6 rounded-2xl shadow-xl border-t-4 border-rose-600 flex flex-col items-center text-center cursor-pointer group">
+                <div class="w-16 h-16 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center text-3xl mb-3 group-hover:scale-110 transition">🛡️</div>
+                <h3 class="text-xl font-bold text-gray-800 font-head">ป้องกันคอรัปชั่น</h3>
+                <p class="text-sm text-gray-500">ช่องทางตรวจสอบ & แจ้งเบาะแส</p>
+            </a>
+
+            <!-- Button 3: Budget -->
+            <a href="#budget" class="hover-card bg-white p-6 rounded-2xl shadow-xl border-t-4 border-teal-500 flex flex-col items-center text-center cursor-pointer group">
+                <div class="w-16 h-16 bg-teal-100 text-teal-600 rounded-full flex items-center justify-center text-3xl mb-3 group-hover:scale-110 transition">🏗️</div>
+                <h3 class="text-xl font-bold text-gray-800 font-head">งบประมาณ 2567</h3>
+                <p class="text-sm text-gray-500">เงินภาษีถูกใช้อย่างไร?</p>
+            </a>
+
+        </div>
+    </div>
+
+    <!-- CONTENT CONTAINER -->
+    <main class="max-w-7xl mx-auto px-4 space-y-24">
+
+        <!-- SECTION 0: STRUCTURE OVERVIEW -->
+        <section class="text-center max-w-4xl mx-auto">
+            <h2 class="text-2xl font-bold text-slate-700 font-head mb-6 border-b inline-block pb-2">🏛️ โครงสร้างการบริหาร (Overview)</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-left">
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                    <div class="text-indigo-600 font-bold text-xs uppercase mb-1">Legislative</div>
+                    <div class="font-bold text-slate-800 text-lg">ฝ่ายนิติบัญญัติ</div>
+                    <div class="text-sm text-slate-500">รัฐสภา (ส.ส.+ส.ว.) ออกกฎหมาย</div>
+                </div>
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                    <div class="text-teal-600 font-bold text-xs uppercase mb-1">Executive</div>
+                    <div class="font-bold text-slate-800 text-lg">ฝ่ายบริหาร</div>
+                    <div class="text-sm text-slate-500">คณะรัฐมนตรี กำหนดนโยบาย</div>
+                </div>
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                    <div class="text-amber-600 font-bold text-xs uppercase mb-1">Judicial</div>
+                    <div class="font-bold text-slate-800 text-lg">ฝ่ายตุลาการ</div>
+                    <div class="text-sm text-slate-500">ศาล ตัดสินคดีความ</div>
+                </div>
+            </div>
+        </section>
+
+        <hr class="border-slate-200">
+
+        <!-- SECTION 1: REVENUE (PIZZA CHART) -->
+        <section id="revenue" class="scroll-mt-28">
+            <div class="text-center mb-10">
+                <span class="bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-xs font-bold uppercase">Interactive</span>
+                <h2 class="text-3xl md:text-4xl font-bold text-[#c2410c] mt-3 font-head">🍕 พิซซ่ารายได้แผ่นดิน</h2>
+                <p class="text-slate-500 mt-2">ผ่าโครงสร้างเงิน 2.79 ล้านล้านบาท (ปี 2567)</p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- CHART -->
+                <div class="lg:col-span-2 bg-white rounded-2xl shadow-lg border-t-8 border-[#c2410c] p-4 md:p-8">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-bold text-slate-700">สัดส่วนแหล่งรายได้</h3>
+                        <span class="text-xs text-orange-500 animate-pulse">👆 คลิกที่ชิ้นพิซซ่าเพื่อดูไส้ใน</span>
+                    </div>
+                    <div class="chart-wrapper">
+                        <canvas id="pizzaChart"></canvas>
+                    </div>
+                    <p class="text-center text-xs text-slate-400 mt-4">*แสดงจำนวนเงินเฉพาะรายการหลัก</p>
+                </div>
+
+                <!-- DETAILS PANEL -->
+                <div class="lg:col-span-1">
+                    <div id="revenueDetailPanel" class="h-full bg-white rounded-2xl shadow-lg border-t-8 border-gray-300 p-6 flex flex-col transition-colors duration-300">
+                        <!-- Placeholder -->
+                        <div id="revPlaceholder" class="flex-1 flex flex-col items-center justify-center text-center opacity-40">
+                            <div class="text-6xl mb-4">🍽️</div>
+                            <h3 class="text-xl font-bold">เลือกชิ้นส่วน</h3>
+                            <p>เพื่อดูรายละเอียดภาษี</p>
+                        </div>
+                        <!-- Active Details -->
+                        <div id="revActive" class="hidden fade-in w-full">
+                            <div class="flex items-center gap-4 border-b pb-4 mb-4">
+                                <span id="revIcon" class="text-5xl"></span>
+                                <div>
+                                    <h3 id="revTitle" class="text-2xl font-bold text-slate-800 font-head">Title</h3>
+                                    <p id="revTotal" class="text-xl font-bold">Total</p>
+                                </div>
+                            </div>
+                            <div class="text-xs font-bold text-slate-400 uppercase mb-2">รายละเอียด (Ingredients)</div>
+                            <ul id="revList" class="space-y-3 text-sm"></ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 2: CORRUPTION (ACTIONABLE) -->
+        <section id="corruption" class="scroll-mt-28">
+            <div class="bg-gradient-to-br from-slate-900 to-slate-800 text-white rounded-3xl p-8 md:p-12 shadow-2xl overflow-hidden relative">
+                <div class="absolute top-0 right-0 w-64 h-64 bg-rose-500 rounded-full blur-3xl opacity-20 -mr-20 -mt-20"></div>
+                
+                <div class="relative z-10 text-center mb-12">
+                    <h2 class="text-3xl md:text-4xl font-bold font-head text-rose-400 mb-4">🛡️ การป้องกันและปราบปรามคอรัปชั่น</h2>
+                    <p class="text-slate-300 max-w-2xl mx-auto">รวมช่องทาง "ของจริง" ที่ประชาชนตรวจสอบและแจ้งเบาะแสได้ทันที</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 relative z-10">
+                    
+                    <!-- 1. OPEN DATA -->
+                    <div class="bg-white/10 backdrop-blur-sm p-6 rounded-xl border border-white/10 hover:bg-white/20 transition group">
+                        <div class="text-4xl mb-4">🔍</div>
+                        <h3 class="text-xl font-bold text-blue-300 mb-2">1. เปิดเผย</h3>
+                        <p class="text-xs text-slate-300 mb-4">ดูข้อมูลจัดซื้อจัดจ้าง</p>
+                        <div class="space-y-2">
+                            <a href="https://actai.co/" target="_blank" class="block bg-blue-600 hover:bg-blue-500 text-white text-xs py-2 px-3 rounded text-center transition">
+                                🌐 ACT Ai (จับโกง)
+                            </a>
+                            <a href="https://govspending.data.go.th/" target="_blank" class="block bg-slate-700 hover:bg-slate-600 text-white text-xs py-2 px-3 rounded text-center transition">
+                                📊 ภาษีไปไหน?
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- 2. CHECK -->
+                    <div class="bg-white/10 backdrop-blur-sm p-6 rounded-xl border border-white/10 hover:bg-white/20 transition">
+                        <div class="text-4xl mb-4">⚖️</div>
+                        <h3 class="text-xl font-bold text-purple-300 mb-2">2. ตรวจสอบ</h3>
+                        <p class="text-xs text-slate-300 mb-4">แจ้งหน่วยงานตรวจสอบ</p>
+                        <div class="space-y-2">
+                            <div class="bg-slate-800 p-2 rounded border border-slate-700">
+                                <div class="font-bold text-purple-300 text-xs">ป.ป.ช. (จนท.รัฐทุจริต)</div>
+                                <div class="text-xs">📞 สายด่วน 1205</div>
+                            </div>
+                            <div class="bg-slate-800 p-2 rounded border border-slate-700">
+                                <div class="font-bold text-purple-300 text-xs">สตง. (การใช้เงิน)</div>
+                                <div class="text-xs">📞 02-271-8000</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3. WHISTLEBLOW -->
+                    <div class="bg-white/10 backdrop-blur-sm p-6 rounded-xl border border-white/10 hover:bg-white/20 transition">
+                        <div class="text-4xl mb-4">📢</div>
+                        <h3 class="text-xl font-bold text-green-300 mb-2">3. แจ้งเบาะแส</h3>
+                        <p class="text-xs text-slate-300 mb-4">คุ้มครองพยาน</p>
+                        <div class="bg-green-900/50 p-3 rounded border border-green-800 mb-2">
+                            <div class="text-xs font-bold text-green-300">กรมคุ้มครองสิทธิฯ</div>
+                            <div class="text-[10px] text-slate-300">กระทรวงยุติธรรม</div>
+                        </div>
+                        <a href="tel:1111" class="block bg-green-600 hover:bg-green-500 text-white text-sm font-bold py-2 rounded text-center">
+                            📞 1111 กด 77
+                        </a>
+                    </div>
+
+                    <!-- 4. PUNISH -->
+                    <div class="bg-white/10 backdrop-blur-sm p-6 rounded-xl border border-white/10 hover:bg-white/20 transition">
+                        <div class="text-4xl mb-4">🔨</div>
+                        <h3 class="text-xl font-bold text-rose-300 mb-2">4. ลงโทษ</h3>
+                        <p class="text-xs text-slate-300 mb-4">ติดตามผลคดี</p>
+                        <ul class="text-xs text-slate-300 space-y-2">
+                            <li class="flex items-center gap-2">
+                                <span class="w-2 h-2 bg-rose-500 rounded-full"></span>
+                                ฐานข้อมูลชี้มูลความผิด (ป.ป.ช.)
+                            </li>
+                            <li class="flex items-center gap-2">
+                                <span class="w-2 h-2 bg-rose-500 rounded-full"></span>
+                                ระบบ CIOS (ศาลยุติธรรม)
+                            </li>
+                        </ul>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 3: BUDGET 2567 (REAL DATA) -->
+        <section id="budget" class="scroll-mt-28">
+            <div class="text-center mb-12">
+                <span class="bg-teal-100 text-teal-800 px-3 py-1 rounded-full text-xs font-bold uppercase">Official Data</span>
+                <h2 class="text-3xl md:text-4xl font-bold text-teal-800 mt-3 font-head">🏗️ เจาะลึกงบประมาณ 2567</h2>
+                <p class="text-slate-600 mt-2">วงเงิน 3.48 ล้านล้านบาท ถูกแบ่งไปที่ไหนบ้าง?</p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
+                
+                <!-- LIST DETAILS -->
+                <div class="space-y-6">
+                    <!-- Social -->
+                    <div class="bg-white p-5 rounded-xl shadow-md border-l-4 border-amber-500 hover:shadow-lg transition">
+                        <div class="flex items-center gap-3 mb-3">
+                            <div class="text-3xl">🎓</div>
+                            <h3 class="text-xl font-bold text-slate-800">1. สังคม & คุณภาพชีวิต</h3>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3 text-sm">
+                            <div class="bg-slate-50 p-2 rounded">
+                                <div class="font-bold">ศธ. (ศึกษา)</div>
+                                <div class="money-badge text-amber-600">3.28 แสนล้าน</div>
+                            </div>
+                            <div class="bg-slate-50 p-2 rounded">
+                                <div class="font-bold">สธ. (สาธารณสุข)</div>
+                                <div class="money-badge text-amber-600">1.70 แสนล้าน</div>
+                            </div>
+                            <div class="col-span-2 bg-slate-50 p-2 rounded">
+                                <div class="font-bold">สวัสดิการผู้สูงอายุ</div>
+                                <div class="money-badge text-amber-600">~9.3 หมื่นล้าน</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Economy -->
+                    <div class="bg-white p-5 rounded-xl shadow-md border-l-4 border-teal-500 hover:shadow-lg transition">
+                        <div class="flex items-center gap-3 mb-3">
+                            <div class="text-3xl">🛣️</div>
+                            <h3 class="text-xl font-bold text-slate-800">2. เศรษฐกิจ & พื้นฐาน</h3>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3 text-sm">
+                            <div class="bg-slate-50 p-2 rounded">
+                                <div class="font-bold">คมนาคม</div>
+                                <div class="text-xs text-slate-500">ถนน, รถไฟฟ้า</div>
+                                <div class="money-badge text-teal-600">1.83 แสนล้าน</div>
+                            </div>
+                            <div class="bg-slate-50 p-2 rounded">
+                                <div class="font-bold">เกษตรฯ</div>
+                                <div class="text-xs text-slate-500">น้ำ, ชลประทาน</div>
+                                <div class="money-badge text-teal-600">1.17 แสนล้าน</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Security -->
+                    <div class="bg-white p-5 rounded-xl shadow-md border-l-4 border-indigo-500 hover:shadow-lg transition">
+                        <div class="flex items-center gap-3 mb-3">
+                            <div class="text-3xl">👮</div>
+                            <h3 class="text-xl font-bold text-slate-800">3. ความมั่นคง & บริหาร</h3>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3 text-sm">
+                            <div class="bg-slate-50 p-2 rounded">
+                                <div class="font-bold">มหาดไทย</div>
+                                <div class="text-xs text-slate-500">ท้องถิ่น (สูงสุด)</div>
+                                <div class="money-badge text-indigo-600">3.53 แสนล้าน</div>
+                            </div>
+                            <div class="bg-slate-50 p-2 rounded">
+                                <div class="font-bold">กลาโหม</div>
+                                <div class="text-xs text-slate-500">กองทัพ</div>
+                                <div class="money-badge text-indigo-600">1.98 แสนล้าน</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CHART VISUALIZATION -->
+                <div class="bg-white p-6 rounded-2xl shadow-xl border border-slate-200">
+                    <h3 class="font-bold text-center text-slate-700 mb-4">เปรียบเทียบงบกระทรวงหลัก (Top 5)</h3>
+                    <div class="chart-wrapper-polar">
+                        <canvas id="budgetChart"></canvas>
+                    </div>
+                    <p class="text-center text-xs text-slate-400 mt-4">อ้างอิง: พ.ร.บ. งบประมาณรายจ่ายประจำปี 2567</p>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="bg-slate-900 text-slate-400 py-10 mt-20 text-center text-sm">
+        <div class="max-w-4xl mx-auto px-4">
+            <p class="font-bold text-white mb-2">"การมีส่วนร่วมของประชาชน คือรากฐานของการพัฒนา"</p>
+            <p class="opacity-70">รวบรวมข้อมูลเพื่อการศึกษา (Data Visualization Demo)</p>
+            <div class="mt-4 text-xs text-slate-600">Generated by Canvas</div>
+        </div>
+    </footer>
+
+    <!-- SCRIPTS -->
+    <script>
+        Chart.register(ChartDataLabels);
+
+        // --- UTILS: Format Money ---
+        function formatThaiMoney(val) {
+            if (val >= 1000000) return (val / 1000000).toFixed(2) + " ล้านล้าน";
+            if (val >= 10000) return (val / 10000).toFixed(2) + " แสนล้าน";
+            return val.toLocaleString() + " ลบ.";
+        }
+
+        // --- 1. PIZZA CHART (Revenue) ---
+        const pizzaCtx = document.getElementById('pizzaChart').getContext('2d');
+        const pizzaData = {
+            labels: ['กรมสรรพากร', 'กรมสรรพสามิต', 'รัฐวิสาหกิจ', 'กรมศุลกากร'],
+            data: [2276700, 590000, 175000, 114000],
+            colors: ['#1e3a8a', '#f97316', '#10b981', '#8b5cf6'],
+            details: [
+                {
+                    title: 'กรมสรรพากร', icon: '🏛️', total: '2.28 ล้านล้าน',
+                    items: [
+                        { label: 'ภาษีมูลค่าเพิ่ม (VAT)', val: '937,000', per: '41%' },
+                        { label: 'ภาษีเงินได้นิติบุคคล', val: '808,000', per: '35%' },
+                        { label: 'ภาษีเงินได้บุคคล', val: '410,000', per: '18%' }
+                    ]
+                },
+                {
+                    title: 'กรมสรรพสามิต', icon: '🍾', total: '5.9 แสนล้าน',
+                    items: [
+                        { label: 'ภาษีน้ำมันฯ', val: '200,000', per: '34%' },
+                        { label: 'ภาษีรถยนต์', val: '100,000', per: '17%' },
+                        { label: 'สินค้าบาป (เหล้า/ยา)', val: '180,000', per: '30%' }
+                    ]
+                },
+                {
+                    title: 'รัฐวิสาหกิจ', icon: '🏭', total: '1.75 แสนล้าน',
+                    items: [
+                        { label: 'สลากกินแบ่งฯ', val: '55,000', per: '31%' },
+                        { label: 'ปตท.', val: '30,000', per: '17%' },
+                        { label: 'การไฟฟ้า', val: '25,000', per: '14%' }
+                    ]
+                },
+                {
+                    title: 'กรมศุลกากร', icon: '🚢', total: '1.14 แสนล้าน',
+                    items: [
+                        { label: 'อากรขาเข้า', val: '95,000', per: '83%' },
+                        { label: 'ค่าธรรมเนียม', val: '19,000', per: '17%' }
+                    ]
+                }
+            ]
+        };
+
+        new Chart(pizzaCtx, {
+            type: 'pie',
+            data: {
+                labels: pizzaData.labels,
+                datasets: [{
+                    data: pizzaData.data,
+                    backgroundColor: pizzaData.colors,
+                    borderColor: '#fff',
+                    borderWidth: 2,
+                    hoverOffset: 15
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                layout: { padding: 20 },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { enabled: false },
+                    datalabels: {
+                        color: '#fff',
+                        textAlign: 'center',
+                        font: (ctx) => {
+                            const val = ctx.dataset.data[ctx.dataIndex];
+                            const total = ctx.dataset.data.reduce((a,b)=>a+b,0);
+                            const per = val/total;
+                            // ซ่อนถ้าเล็กเกินไป
+                            return { family: 'Prompt', weight: 'bold', size: (per > 0.1) ? 14 : 0 };
+                        },
+                        formatter: (val, ctx) => {
+                            const label = ctx.chart.data.labels[ctx.dataIndex];
+                            const money = formatThaiMoney(val);
+                            return [label, money];
+                        },
+                        display: 'auto', anchor: 'center', align: 'center'
+                    }
+                },
+                onClick: (e, els) => {
+                    if(els.length > 0) updateRev(els[0].index);
+                }
+            }
+        });
+
+        function updateRev(index) {
+            const d = pizzaData.details[index];
+            const color = pizzaData.colors[index];
+            
+            document.getElementById('revPlaceholder').classList.add('hidden');
+            const active = document.getElementById('revActive');
+            active.classList.remove('hidden');
+
+            const panel = document.getElementById('revenueDetailPanel');
+            panel.style.borderColor = color;
+
+            document.getElementById('revIcon').innerText = d.icon;
+            document.getElementById('revTitle').innerText = d.title;
+            document.getElementById('revTotal').innerText = d.total;
+            document.getElementById('revTotal').style.color = color;
+
+            const list = document.getElementById('revList');
+            list.innerHTML = '';
+            d.items.forEach(item => {
+                list.innerHTML += `
+                    <li class="bg-slate-50 p-3 rounded-lg border border-slate-100 flex justify-between items-center">
+                        <div>
+                            <div class="font-bold text-slate-700">${item.label}</div>
+                            <div class="text-xs text-slate-400">${item.val} ลบ.</div>
+                        </div>
+                        <div class="text-xs font-bold text-slate-500 bg-white px-2 py-1 rounded shadow-sm">${item.per}</div>
+                    </li>
+                `;
+            });
+        }
+
+        // Init Pizza
+        updateRev(0);
+
+        // --- 2. BUDGET CHART (Polar Area) ---
+        const budgetCtx = document.getElementById('budgetChart').getContext('2d');
+        new Chart(budgetCtx, {
+            type: 'polarArea',
+            data: {
+                labels: ['มหาดไทย', 'ศึกษา', 'การคลัง', 'กลาโหม', 'คมนาคม'],
+                datasets: [{
+                    data: [353127, 328384, 327155, 198320, 183635],
+                    backgroundColor: ['#6366f1', '#f59e0b', '#10b981', '#3b82f6', '#06b6d4'],
+                    borderWidth: 2,
+                    borderColor: '#ffffff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: { r: { ticks: { display: false }, grid: { color: '#e2e8f0' } } },
+                plugins: {
+                    legend: { position: 'bottom', labels: { font: { family: 'Sarabun' } } },
+                    datalabels: {
+                        color: '#1e293b',
+                        backgroundColor: '#fff',
+                        borderRadius: 4,
+                        font: { weight: 'bold', size: 10 },
+                        formatter: (val) => (val/1000).toFixed(0) + " พันล.",
+                        padding: 4
+                    }
+                }
+            }
+        });
+
+    </script>
+</body>
+</html>
