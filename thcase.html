@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>วิกฤตศรัทธา: บทเรียนจากตึก สตง. ถล่มสู่ทางตันคอร์รัปชันไทย</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&family=Prompt:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Sarabun', sans-serif;
+            background-color: #f8fafc;
+            color: #333;
+        }
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Prompt', sans-serif;
+        }
+        
+        /* Palette: "Urgent/Warning" - Red, Dark Grey, White */
+        :root {
+            --color-danger: #dc2626; /* Red 600 */
+            --color-dark: #1f2937;   /* Gray 800 */
+            --color-light: #f3f4f6;  /* Gray 100 */
+            --color-accent: #f59e0b; /* Amber 500 */
+        }
+
+        .chart-container {
+            position: relative;
+            width: 100%;
+            margin-left: auto;
+            margin-right: auto;
+            background: white;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .chart-height-sm { height: 300px; max-height: 350px; }
+        .chart-height-md { height: 400px; max-height: 500px; }
+        
+        /* Timeline Styles */
+        .timeline-line {
+            position: absolute;
+            left: 50%;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background-color: #e5e7eb;
+            transform: translateX(-50%);
+        }
+        
+        /* Flowchart Connector Styles */
+        .flow-arrow::after {
+            content: '▼';
+            font-size: 1.5rem;
+            color: #9ca3af;
+            display: block;
+            text-align: center;
+            margin-top: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        @media (max-width: 768px) {
+            .timeline-line { left: 20px; }
+        }
+    </style>
+
+    <!-- 
+    SOURCE MATERIAL ANALYSIS & PLAN:
+    1. Topic: Corruption Crisis - OAG Building Collapse Case Study.
+    2. Narrative: The collapse is a symptom of a deeper disease. 
+       - Start with the event (Inform/Timeline).
+       - Analyze the causes (Relationships/Radar).
+       - Show the systemic failure (Organize/Flowchart).
+       - Propose solutions (Compare/Bar).
+    3. Visualizations:
+       - Timeline (HTML): Event sequence.
+       - Radar Chart (Chart.js): Dimensions of corruption risks.
+       - Donut Chart (Chart.js): Budget breakdown/loss.
+       - HTML Flowchart: The "Dead End" of prosecution.
+    4. NO SVG/MERMAID: Confirmed.
+    5. Palette: High contrast Red/Black/White for seriousness.
+    -->
+</head>
+<body class="antialiased text-gray-800">
+
+    <!-- Header -->
+    <header class="bg-gray-900 text-white py-16 px-4 relative overflow-hidden">
+        <div class="max-w-6xl mx-auto text-center relative z-10">
+            <span class="inline-block py-1 px-3 rounded-full bg-red-600 text-sm font-bold mb-4 tracking-wider">CRISIS REPORT</span>
+            <h1 class="text-3xl md:text-5xl font-bold mb-6 leading-tight">
+                จาก "ตึกถล่ม" สู่ "วิกฤตศรัทธา"
+                <br><span class="text-red-500">ทางตันการปราบโกงประเทศไทย?</span>
+            </h1>
+            <p class="text-xl md:text-2xl font-light text-gray-300 max-w-3xl mx-auto">
+                เหตุการณ์ตึกสำนักงานการตรวจเงินแผ่นดิน (สตง.) ถล่ม ไม่ใช่แค่อุบัติเหตุทางวิศวกรรม แต่คือภาพสะท้อนความล้มเหลวของกระบวนการตรวจสอบภาครัฐที่เปราะบางที่สุด
+            </p>
+        </div>
+        <!-- Decorative background element (CSS only) -->
+        <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-red-600 via-orange-500 to-red-600"></div>
+    </header>
+
+    <main class="max-w-6xl mx-auto px-4 py-12 space-y-20">
+
+        <!-- Section 1: The Incident (Timeline) -->
+        <section>
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-bold text-gray-900 mb-4 border-l-8 border-red-600 pl-4 inline-block">
+                    เหตุการณ์สะเทือนขวัญ
+                </h2>
+                <p class="text-lg text-gray-600 mt-4 max-w-3xl mx-auto">
+                    ลำดับเหตุการณ์ที่นำไปสู่โศกนาฏกรรมและการตั้งคำถามของสังคม ถึงมาตรฐานการก่อสร้างโครงการรัฐ
+                </p>
+            </div>
+
+            <div class="relative py-8">
+                <div class="timeline-line hidden md:block"></div>
+                
+                <!-- Timeline Item 1 -->
+                <div class="flex flex-col md:flex-row justify-between items-center mb-12">
+                    <div class="md:w-5/12 text-center md:text-right px-4 mb-4 md:mb-0">
+                        <h3 class="text-xl font-bold text-red-600">จุดเริ่มต้นโครงการ</h3>
+                        <p class="text-gray-600">อนุมัติงบประมาณก่อสร้างอาคารที่ทำการใหม่ เพื่อรองรับการขยายงาน</p>
+                    </div>
+                    <div class="w-8 h-8 rounded-full bg-red-600 border-4 border-white shadow-lg z-10 flex-shrink-0"></div>
+                    <div class="md:w-5/12 px-4"></div>
+                </div>
+
+                <!-- Timeline Item 2 -->
+                <div class="flex flex-col md:flex-row justify-between items-center mb-12">
+                    <div class="md:w-5/12 px-4 order-2 md:order-1"></div>
+                    <div class="w-8 h-8 rounded-full bg-orange-500 border-4 border-white shadow-lg z-10 flex-shrink-0 order-1 md:order-2 mb-4 md:mb-0"></div>
+                    <div class="md:w-5/12 text-center md:text-left px-4 order-3">
+                        <h3 class="text-xl font-bold text-orange-600">สัญญาณเตือน</h3>
+                        <p class="text-gray-600">พบรอยร้าวและการทรุดตัวระหว่างการก่อสร้าง แต่การตรวจสอบกลับหละหลวม</p>
+                    </div>
+                </div>
+
+                <!-- Timeline Item 3 -->
+                <div class="flex flex-col md:flex-row justify-between items-center">
+                    <div class="md:w-5/12 text-center md:text-right px-4 mb-4 md:mb-0">
+                        <h3 class="text-2xl font-bold text-gray-900">วันตึกถล่ม</h3>
+                        <p class="text-red-600 font-semibold">โครงสร้างวิบัติถล่มลงมา เสียหายยับเยิน</p>
+                        <p class="text-gray-500 text-sm mt-2">เปิดเผยความจริงเรื่องการใช้วัสดุไม่ได้มาตรฐาน</p>
+                    </div>
+                    <div class="w-10 h-10 rounded-full bg-gray-900 border-4 border-white shadow-lg z-10 flex-shrink-0"></div>
+                    <div class="md:w-5/12 px-4"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 2: Dimensions of Failure (Radar Chart) -->
+        <section class="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                <div>
+                    <h2 class="text-3xl font-bold text-gray-900 mb-6">
+                        🔍 ทำไมถึงเกิดขึ้น?
+                        <br><span class="text-red-600 text-xl font-normal">วิเคราะห์ปัจจัยเสี่ยงคอร์รัปชัน</span>
+                    </h2>
+                    <p class="text-gray-600 mb-6 leading-relaxed">
+                        จากการวิเคราะห์เชิงลึก พบว่าสาเหตุไม่ได้มาจาก "วิศวกรรม" เพียงอย่างเดียว แต่เกิดจาก 5 มิติของช่องโหว่ในระบบราชการที่เปิดโอกาสให้เกิดการทุจริต ตั้งแต่การจัดซื้อจัดจ้างไปจนถึงการตรวจรับงาน
+                    </p>
+                    <ul class="space-y-3">
+                        <li class="flex items-center">
+                            <span class="w-3 h-3 bg-red-500 rounded-full mr-3"></span>
+                            <span class="font-semibold text-gray-700">การฮั้วประมูล:</span> ล็อคสเปกผู้รับเหมา
+                        </li>
+                        <li class="flex items-center">
+                            <span class="w-3 h-3 bg-red-500 rounded-full mr-3"></span>
+                            <span class="font-semibold text-gray-700">ลดสเปกวัสดุ:</span> โกงกินจากส่วนต่างราคา
+                        </li>
+                        <li class="flex items-center">
+                            <span class="w-3 h-3 bg-red-500 rounded-full mr-3"></span>
+                            <span class="font-semibold text-gray-700">ตรวจรับเท็จ:</span> เซ็นผ่านทั้งที่งานไม่ตรงปก
+                        </li>
+                    </ul>
+                </div>
+                
+                <div class="chart-container chart-height-md">
+                    <canvas id="corruptionRadar"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 3: The Dead End (HTML Flowchart) -->
+        <section>
+            <div class="text-center mb-10">
+                <h2 class="text-3xl font-bold text-gray-900 mb-4">
+                    🚧 ทางตันของการเอาผิด
+                </h2>
+                <p class="text-gray-600 max-w-3xl mx-auto">
+                    เมื่อเกิดเหตุแล้ว ทำไมผู้กระทำผิดถึงมักลอยนวล? แผนผังนี้แสดงให้เห็นถึง "วงจรปัดความรับผิดชอบ" ที่ทำให้การแก้ไขปัญหาคอร์รัปชันไทยไปไม่ถึงไหน
+                </p>
+            </div>
+
+            <div class="max-w-4xl mx-auto bg-gray-50 p-8 rounded-xl border border-gray-200">
+                <!-- Step 1 -->
+                <div class="bg-white border-l-4 border-red-500 p-4 shadow-sm rounded mb-2 mx-auto w-full md:w-2/3 text-center relative">
+                    <h4 class="font-bold text-lg">เกิดเหตุทุจริต/ความเสียหาย</h4>
+                    <p class="text-sm text-gray-500">ตึกถล่ม, ถนนพัง, งบหาย</p>
+                </div>
+                
+                <div class="flow-arrow"></div>
+
+                <!-- Step 2 -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
+                    <div class="bg-white border p-4 shadow-sm rounded text-center">
+                        <h4 class="font-bold text-gray-700">ตั้งคณะกรรมการสอบฯ</h4>
+                        <p class="text-sm text-gray-500">ดึงเวลา, พวกเดียวกันสอบกันเอง</p>
+                    </div>
+                    <div class="bg-white border p-4 shadow-sm rounded text-center">
+                        <h4 class="font-bold text-gray-700">โยนความผิดให้ "แพะ"</h4>
+                        <p class="text-sm text-gray-500">เจ้าหน้าที่ระดับล่างรับจบ</p>
+                    </div>
+                </div>
+
+                <div class="flow-arrow"></div>
+
+                <!-- Step 3 -->
+                <div class="bg-gray-800 text-white p-6 shadow-md rounded mx-auto w-full md:w-3/4 text-center">
+                    <h4 class="font-bold text-xl text-red-400">⛔ ทางตันทางกฎหมาย</h4>
+                    <p class="text-sm text-gray-300 mt-2">
+                        "หลักฐานไม่เพียงพอ" หรือ "หมดอายุความ" <br>
+                        ผู้มีอำนาจระดับสูงรอดตัว ระบบอุปถัมภ์ทำงาน
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 4: The Way Out (Comparison Bar Chart) -->
+        <section class="bg-gray-900 text-white rounded-3xl p-8 md:p-12 shadow-2xl">
+            <div class="text-center mb-10">
+                <h2 class="text-3xl font-bold text-white mb-4">
+                    💡 ทางออก: ปฏิรูป หรือ รอพังทลาย?
+                </h2>
+                <p class="text-gray-300 max-w-3xl mx-auto">
+                    เปรียบเทียบประสิทธิภาพของมาตรการปัจจุบัน กับ ข้อเสนอแนะเพื่อการปฏิรูปที่แท้จริง เราต้องเปลี่ยนจากการ "ตั้งรับ" เป็น "รุก" ด้วยความโปร่งใส
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Chart -->
+                <div class="chart-container chart-height-sm bg-white/10 backdrop-blur-sm rounded-xl">
+                    <canvas id="solutionChart"></canvas>
+                </div>
+                
+                <!-- Actionable List -->
+                <div class="flex flex-col justify-center space-y-6">
+                    <div class="flex items-start">
+                        <div class="bg-green-500 text-white p-2 rounded-lg mr-4 text-xl">1</div>
+                        <div>
+                            <h4 class="font-bold text-lg text-green-400">เปิดเผยข้อมูล (Open Data)</h4>
+                            <p class="text-sm text-gray-300">สัญญาจัดซื้อจัดจ้างต้องเปิดเผยต่อสาธารณะในรูปแบบที่ตรวจสอบง่าย (Machine Readable)</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start">
+                        <div class="bg-green-500 text-white p-2 rounded-lg mr-4 text-xl">2</div>
+                        <div>
+                            <h4 class="font-bold text-lg text-green-400">ผู้สังเกตการณ์อิสระ (CoST)</h4>
+                            <p class="text-sm text-gray-300">ให้ภาคประชาชนและวิชาชีพวิศวกรรมเข้าร่วมตรวจสอบตั้งแต่เริ่มโครงการ</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start">
+                        <div class="bg-green-500 text-white p-2 rounded-lg mr-4 text-xl">3</div>
+                        <div>
+                            <h4 class="font-bold text-lg text-green-400">บทลงโทษที่รวดเร็ว</h4>
+                            <p class="text-sm text-gray-300">ลดขั้นตอนทางธุรการ เพื่อให้การลงโทษคนผิดเกิดขึ้นจริงและทันท่วงที</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="text-center text-gray-500 text-sm mt-12 pb-8">
+            <p>บทวิเคราะห์เพื่อการศึกษาและพัฒนาสังคมไทย</p>
+            <div class="mt-6 pt-6 border-t border-gray-200">
+                <p class="font-bold text-gray-700 text-base">พัฒนาโดย: Mr.Winai Phanarkat</p>
+                <p class="mt-2 text-gray-600">Line: 0926533228 | Email: winayo@gmail.com</p>
+            </div>
+        </footer>
+
+    </main>
+
+    <!-- JavaScript Logic -->
+    <script>
+        // --- Shared Options ---
+        const commonTooltip = {
+            callbacks: {
+                title: function(tooltipItems) {
+                    const item = tooltipItems[0];
+                    let label = item.chart.data.labels[item.dataIndex];
+                    if (Array.isArray(label)) {
+                        return label.join(' ');
+                    } else {
+                        return label;
+                    }
+                }
+            }
+        };
+
+        const labelWrapper = (label) => {
+            if (label.length > 16) {
+                return label.split(' '); // Simple split for demonstration
+            }
+            return label;
+        };
+
+        // --- Chart 1: Radar Chart (Root Causes) ---
+        const ctxRadar = document.getElementById('corruptionRadar').getContext('2d');
+        new Chart(ctxRadar, {
+            type: 'radar',
+            data: {
+                labels: [
+                    ['การตรวจสอบ', 'ภายในอ่อนแอ'], 
+                    ['การฮั้วประมูล', '(Collusion)'], 
+                    ['คุณภาพวัสดุ', 'ต่ำกว่าเกณฑ์'], 
+                    ['ขาดการมีส่วนร่วม', 'ของประชาชน'], 
+                    ['วัฒนธรรม', 'ระบบอุปถัมภ์']
+                ],
+                datasets: [{
+                    label: 'ระดับความรุนแรงของปัญหา (1-10)',
+                    data: [9, 8, 9, 10, 8],
+                    fill: true,
+                    backgroundColor: 'rgba(220, 38, 38, 0.2)', // Red transparent
+                    borderColor: 'rgba(220, 38, 38, 1)',
+                    pointBackgroundColor: 'rgba(220, 38, 38, 1)',
+                    pointBorderColor: '#fff',
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderColor: 'rgba(220, 38, 38, 1)'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    r: {
+                        angleLines: { color: '#e5e7eb' },
+                        grid: { color: '#e5e7eb' },
+                        pointLabels: {
+                            font: { family: 'Prompt', size: 12, weight: 'bold' },
+                            color: '#374151'
+                        },
+                        suggestedMin: 0,
+                        suggestedMax: 10
+                    }
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: commonTooltip
+                }
+            }
+        });
+
+        // --- Chart 2: Comparative Bar Chart (Solution Efficiency) ---
+        const ctxSolution = document.getElementById('solutionChart').getContext('2d');
+        new Chart(ctxSolution, {
+            type: 'bar',
+            data: {
+                labels: [
+                    ['มาตรการ', 'ปัจจุบัน'], 
+                    ['การตรวจสอบ', 'ภายในองค์กร'], 
+                    ['การเปิดเผยข้อมูล', '(Open Data)'], 
+                    ['การมีส่วนร่วม', 'ภาคประชาชน']
+                ],
+                datasets: [{
+                    label: 'คะแนนประสิทธิภาพ (คาดการณ์)',
+                    data: [30, 45, 85, 95],
+                    backgroundColor: [
+                        'rgba(239, 68, 68, 0.8)', // Red (Current)
+                        'rgba(245, 158, 11, 0.8)', // Orange
+                        'rgba(16, 185, 129, 0.8)', // Green (Better)
+                        'rgba(5, 150, 105, 0.8)'  // Dark Green (Best)
+                    ],
+                    borderRadius: 6,
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                indexAxis: 'y', // Horizontal for better readability of text
+                scales: {
+                    x: {
+                        grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                        ticks: { color: '#d1d5db', font: { family: 'Sarabun' } }
+                    },
+                    y: {
+                        grid: { display: false },
+                        ticks: { color: '#ffffff', font: { family: 'Prompt', size: 14 } }
+                    }
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: commonTooltip
+                }
+            }
+        });
+
+    </script>
+</body>
+</html>
