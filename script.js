@@ -6,10 +6,11 @@ const { useState, useEffect, useRef, useMemo, useCallback } = React;
 const { useRealtimeData, normalizeThaiName, getBearing, DON_MUEANG_COORDS, MOCK_CROPS } = window.AppCore;
 const { SimulationPanel, CloudOverlay, KnowledgeCenterModal } = window.AppUI;
 
-const KasetCloudApp = ({ mapInstance, onTravelStart, onTravelEnd, onGoHome, isTraveling, initialAction }) => {
+const KasetCloudApp = ({ mapInstance, onTravelStart, onTravelEnd, onGoHome, isTraveling, initialAction, initialConfig }) => {
     // ... (Existing state)
+    // FIX: Initialize with config if available
     const [selectedRegion, setSelectedRegion] = useState(null);
-    const [selectedProvince, setSelectedProvince] = useState(null);
+    const [selectedProvince, setSelectedProvince] = useState(initialConfig?.province || null);
     const [area, setArea] = useState(1);
     const [years, setYears] = useState(25);
     const [results, setResults] = useState(null);
@@ -18,12 +19,13 @@ const KasetCloudApp = ({ mapInstance, onTravelStart, onTravelEnd, onGoHome, isTr
     const [isPinning, setIsPinning] = useState(false);
     const [mapType, setMapType] = useState('satellite');
     const [sortType, setSortType] = useState('profit');
-    const [categoryFilter, setCategoryFilter] = useState('all');
+    // FIX: Initialize category with config if available
+    const [categoryFilter, setCategoryFilter] = useState(initialConfig?.category || 'all');
     
-    // NEW: State for Knowledge Center Modal
     const [showKnowledgeCenter, setShowKnowledgeCenter] = useState(false);
-    // NEW: State for Reading Mode (to hide dashboard)
     const [isReadingBook, setIsReadingBook] = useState(false);
+    // State for Share Feedback
+    const [isCopied, setIsCopied] = useState(false);
 
     // Handle Initial Action (Deep Linking)
     useEffect(() => {
@@ -33,7 +35,6 @@ const KasetCloudApp = ({ mapInstance, onTravelStart, onTravelEnd, onGoHome, isTr
     }, [initialAction]);
 
     const appData = useRealtimeData();
-    // ... (Existing refs & effects)
     const markerRef = useRef(null);
     const lastProvinceRef = useRef(null);
     const provinceFeaturesRef = useRef(null);
@@ -45,6 +46,19 @@ const KasetCloudApp = ({ mapInstance, onTravelStart, onTravelEnd, onGoHome, isTr
     const [address, setAddress] = useState(null);
     const [addressDetails, setAddressDetails] = useState(null);
     const [isAddressLoading, setIsAddressLoading] = useState(false);
+
+    // *** NEW: Initial FlyTo Effect when data is loaded ***
+    useEffect(() => {
+        if (initialConfig?.province && mapInstance && appData.provinceData[initialConfig.province]) {
+            const info = appData.provinceData[initialConfig.province];
+            // Set view directly without animation to be instant on load
+            mapInstance.setView([info.lat - 0.1, info.lng], 10);
+            
+            // Set soil info & coords as well
+            setSoilInfo(info);
+            setPinCoords([info.lat, info.lng]);
+        }
+    }, [initialConfig, mapInstance, appData.provinceData]);
 
     // ... (Map logic: Auto-switch, Layers, Markers, Pin Drag, Geocoding) - No changes needed
     useEffect(() => {
@@ -134,7 +148,6 @@ const KasetCloudApp = ({ mapInstance, onTravelStart, onTravelEnd, onGoHome, isTr
             const isDurian = c.name.includes('ทุเรียน');
             const isRubber = c.name.includes('ยาง') && !c.name.includes('โพนยางคำ');
             const isCoconut = c.name.includes('มะพร้าว');
-            // Check for Integrated Farming
             const isIntegrated = c.name.includes('โคก') || c.category === 'ผสมผสาน';
 
             if (isIntegrated && window.calculateIntegratedEconomics) {
@@ -206,7 +219,7 @@ const KasetCloudApp = ({ mapInstance, onTravelStart, onTravelEnd, onGoHome, isTr
             else if (categoryFilter === 'animal') processed = processed.filter(c => c.category === 'ปศุสัตว์');
             else if (categoryFilter === 'integrated') processed = processed.filter(c => c.category === 'ผสมผสาน');
             else if (categoryFilter === 'rice_ministry') processed = processed.filter(c => c.name.includes('ข้าว'));
-            else if (categoryFilter === 'rubber_ministry') processed = processed.filter(c => c.name.includes('ยาง') && !c.name.includes('โพนยางคำ'));
+            else if (categoryFilter === 'rubber_ministry') processed = processed.filter(c => c.name.includes('ยาง'));
             else if (categoryFilter === 'coconut_ministry') processed = processed.filter(c => c.name.includes('มะพร้าว')); 
             else if (categoryFilter === 'durian_ministry') processed = processed.filter(c => c.name.includes('ทุเรียน')); 
             // NEW: Ministry of Integrated Farming Filter
@@ -236,7 +249,18 @@ const KasetCloudApp = ({ mapInstance, onTravelStart, onTravelEnd, onGoHome, isTr
     const handleBack = () => { if (isPinning) { setIsPinning(false); return; } if (simulatingItem) { setSimulatingItem(null); return; } if (selectedProvince) { setSelectedProvince(null); setResults(null); lastProvinceRef.current = null; setMapType('satellite'); setPinCoords(null); if (mapInstance && mapInstance._container) mapInstance.flyTo(DON_MUEANG_COORDS, 6, { duration: 2 }); return; } if (selectedRegion) { setSelectedRegion(null); return; } };
     const handleAreaChange = (val) => { const newArea = parseFloat(val) || 0; setArea(newArea); };
     
-    // ... (Render variables - Same as before)
+    // Share Handler
+    const handleShareProvince = () => {
+        const url = `${window.location.origin}${window.location.pathname}#province=${encodeURIComponent(selectedProvince)}&category=${encodeURIComponent(categoryFilter)}`;
+        
+        const textarea = document.createElement('textarea');
+        textarea.value = url;
+        document.body.appendChild(textarea);
+        textarea.select();
+        try { document.execCommand('copy'); setIsCopied(true); setTimeout(() => setIsCopied(false), 2000); } catch (err) { console.error('Copy failed', err); }
+        document.body.removeChild(textarea);
+    };
+
     const currentProvInfo = appData.provinceData[selectedProvince];
     const floodColorClass = activeFloodData.risk_level === 'High' ? 'text-red-400' : activeFloodData.risk_level === 'Medium' ? 'text-orange-400' : 'text-green-400';
 
@@ -279,8 +303,18 @@ const KasetCloudApp = ({ mapInstance, onTravelStart, onTravelEnd, onGoHome, isTr
                 // *** UPDATED: Reduced scale to 0.6 and adjusted width to 167% to prevent overflow ***
                 <div className="fixed bottom-6 left-0 w-screen origin-bottom-left scale-[0.6] z-[10] flex flex-col md:flex-row items-end justify-between pointer-events-none animate-fade-in-up px-10">
                     <style>{`.text-shadow-heavy { text-shadow: 0 2px 4px rgba(0,0,0,0.9); }`}</style>
-                    <div className="mb-4 md:mb-0 text-shadow-heavy">
-                        <h3 className="font-bold text-white text-4xl md:text-5xl leading-none tracking-wide">{selectedProvince}</h3>
+                    <div className="mb-4 md:mb-0 text-shadow-heavy pointer-events-auto">
+                        <div className="flex items-center gap-3">
+                            <h3 className="font-bold text-white text-4xl md:text-5xl leading-none tracking-wide">{selectedProvince}</h3>
+                            <div className="flex gap-2">
+                                <a href="https://www.facebook.com/winayo1" target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-full bg-blue-600 hover:bg-blue-500 text-white flex items-center justify-center transition shadow-lg" title="ติดตามผู้พัฒนา">
+                                    <i className="fa-brands fa-facebook text-lg"></i>
+                                </a>
+                                <button onClick={handleShareProvince} className={`w-8 h-8 rounded-full flex items-center justify-center transition shadow-lg ${isCopied ? 'bg-green-500 text-white' : 'bg-white/20 hover:bg-white/40 text-white'}`} title="แชร์หน้านี้">
+                                    <i className={`fa-solid ${isCopied ? 'fa-check' : 'fa-share-nodes'}`}></i>
+                                </button>
+                            </div>
+                        </div>
                         <div className="mt-1">
                             {isAddressLoading ? (<span className="text-xs text-yellow-300 animate-pulse"><i className="fa-solid fa-spinner fa-spin mr-1"></i> กำลังค้นหาที่อยู่...</span>) : address ? (<div className="bg-black/40 backdrop-blur-md px-3 py-1.5 rounded-lg text-xs md:text-sm text-emerald-200 border border-emerald-500/30 shadow-lg inline-block max-w-[250px] md:max-w-md truncate"><i className="fa-solid fa-map-location-dot mr-2 text-emerald-400"></i>{address}</div>) : (pinCoords && <span className="text-xs text-slate-400">{pinCoords[0].toFixed(4)}, {pinCoords[1].toFixed(4)}</span>)}
                         </div>
@@ -292,7 +326,7 @@ const KasetCloudApp = ({ mapInstance, onTravelStart, onTravelEnd, onGoHome, isTr
                         <div className="w-px h-8 bg-white/20 hidden md:block"></div>
                         <div className="flex flex-col items-center"><div className="flex items-baseline gap-1"><i className="fa-solid fa-flask text-purple-400 text-lg"></i><span className="text-2xl font-bold text-white">{currentProvInfo?.ph || '-'}</span></div><div className="text-[10px] text-purple-200 font-bold uppercase tracking-wider">pH ดิน</div></div>
                         <div className="flex flex-col items-center"><div className="flex items-baseline gap-1"><i className="fa-solid fa-droplet text-blue-400 text-lg"></i><span className="text-2xl font-bold text-white">{currentProvInfo?.moisture || '-'}</span><span className="text-xs text-blue-200">%</span></div><div className="text-[10px] text-blue-200 font-bold uppercase tracking-wider">ความชื้น</div></div>
-                        <div className="flex flex-col items-center group relative cursor-help">
+                        <div className="flex flex-col items-center group relative cursor-help pointer-events-auto">
                             <div className="flex items-baseline gap-1"><i className={`fa-solid fa-water text-lg ${floodColorClass}`}></i><span className="text-2xl font-bold text-white">{activeFloodData.risk_level}</span></div>
                             <div className={`text-[10px] font-bold uppercase tracking-wider ${floodColorClass.replace('text', 'bg').replace('400', '500/20')} px-1 rounded`}>เสี่ยงน้ำท่วม</div>
                             <div className="absolute bottom-full mb-2 hidden group-hover:block w-72 bg-black/95 text-white text-xs p-3 rounded border border-white/20 backdrop-blur-md z-50 shadow-2xl">
@@ -322,7 +356,8 @@ const KasetCloudApp = ({ mapInstance, onTravelStart, onTravelEnd, onGoHome, isTr
             )}
 
             <div className={`w-full flex-1 flex flex-col items-center transition-all duration-700 ease-in-out transform ${isTraveling || isPinning ? '-translate-y-20 opacity-0' : 'translate-y-0 opacity-100'} ${isTraveling || isPinning ? 'pointer-events-none' : 'pointer-events-auto'}`}>
-                {!selectedRegion && (
+                {/* --- FIX: Updated Condition to hide Region Selector if Province is selected --- */}
+                {!selectedRegion && !selectedProvince && !simulatingItem && (
                     <div className={`w-full max-w-5xl mx-auto glass-panel-clear rounded-b-3xl p-6 animate-slide-down shadow-[0_10px_40px_rgba(0,0,0,0.5)] border-t-0 mt-4`}>
                         <h2 className="text-xl font-bold text-white mb-4 text-center">เลือกภูมิภาคของคุณ</h2>
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">{Object.keys(appData.regions).map(r => (<button key={r} onClick={() => handleRegionSelect(r)} className="bg-white/5 hover:bg-emerald-500/20 border border-white/20 rounded-xl p-6 flex flex-col items-center gap-2 transition hover:scale-105 group backdrop-blur-sm"><span className="text-4xl group-hover:animate-bounce">{r === 'เหนือ' ? '⛰️' : r === 'ใต้' ? '🌊' : '🏙️'}</span><span className="font-bold text-slate-200">{r}</span></button>))}</div>
@@ -451,12 +486,35 @@ const App = () => {
     const [travel, setTravel] = useState({ active: false, msg: '', rotation: 0 }); 
     const mapRef = useRef(null);
     const rotationInterval = useRef(null);
+    const [initialAction, setInitialAction] = useState(null);
+    const [initialConfig, setInitialConfig] = useState(null);
 
     useEffect(() => {
         if (mapRef.current) return;
         const map = L.map('global-map', { zoomControl: false, attributionControl: false }).setView([13.7563, 100.5018], 5);
         L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}').addTo(map);
         mapRef.current = map;
+
+        // *** FIX: Check Hash for Deep Linking ***
+        const hash = window.location.hash;
+        if (hash.includes('book')) {
+             setPage('kaset'); // Skip Home
+             setInitialAction('openKnowledgeCenter');
+             // Optional: Set view to default focus
+             map.setView(DON_MUEANG_COORDS, 6); 
+        } else if (hash.includes('province=')) {
+            const params = new URLSearchParams(hash.substring(1)); // remove #
+            const prov = params.get('province');
+            const cat = params.get('category');
+            if (prov) {
+                setInitialConfig({ 
+                    province: decodeURIComponent(prov), 
+                    category: cat ? decodeURIComponent(cat) : 'all' 
+                });
+                setPage('kaset');
+            }
+        }
+
         return () => { if (map) map.remove(); mapRef.current = null; };
     }, []);
 
@@ -487,7 +545,7 @@ const App = () => {
             <div id="global-map"></div>
             <CloudOverlay isActive={travel.active} message={travel.msg} rotation={travel.rotation} />
             {page === 'home' && <HomePage onStart={handleStart} isTraveling={travel.active} />}
-            {page === 'kaset' && (<KasetCloudApp mapInstance={mapRef.current} onTravelStart={(msg, rotation) => setTravel({ active: true, msg, rotation })} onTravelEnd={() => setTravel({ active: false, msg: '', rotation: 0 })} onGoHome={handleGoHome} isTraveling={travel.active} />)}
+            {page === 'kaset' && (<KasetCloudApp mapInstance={mapRef.current} onTravelStart={(msg, rotation) => setTravel({ active: true, msg, rotation })} onTravelEnd={() => setTravel({ active: false, msg: '', rotation: 0 })} onGoHome={handleGoHome} isTraveling={travel.active} initialAction={initialAction} initialConfig={initialConfig} />)}
         </div>
     );
 };

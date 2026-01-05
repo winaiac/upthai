@@ -11,7 +11,6 @@
         textarea.select();
         try {
             document.execCommand('copy');
-            // alert('คัดลอกลิงก์เรียบร้อยแล้ว!'); // สามารถทำ Custom Toast ได้ถ้าต้องการ
         } catch (err) {
             console.error('Failed to copy', err);
         }
@@ -21,6 +20,9 @@
     // --- SUB-COMPONENT: HANDBOOK MODAL ---
     const HandbookModal = ({ bookData, onClose }) => {
         if (!bookData) return null;
+        
+        // State for copy feedback
+        const [isCopied, setIsCopied] = useState(false);
 
         // Dynamic Title for SEO/Sharing context
         useEffect(() => {
@@ -30,15 +32,13 @@
         }, [bookData]);
 
         const handleShareBook = () => {
-            const url = `${window.location.origin}${window.location.pathname}#book=${bookData.id || ''}`; // Future proofing for specific book
+            // Use book ID for deep linking if available
+            const url = `${window.location.origin}${window.location.pathname}#book=${bookData.id || ''}`; 
             copyToClipboard(url);
-            // Simple visual feedback
-            const btn = document.getElementById('share-btn-text');
-            if(btn) {
-                const original = btn.innerText;
-                btn.innerText = 'คัดลอกแล้ว!';
-                setTimeout(() => btn.innerText = original, 2000);
-            }
+            
+            // Visual feedback
+            setIsCopied(true);
+            setTimeout(() => setIsCopied(false), 2000);
         };
 
         return (
@@ -60,10 +60,14 @@
                             </div>
                         </div>
                         <div className="flex gap-2">
-                            {/* Share Button (Specific Book) */}
-                            {/* <button onClick={handleShareBook} className="w-8 h-8 rounded-full bg-white/10 hover:bg-emerald-500 text-slate-300 hover:text-white transition flex items-center justify-center" title="แชร์หน้านี้">
-                                <i className="fa-solid fa-share-nodes"></i>
-                            </button> */}
+                            {/* Share Button (Restored & Enhanced) */}
+                            <button 
+                                onClick={handleShareBook} 
+                                className={`w-8 h-8 rounded-full transition flex items-center justify-center ${isCopied ? 'bg-emerald-500 text-white' : 'bg-white/10 hover:bg-emerald-500 text-slate-300 hover:text-white'}`} 
+                                title="คัดลอกลิงก์หน้านี้"
+                            >
+                                <i className={`fa-solid ${isCopied ? 'fa-check' : 'fa-share-nodes'}`}></i>
+                            </button>
                             <button onClick={onClose} className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-slate-300 hover:text-white transition">
                                 <i className="fa-solid fa-times"></i>
                             </button>
@@ -95,21 +99,8 @@
     // --- COMPONENT: KNOWLEDGE CENTER MODAL ---
     const KnowledgeCenterModal = ({ onClose, onReadMode }) => {
         const [selectedBook, setSelectedBook] = useState(null);
+        const [isCopied, setIsCopied] = useState(false); // State for share feedback
         const library = (window.AppKnowledge && window.AppKnowledge.LIBRARY) ? window.AppKnowledge.LIBRARY : {};
-
-        // Update Title and URL when Knowledge Center opens
-        useEffect(() => {
-            const originalTitle = document.title;
-            document.title = "ศูนย์ความรู้การเกษตร - Winai Innovation";
-            
-            // Optional: Update URL hash without reload
-            // window.history.replaceState(null, null, '#book');
-
-            return () => { 
-                document.title = originalTitle; 
-                // window.history.replaceState(null, null, ' '); // Clear hash on close (optional)
-            };
-        }, []);
 
         useEffect(() => {
             if (onReadMode) {
@@ -117,27 +108,16 @@
             }
         }, [selectedBook, onReadMode]);
 
+        // Handler for sharing the Knowledge Center main page
         const handleCopyLink = () => {
             const url = `${window.location.origin}${window.location.pathname}#book`;
             copyToClipboard(url);
-            
-            const btnText = document.getElementById('kc-share-text');
-            const btnIcon = document.getElementById('kc-share-icon');
-            if(btnText) {
-                const original = btnText.innerText;
-                btnText.innerText = 'คัดลอกแล้ว!';
-                if(btnIcon) btnIcon.className = "fa-solid fa-check";
-                
-                setTimeout(() => {
-                    btnText.innerText = original;
-                    if(btnIcon) btnIcon.className = "fa-solid fa-link";
-                }, 2000);
-            }
+            setIsCopied(true);
+            setTimeout(() => setIsCopied(false), 2000);
         };
 
         return (
             <div className={`fixed inset-0 z-[9999] flex items-center justify-center p-4 animate-fade-in pointer-events-auto ${selectedBook ? '' : 'bg-black/80 backdrop-blur-sm'}`}>
-                
                 {selectedBook ? (
                     <HandbookModal bookData={selectedBook} onClose={() => setSelectedBook(null)} />
                 ) : (
@@ -145,37 +125,39 @@
                         <div className="p-5 border-b border-white/10 bg-gradient-to-r from-blue-900/40 to-slate-900 flex justify-between items-center">
                             <div className="flex items-center gap-3">
                                 <i className="fa-solid fa-book-journal-whills text-2xl text-blue-400"></i>
-                                <div>
-                                    <h2 className="text-xl font-bold text-white">ศูนย์ความรู้การเกษตร</h2>
-                                    <div className="text-[10px] text-blue-300">Knowledge Center</div>
-                                </div>
+                                <h2 className="text-xl font-bold text-white">ศูนย์ความรู้การเกษตร (Knowledge Center)</h2>
                             </div>
-                            <div className="flex gap-2">
-                                <button onClick={handleCopyLink} className="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-blue-600 text-slate-300 hover:text-white transition flex items-center gap-2 text-xs border border-white/10">
-                                    <i id="kc-share-icon" className="fa-solid fa-link"></i>
-                                    <span id="kc-share-text">แชร์หน้านี้</span>
+                            {/* Header Actions */}
+                            <div className="flex items-center gap-2">
+                                {/* SHARE BUTTON (Restored) */}
+                                <button 
+                                    onClick={handleCopyLink} 
+                                    className={`px-3 py-1.5 rounded-full flex items-center gap-2 text-xs font-bold transition shadow-lg border border-white/10 ${isCopied ? 'bg-emerald-600 text-white' : 'bg-white/10 hover:bg-blue-600 text-slate-300 hover:text-white'}`}
+                                >
+                                    <i className={`fa-solid ${isCopied ? 'fa-check' : 'fa-link'}`}></i>
+                                    <span>{isCopied ? 'คัดลอกแล้ว' : 'แชร์หน้านี้'}</span>
                                 </button>
-                                <button onClick={onClose} className="w-8 h-8 rounded-full bg-white/10 hover:bg-red-500/20 hover:text-red-400 text-slate-400 transition flex items-center justify-center">
-                                    <i className="fa-solid fa-times text-lg"></i>
-                                </button>
+
+                                {/* FACEBOOK BUTTON */}
+                                <a href="https://www.facebook.com/winayo1" target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-full bg-blue-600 hover:bg-blue-500 text-white flex items-center justify-center transition shadow-lg" title="ติดตามผู้พัฒนา">
+                                    <i className="fa-brands fa-facebook text-lg"></i>
+                                </a>
+                                
+                                <button onClick={onClose} className="text-slate-400 hover:text-white ml-2"><i className="fa-solid fa-times text-xl"></i></button>
                             </div>
                         </div>
-                        
                         <div className="flex-1 overflow-y-auto p-6 scrollbar-prominent grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-900">
                             {Object.entries(library).map(([key, book]) => (
-                                <div key={key} onClick={() => setSelectedBook({...book, id: key})} className="bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl p-4 cursor-pointer transition group hover:border-emerald-500/50 relative overflow-hidden">
-                                    <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition">
-                                        <i className={`fa-solid ${book.type === 'Research' ? 'fa-microscope' : 'fa-book-open'} text-4xl text-white`}></i>
-                                    </div>
-                                    <div className="flex items-start gap-3 relative z-10">
-                                        <div className={`w-12 h-12 rounded-lg flex items-center justify-center text-white text-xl shadow-lg shrink-0 ${book.type === 'Research' ? 'bg-indigo-600' : 'bg-emerald-600'}`}>
-                                            <i className={`fa-solid ${book.type === 'Research' ? 'fa-flask' : 'fa-book'}`}></i>
+                                <div key={key} onClick={() => setSelectedBook({...book, id: key})} className="bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl p-4 cursor-pointer transition group hover:border-emerald-500/50">
+                                    <div className="flex items-start gap-3">
+                                        <div className="w-12 h-12 rounded-lg bg-emerald-900/50 flex items-center justify-center text-emerald-400 text-2xl group-hover:scale-110 transition">
+                                            <i className="fa-solid fa-book"></i>
                                         </div>
                                         <div>
-                                            <h3 className="font-bold text-white group-hover:text-emerald-300 transition line-clamp-2">{book.title}</h3>
-                                            <div className="text-xs text-slate-400 mt-1 line-clamp-2">{book.subtitle}</div>
-                                            <span className={`inline-block mt-2 text-[9px] px-2 py-0.5 rounded border ${book.type === 'Research' ? 'bg-indigo-900/50 border-indigo-500/30 text-indigo-300' : 'bg-emerald-900/50 border-emerald-500/30 text-emerald-300'}`}>
-                                                {book.type === 'Research' ? 'งานวิจัย' : 'คู่มือปฏิบัติ'}
+                                            <h3 className="font-bold text-white group-hover:text-emerald-300 transition">{book.title}</h3>
+                                            <div className="text-xs text-slate-400 mt-1">{book.subtitle}</div>
+                                            <span className="inline-block mt-2 text-[10px] bg-slate-800 px-2 py-0.5 rounded text-slate-300 border border-slate-700">
+                                                {book.type || 'General'}
                                             </span>
                                         </div>
                                     </div>
@@ -184,14 +166,12 @@
                             {Object.keys(library).length === 0 && (
                                 <div className="col-span-full text-center text-slate-500 py-10">
                                     <i className="fa-solid fa-exclamation-circle mb-2 text-2xl"></i><br/>
-                                    ไม่พบข้อมูลหนังสือ
+                                    ไม่พบข้อมูลหนังสือ หรือไฟล์ scriptknowledge.js ยังไม่ถูกโหลด
                                 </div>
                             )}
                         </div>
                     </div>
                 )}
-                
-                {/* Click outside to close (active only in List mode) */}
                 {!selectedBook && <div className="absolute inset-0 -z-10" onClick={onClose}></div>}
             </div>
         );
@@ -401,7 +381,11 @@
                 let floodRiskLevel = floodData ? floodData.risk_level : 'Low';
                 let riskLoss = 0;
                 if (floodRiskLevel === 'High' && i % 3 === 0) { riskLoss = yearlyRev * 0.5; if(i===0) advice.push('⚠️ เสี่ยงน้ำท่วม: เสียหาย 50%'); }
-                if (isIntegrated && floodRiskLevel === 'High') { riskLoss = riskLoss * 0.5; if(i===0) advice.push('🛡️ โคกหนองนาช่วยลดความเสียหายน้ำท่วม'); }
+                
+                if (isIntegrated && floodRiskLevel === 'High') {
+                    riskLoss = riskLoss * 0.5; 
+                    if(i===0) advice.push('🛡️ โคกหนองนาช่วยลดความเสียหายน้ำท่วม');
+                }
 
                 const yearlyProfit = (yearlyRev - riskLoss) - yearlyCost;
                 cumulative += yearlyProfit;
@@ -439,7 +423,6 @@
 
         if (!customCosts) return <div className="p-10 text-center text-slate-400">กำลังคำนวณโมเดล...</div>;
         
-        // ... (Summary variables - Same as before)
         const finalYearData = simulationData[simulationData.length - 1];
         const totalAccumulatedProfit = finalYearData ? finalYearData.accumulatedProfit : 0;
         const averageProfitPerYear = globalYears > 0 ? (totalAccumulatedProfit / globalYears) : 0;
@@ -544,8 +527,8 @@
                                     {/* Integrated Farming Settings */}
                                     {isIntegrated && (
                                         <div className="bg-emerald-900/30 border border-emerald-500/30 rounded-xl p-4 relative overflow-hidden group">
-                                            {/* ... Integrated Content ... */}
-                                            <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:opacity-20 transition">
+                                             {/* ... Integrated Content ... */}
+                                             <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:opacity-20 transition">
                                                 <i className="fa-solid fa-seedling text-6xl text-white"></i>
                                             </div>
                                             <h3 className="text-sm font-bold text-emerald-200 mb-3 border-b border-emerald-500/20 pb-2 flex items-center gap-2">
@@ -577,7 +560,7 @@
                                             </h3>
                                             <div className="flex gap-2 overflow-x-auto pb-2 mb-2">
                                                 {Object.entries(DURIAN_PRESETS).map(([key, info]) => (
-                                                    <button key={key} onClick={() => setDurianConfig({...durianConfig, variety: key})} className={`text-xs p-2 rounded border min-w-[120px] text-left transition ${durianConfig.variety === key ? 'bg-yellow-700 border-yellow-400 text-white' : 'bg-white/5 border-white/10 text-slate-400'}`}>
+                                                    <button key={key} onClick={() => setDurianConfig({...durianConfig, variety: key})} className={`text-xs p-2 rounded border min-w-[100px] text-left transition ${durianConfig.variety === key ? 'bg-yellow-700 border-yellow-400 text-white' : 'bg-white/5 border-white/10 text-slate-400'}`}>
                                                         <div className="font-bold truncate">{info.name}</div>
                                                         <div className="text-[9px] opacity-70">{info.type}</div>
                                                     </button>
@@ -601,6 +584,7 @@
                                                     </button>
                                                 ))}
                                             </div>
+                                            
                                             {availableBookKey && (
                                                 <button onClick={handleOpenHandbook} className="w-full mt-2 py-2.5 rounded-lg bg-gradient-to-r from-slate-600 to-gray-600 text-white font-bold text-xs shadow-lg hover:shadow-slate-500/30 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2 border border-slate-400/30">
                                                     <i className="fa-solid fa-book-open animate-pulse"></i> อ่านคู่มือยางพารายุคใหม่
@@ -609,6 +593,7 @@
                                         </div>
                                     )}
 
+                                    {/* General Handbook Button for other crops (Coconut, Pig, Beef) */}
                                     {!isIntegrated && !isDurian && !isRice && !isRubber && availableBookKey && (
                                         <div className="mb-4">
                                             <button onClick={handleOpenHandbook} className="w-full py-2.5 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold text-xs shadow-lg hover:shadow-blue-500/30 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2 border border-blue-400/30">
