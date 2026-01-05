@@ -204,6 +204,8 @@ const KasetCloudApp = ({ mapInstance, onTravelStart, onTravelEnd, onGoHome, isTr
 
     // *** FIX: handleProvinceSelect with FlyTo ***
     const handleProvinceSelect = (p) => { 
+        if (p === selectedProvince) return; // Prevent duplicate action for same province
+
         setIsPinning(false); 
         setSelectedProvince(p); 
         setMapType('satellite'); 
@@ -231,6 +233,102 @@ const KasetCloudApp = ({ mapInstance, onTravelStart, onTravelEnd, onGoHome, isTr
         setResults(calculateEconomics(area)); 
     };
 
+    // --- NEW: Dashboard Dropdown Logic (GPS & Region Change) ---
+    const currentRegionContext = useMemo(() => {
+        if (selectedRegion) return selectedRegion;
+        if (selectedProvince && appData.regions) {
+            for (const [r, provs] of Object.entries(appData.regions)) {
+                if (provs.includes(selectedProvince)) return r;
+            }
+        }
+        return null;
+    }, [selectedRegion, selectedProvince, appData.regions]);
+
+    const handleGPSLocation = () => {
+        if (!navigator.geolocation) {
+            alert("อุปกรณ์ของคุณไม่รองรับ GPS");
+            return;
+        }
+        
+        onTravelStart("กำลังระบุพิกัด GPS...", 0);
+
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                const { latitude, longitude } = position.coords;
+                
+                // Check if current location (pinCoords) is essentially same as GPS
+                if (pinCoords && Math.abs(pinCoords[0] - latitude) < 0.0001 && Math.abs(pinCoords[1] - longitude) < 0.0001) {
+                    onTravelEnd(); // Stop loading
+                    return; // Do nothing else
+                }
+
+                fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&accept-language=th`)
+                    .then(res => res.json())
+                    .then(data => {
+                        const addressObj = data.address;
+                        const prov = addressObj.state || addressObj.province;
+                        const cleanProv = prov ? prov.replace('จังหวัด', '').trim() : null;
+
+                        if (cleanProv && appData.provinceData && appData.provinceData[cleanProv]) {
+                            const info = appData.provinceData[cleanProv];
+                            
+                            // Update State
+                            setSelectedProvince(cleanProv);
+                            const reg = Object.keys(appData.regions).find(r => appData.regions[r].includes(cleanProv));
+                            if (reg) setSelectedRegion(reg);
+                            
+                            setSoilInfo(info);
+                            setPinCoords([latitude, longitude]); // Use GPS exact location
+                            
+                            // Fly Logic
+                            if (mapInstance && mapInstance._container) {
+                                const center = mapInstance.getCenter();
+                                const bearing = getBearing(center.lat, center.lng, latitude, longitude);
+                                
+                                onTravelStart(`บินไปยังพิกัด GPS (${cleanProv})...`, bearing);
+                                
+                                mapInstance.flyTo([latitude, longitude], 12, {
+                                    duration: 3,
+                                    easeLinearity: 0.2,
+                                    noMoveStart: false
+                                });
+                                
+                                setTimeout(() => onTravelEnd(), 3200);
+                            }
+                            setResults(calculateEconomics(area));
+                        } else {
+                            onTravelEnd();
+                            alert("ไม่พบข้อมูลจังหวัดสำหรับพิกัดนี้");
+                        }
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        onTravelEnd();
+                        alert("เชื่อมต่อแผนที่ล้มเหลว");
+                    });
+            },
+            (err) => {
+                console.warn(err);
+                onTravelEnd();
+                alert("กรุณาเปิด GPS เพื่อระบุตำแหน่ง");
+            }
+        );
+    };
+
+    const handleDashboardDropdownChange = (val) => {
+        if (val === 'USE_GPS') {
+            handleGPSLocation();
+        } else if (val === 'CHANGE_REGION') {
+            // Reset to region selection state
+            setSelectedProvince(null);
+            setSelectedRegion(null);
+            setResults(null);
+            if (mapInstance) mapInstance.flyTo(DON_MUEANG_COORDS, 6, { duration: 1.5 });
+        } else {
+            handleProvinceSelect(val);
+        }
+    };
+
     // Render Logic
     const currentProvInfo = appData.provinceData && selectedProvince ? appData.provinceData[selectedProvince] : null;
     const floodColorClass = activeFloodData.risk_level === 'High' ? 'text-red-400' : activeFloodData.risk_level === 'Medium' ? 'text-orange-400' : 'text-green-400';
@@ -252,11 +350,44 @@ const KasetCloudApp = ({ mapInstance, onTravelStart, onTravelEnd, onGoHome, isTr
                     ) : selectedProvince ? (
                         <div className="glass-panel rounded-full px-1 py-1 flex items-center gap-1 md:gap-2 shadow-[0_0_20px_rgba(0,0,0,0.3)] animate-fade-in-up max-w-full overflow-hidden">
                             <div className="flex items-center gap-2 pl-3 pr-2 border-r border-white/20 shrink-0 min-w-[80px]"><div className="relative"><i className="fa-solid fa-seedling text-emerald-400 text-lg"></i><span className="absolute -top-0.5 -right-0.5 flex h-2.5 w-2.5"><span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${appData.isOnline ? 'bg-green-400' : 'bg-orange-400'}`}></span><span className={`relative inline-flex rounded-full h-2.5 w-2.5 border border-black/50 ${appData.isOnline ? 'bg-green-500' : 'bg-orange-500'}`}></span></span></div><div className="flex flex-col leading-none hidden sm:flex"><span className="text-xs font-bold text-emerald-100">พืชแนะนำ</span><span className={`text-[8px] font-bold uppercase tracking-wide mt-0.5 ${appData.isOnline ? 'text-green-300' : 'text-orange-300'}`}>{appData.isOnline ? '● SUPABASE' : '○ MOCK DATA'}</span></div></div>
-                            <div className="relative group pl-1 min-w-0 flex-1"><i className="fa-solid fa-location-dot text-emerald-400 text-xs md:text-sm absolute left-1 top-1/2 -translate-y-1/2"></i><select value={selectedProvince} onChange={(e) => handleProvinceSelect(e.target.value)} className="bg-transparent text-white text-xs md:text-sm font-bold py-2 pl-6 pr-2 focus:outline-none cursor-pointer appearance-none w-full truncate">{(appData.regions[selectedRegion] || [selectedProvince]).map(p => <option key={p} value={p} className="bg-slate-800 text-white">{p}</option>)}</select></div>
+                            
+                            {/* --- MODIFIED PROVINCE SELECTOR WITH 3D & PULSE EFFECT --- */}
+                            <div className="relative group pl-1 min-w-0 flex-1">
+                                <i className="fa-solid fa-location-dot text-emerald-400 text-xs md:text-sm absolute left-1 top-1/2 -translate-y-1/2 animate-pulse"></i>
+                                <select 
+                                    value={selectedProvince} 
+                                    onChange={(e) => handleDashboardDropdownChange(e.target.value)} 
+                                    className="bg-slate-900/50 text-white text-xs md:text-sm font-bold py-2 pl-6 pr-2 focus:outline-none cursor-pointer appearance-none w-full truncate border-b-2 border-emerald-500/50 hover:border-emerald-400 transition-all shadow-[inset_0_-2px_4px_rgba(0,0,0,0.3)] rounded-t-md hover:bg-slate-800/70"
+                                >
+                                    <option value="USE_GPS" className="bg-emerald-900 text-emerald-200 font-bold">📍 ใช้พิกัด GPS ปัจจุบัน</option>
+                                    <optgroup label={`จังหวัดในภาค${currentRegionContext || ''}`}>
+                                        {(appData.regions[currentRegionContext] || (selectedProvince ? [selectedProvince] : [])).map(p => (
+                                            <option key={p} value={p} className="bg-slate-800 text-white">{p}</option>
+                                        ))}
+                                    </optgroup>
+                                    <option value="CHANGE_REGION" className="bg-blue-900 text-blue-200 font-bold">🗺️ ไปภูมิภาคอื่น...</option>
+                                </select>
+                            </div>
+
                             <div className="w-[1px] h-4 bg-white/20"></div>
-                            <div className="flex items-center gap-1 pr-1 shrink-0"><input type="number" step="0.1" min="0" value={area} onChange={(e) => handleAreaChange(e.target.value)} className="w-10 md:w-16 bg-transparent text-center text-xs md:text-sm font-bold text-yellow-300 focus:outline-none py-1 transition placeholder-white/30" /><span className="text-[10px] md:text-xs text-slate-300 font-bold">ไร่</span></div>
+                            
+                            {/* --- 3D AREA INPUT --- */}
+                            <div className="flex items-center gap-1 pr-1 shrink-0 relative group">
+                                <input type="number" step="0.1" min="0" value={area} onChange={(e) => handleAreaChange(e.target.value)} 
+                                    className="w-10 md:w-16 bg-black/30 text-center text-xs md:text-sm font-bold text-yellow-300 focus:outline-none py-1 transition placeholder-white/30 border border-white/10 rounded shadow-[inset_0_2px_4px_rgba(0,0,0,0.5)] focus:border-emerald-400 focus:shadow-[0_0_10px_rgba(16,185,129,0.3)]" 
+                                />
+                                <span className="text-[10px] md:text-xs text-slate-300 font-bold drop-shadow-md">ไร่</span>
+                            </div>
+                            
                             <div className="w-[1px] h-4 bg-white/20"></div>
-                            <div className="flex items-center gap-1 pr-2 shrink-0"><input type="number" min="1" max="50" value={years} onChange={(e) => setYears(parseFloat(e.target.value) || 1)} className="w-8 md:w-10 bg-transparent text-center text-xs md:text-sm font-bold text-yellow-300 focus:outline-none py-1 transition placeholder-white/30" /><span className="text-[10px] md:text-xs text-slate-300 font-bold">ปี</span></div>
+                            
+                            {/* --- 3D YEAR INPUT --- */}
+                            <div className="flex items-center gap-1 pr-2 shrink-0">
+                                <input type="number" min="1" max="50" value={years} onChange={(e) => setYears(parseFloat(e.target.value) || 1)} 
+                                    className="w-8 md:w-10 bg-black/30 text-center text-xs md:text-sm font-bold text-yellow-300 focus:outline-none py-1 transition placeholder-white/30 border border-white/10 rounded shadow-[inset_0_2px_4px_rgba(0,0,0,0.5)] focus:border-emerald-400 focus:shadow-[0_0_10px_rgba(16,185,129,0.3)]" 
+                                />
+                                <span className="text-[10px] md:text-xs text-slate-300 font-bold drop-shadow-md">ปี</span>
+                            </div>
                         </div>
                     ) : (
                         <div className="glass-panel rounded-full px-4 py-1.5 text-sm font-bold text-white/90">{selectedRegion ? `ภาค${selectedRegion}` : 'เลือกภูมิภาค'}</div>
@@ -354,27 +485,27 @@ const KasetCloudApp = ({ mapInstance, onTravelStart, onTravelEnd, onGoHome, isTr
                             <div className="flex flex-wrap gap-2 p-3 border-b border-white/10 items-center justify-between bg-black/20">
                                 <div className="flex gap-1 overflow-x-auto scrollbar-prominent pb-1">
                                     {/* NEW: Knowledge Center Button Moved Here */}
-                                    <button onClick={() => setShowKnowledgeCenter(true)} className="px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap bg-blue-600 text-white shadow-[0_0_15px_rgba(37,99,235,0.6)] hover:bg-blue-500 transition mr-1"><i className="fa-solid fa-book-journal-whills mr-1"></i>ศูนย์ความรู้</button>
+                                    <button onClick={() => setShowKnowledgeCenter(true)} className="px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap bg-blue-600 text-white shadow-[0_4px_0_rgb(30,58,138)] active:shadow-none active:translate-y-1 hover:bg-blue-500 transition-all mr-1 border border-blue-400/30"><i className="fa-solid fa-book-journal-whills mr-1"></i>ศูนย์ความรู้</button>
                                     
-                                    <button onClick={() => setCategoryFilter('plant')} className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap ${categoryFilter === 'plant' ? 'bg-emerald-500 text-white' : 'bg-white/10 text-slate-300'}`}>พืชไร่/สวน</button>
-                                    <button onClick={() => setCategoryFilter('animal')} className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap ${categoryFilter === 'animal' ? 'bg-orange-500 text-white' : 'bg-white/10 text-slate-300'}`}>ฟาร์มสัตว์</button>
-                                    <button onClick={() => setCategoryFilter('integrated')} className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap ${categoryFilter === 'integrated' ? 'bg-blue-500 text-white' : 'bg-white/10 text-slate-300'}`}>เกษตรผสมผสาน</button>
+                                    <button onClick={() => setCategoryFilter('plant')} className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap transition-all active:translate-y-1 ${categoryFilter === 'plant' ? 'bg-emerald-500 text-white shadow-[0_4px_0_rgb(6,95,70)]' : 'bg-white/10 text-slate-300 hover:bg-white/20 shadow-[0_4px_0_rgba(255,255,255,0.1)]'}`}>พืชไร่/สวน</button>
+                                    <button onClick={() => setCategoryFilter('animal')} className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap transition-all active:translate-y-1 ${categoryFilter === 'animal' ? 'bg-orange-500 text-white shadow-[0_4px_0_rgb(154,52,18)]' : 'bg-white/10 text-slate-300 hover:bg-white/20 shadow-[0_4px_0_rgba(255,255,255,0.1)]'}`}>ฟาร์มสัตว์</button>
+                                    <button onClick={() => setCategoryFilter('integrated')} className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap transition-all active:translate-y-1 ${categoryFilter === 'integrated' ? 'bg-blue-500 text-white shadow-[0_4px_0_rgb(30,58,138)]' : 'bg-white/10 text-slate-300 hover:bg-white/20 shadow-[0_4px_0_rgba(255,255,255,0.1)]'}`}>เกษตรผสมผสาน</button>
                                     
-                                    {/* กระทรวงต่างๆ */}
-                                    <button onClick={() => setCategoryFilter('rice_ministry')} className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap ${categoryFilter === 'rice_ministry' ? 'bg-indigo-500 text-white shadow-[0_0_10px_rgba(99,102,241,0.5)]' : 'bg-white/10 text-slate-300'}`}><i className="fa-solid fa-shekel-sign mr-1"></i>กระทรวงชาวนา</button>
-                                    <button onClick={() => setCategoryFilter('rubber_ministry')} className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap ${categoryFilter === 'rubber_ministry' ? 'bg-slate-200 text-slate-900 shadow-[0_0_10px_rgba(255,255,255,0.5)]' : 'bg-white/10 text-slate-300'}`}><i className="fa-solid fa-droplet mr-1"></i>กระทรวงยางพารา</button>
-                                    <button onClick={() => setCategoryFilter('coconut_ministry')} className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap ${categoryFilter === 'coconut_ministry' ? 'bg-green-600 text-white shadow-[0_0_10px_rgba(22,163,74,0.5)]' : 'bg-white/10 text-slate-300'}`}><i className="fa-solid fa-tree mr-1"></i>กระทรวงมะพร้าว</button>
-                                    <button onClick={() => setCategoryFilter('durian_ministry')} className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap ${categoryFilter === 'durian_ministry' ? 'bg-yellow-600 text-white shadow-[0_0_10px_rgba(234,179,8,0.5)]' : 'bg-white/10 text-slate-300'}`}><i className="fa-solid fa-crown mr-1"></i>กระทรวงทุเรียน</button>
-                                    <button onClick={() => setCategoryFilter('integrated_ministry')} className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap ${categoryFilter === 'integrated_ministry' ? 'bg-emerald-700 text-white shadow-[0_0_15px_rgba(16,185,129,0.6)]' : 'bg-white/10 text-slate-300'}`}><i className="fa-solid fa-layer-group mr-1"></i>กระทรวงเกษตรผสมผสาน</button>
+                                    {/* กระทรวงต่างๆ - 3D Buttons */}
+                                    <button onClick={() => setCategoryFilter('rice_ministry')} className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap transition-all active:translate-y-1 ${categoryFilter === 'rice_ministry' ? 'bg-indigo-500 text-white shadow-[0_4px_0_rgb(55,48,163)]' : 'bg-white/10 text-slate-300 hover:bg-white/20 shadow-[0_4px_0_rgba(255,255,255,0.1)]'}`}><i className="fa-solid fa-shekel-sign mr-1"></i>กระทรวงชาวนา</button>
+                                    <button onClick={() => setCategoryFilter('rubber_ministry')} className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap transition-all active:translate-y-1 ${categoryFilter === 'rubber_ministry' ? 'bg-slate-200 text-slate-900 shadow-[0_4px_0_rgb(100,116,139)]' : 'bg-white/10 text-slate-300 hover:bg-white/20 shadow-[0_4px_0_rgba(255,255,255,0.1)]'}`}><i className="fa-solid fa-droplet mr-1"></i>กระทรวงยางพารา</button>
+                                    <button onClick={() => setCategoryFilter('coconut_ministry')} className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap transition-all active:translate-y-1 ${categoryFilter === 'coconut_ministry' ? 'bg-green-600 text-white shadow-[0_4px_0_rgb(20,83,45)]' : 'bg-white/10 text-slate-300 hover:bg-white/20 shadow-[0_4px_0_rgba(255,255,255,0.1)]'}`}><i className="fa-solid fa-tree mr-1"></i>กระทรวงมะพร้าว</button>
+                                    <button onClick={() => setCategoryFilter('durian_ministry')} className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap transition-all active:translate-y-1 ${categoryFilter === 'durian_ministry' ? 'bg-yellow-600 text-white shadow-[0_4px_0_rgb(161,98,7)]' : 'bg-white/10 text-slate-300 hover:bg-white/20 shadow-[0_4px_0_rgba(255,255,255,0.1)]'}`}><i className="fa-solid fa-crown mr-1"></i>กระทรวงทุเรียน</button>
+                                    <button onClick={() => setCategoryFilter('integrated_ministry')} className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap transition-all active:translate-y-1 ${categoryFilter === 'integrated_ministry' ? 'bg-emerald-700 text-white shadow-[0_4px_0_rgb(6,78,59)]' : 'bg-white/10 text-slate-300 hover:bg-white/20 shadow-[0_4px_0_rgba(255,255,255,0.1)]'}`}><i className="fa-solid fa-layer-group mr-1"></i>กระทรวงเกษตรผสมผสาน</button>
 
-                                    <button onClick={() => setCategoryFilter('business_ministry')} className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap ${categoryFilter === 'business_ministry' ? 'bg-purple-600 text-white shadow-[0_0_15px_rgba(168,85,247,0.6)]' : 'bg-white/10 text-slate-300'}`}><i className="fa-solid fa-briefcase mr-1"></i>กระทรวงพี่เลี้ยงธุรกิจ</button>
-                                    <button onClick={() => setCategoryFilter('all')} className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap ${categoryFilter === 'all' ? 'bg-emerald-500 text-white' : 'bg-white/10 text-slate-300'}`}>ทั้งหมด</button>
+                                    <button onClick={() => setCategoryFilter('business_ministry')} className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap transition-all active:translate-y-1 ${categoryFilter === 'business_ministry' ? 'bg-purple-600 text-white shadow-[0_4px_0_rgb(107,33,168)]' : 'bg-white/10 text-slate-300 hover:bg-white/20 shadow-[0_4px_0_rgba(255,255,255,0.1)]'}`}><i className="fa-solid fa-briefcase mr-1"></i>กระทรวงพี่เลี้ยงธุรกิจ</button>
+                                    <button onClick={() => setCategoryFilter('all')} className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap transition-all active:translate-y-1 ${categoryFilter === 'all' ? 'bg-emerald-500 text-white shadow-[0_4px_0_rgb(6,95,70)]' : 'bg-white/10 text-slate-300 hover:bg-white/20 shadow-[0_4px_0_rgba(255,255,255,0.1)]'}`}>ทั้งหมด</button>
                                 </div>
                                 <div className="flex gap-1">
-                                    <button onClick={() => setSortType('profit')} className={`w-8 h-8 rounded-full flex items-center justify-center border ${sortType === 'profit' ? 'bg-yellow-500/20 border-yellow-500 text-yellow-400' : 'border-white/10 text-slate-400'}`} title="ผลตอบแทนสูง"><i className="fa-solid fa-sack-dollar"></i></button>
-                                    <button onClick={() => setSortType('payback')} className={`w-8 h-8 rounded-full flex items-center justify-center border ${sortType === 'payback' ? 'bg-purple-500/20 border-purple-500 text-purple-400' : 'border-white/10 text-slate-400'}`} title="คืนทุนไว"><i className="fa-solid fa-stopwatch"></i></button>
-                                    <button onClick={() => setSortType('risk')} className={`w-8 h-8 rounded-full flex items-center justify-center border ${sortType === 'risk' ? 'bg-green-500/20 border-green-500 text-green-400' : 'border-white/10 text-slate-400'}`} title="ความเสี่ยงต่ำ"><i className="fa-solid fa-shield-halved"></i></button>
-                                    <button onClick={() => setSortType('balanced')} className={`w-8 h-8 rounded-full flex items-center justify-center border ${sortType === 'balanced' ? 'bg-blue-500/20 border-blue-500 text-blue-400' : 'border-white/10 text-slate-400'}`} title="แนะนำ"><i className="fa-solid fa-star"></i></button>
+                                    <button onClick={() => setSortType('profit')} className={`w-8 h-8 rounded-full flex items-center justify-center border transition-all active:translate-y-0.5 ${sortType === 'profit' ? 'bg-yellow-500/20 border-yellow-500 text-yellow-400 shadow-[0_0_10px_rgba(234,179,8,0.5)]' : 'border-white/10 text-slate-400 shadow-sm'}`} title="ผลตอบแทนสูง"><i className="fa-solid fa-sack-dollar"></i></button>
+                                    <button onClick={() => setSortType('payback')} className={`w-8 h-8 rounded-full flex items-center justify-center border transition-all active:translate-y-0.5 ${sortType === 'payback' ? 'bg-purple-500/20 border-purple-500 text-purple-400 shadow-[0_0_10px_rgba(168,85,247,0.5)]' : 'border-white/10 text-slate-400 shadow-sm'}`} title="คืนทุนไว"><i className="fa-solid fa-stopwatch"></i></button>
+                                    <button onClick={() => setSortType('risk')} className={`w-8 h-8 rounded-full flex items-center justify-center border transition-all active:translate-y-0.5 ${sortType === 'risk' ? 'bg-green-500/20 border-green-500 text-green-400 shadow-[0_0_10px_rgba(34,197,94,0.5)]' : 'border-white/10 text-slate-400 shadow-sm'}`} title="ความเสี่ยงต่ำ"><i className="fa-solid fa-shield-halved"></i></button>
+                                    <button onClick={() => setSortType('balanced')} className={`w-8 h-8 rounded-full flex items-center justify-center border transition-all active:translate-y-0.5 ${sortType === 'balanced' ? 'bg-blue-500/20 border-blue-500 text-blue-400 shadow-[0_0_10px_rgba(59,130,246,0.5)]' : 'border-white/10 text-slate-400 shadow-sm'}`} title="แนะนำ"><i className="fa-solid fa-star"></i></button>
                                 </div>
                             </div>
                             
@@ -429,51 +560,123 @@ const KasetCloudApp = ({ mapInstance, onTravelStart, onTravelEnd, onGoHome, isTr
     );
 };
 
-const HomePage = ({ onStart, isTraveling, onLocate }) => { 
-    // ... (Existing HomePage - No changes)
+const HomePage = ({ onLocate, isTraveling }) => { 
     const [isFullscreen, setIsFullscreen] = useState(false);
-    const [locating, setLocating] = useState(false); // Local loading state for Locate button
+    const [locating, setLocating] = useState(false); 
+    const [autoPilotLocation, setAutoPilotLocation] = useState(null);
+    const [showManualSelector, setShowManualSelector] = useState(false);
+    const [manualRegion, setManualRegion] = useState(null);
+    
+    // Call hook to get regions data for manual selector
+    const appData = useRealtimeData ? useRealtimeData() : { regions: {} };
+
+    // --- AUTO-PILOT LOGIC: Check IP on Load ---
+    useEffect(() => {
+        // Silent check for IP location
+        const checkIP = async () => {
+            try {
+                // Using ipwho.is (No API Key needed, HTTPS supported)
+                const res = await fetch('https://ipwho.is/');
+                const data = await res.json();
+                
+                if (data.success && data.latitude && data.longitude) {
+                    // Try to map to a specific province if possible using reverse geocode
+                    // Or just store the lat/lng
+                    fetch(`https://nominatim.openstreetmap.org/reverse?lat=${data.latitude}&lon=${data.longitude}&format=json&accept-language=th`)
+                        .then(r => r.json())
+                        .then(geo => {
+                            const addressObj = geo.address;
+                            const prov = addressObj.state || addressObj.province;
+                            const cleanProv = prov ? prov.replace('จังหวัด', '').trim() : null;
+                            
+                            // Ready for Auto-Pilot
+                            setAutoPilotLocation({
+                                lat: data.latitude,
+                                lng: data.longitude,
+                                province: cleanProv
+                            });
+                        })
+                        .catch(e => {
+                            // If geocode fails, still use coords
+                            setAutoPilotLocation({ lat: data.latitude, lng: data.longitude, province: null });
+                        });
+                }
+            } catch (err) {
+                console.log("Auto-pilot IP check failed (Silent)", err);
+            }
+        };
+        checkIP();
+    }, []);
 
     const toggleFullscreen = () => { if (!document.fullscreenElement) { document.documentElement.requestFullscreen().then(() => setIsFullscreen(true)); } else { if (document.exitFullscreen) document.exitFullscreen().then(() => setIsFullscreen(false)); } };
 
-    const handleLocateClick = () => {
-        if (!navigator.geolocation) {
-            alert("เบราว์เซอร์ของคุณไม่รองรับการระบุตำแหน่ง");
-            return;
+    // --- HANDLER: MAIN "ENTER KASET CROWN" BUTTON ---
+    const handleMainEnter = () => {
+        if (autoPilotLocation) {
+            // Case 1: Auto-pilot Ready -> Fly Straight
+            onLocate(autoPilotLocation.lat, autoPilotLocation.lng, autoPilotLocation.province);
+        } else {
+            // Case 2: Unknown Location -> Show Manual Selector
+            setShowManualSelector(true);
         }
+    };
 
+    // --- HANDLER: LOCATE ME BUTTON (Smart Fallback) ---
+    const handleLocateClick = () => {
         setLocating(true);
+
+        const useAutoPilotFallback = () => {
+             if (autoPilotLocation) {
+                // Fallback to IP
+                setLocating(false);
+                onLocate(autoPilotLocation.lat, autoPilotLocation.lng, autoPilotLocation.province);
+            } else {
+                // Both Failed
+                setLocating(false);
+                alert("ไม่สามารถระบุตำแหน่งได้ กรุณาเปิด GPS");
+            }
+        };
+
+        if (!navigator.geolocation) {
+           useAutoPilotFallback();
+           return;
+        }
 
         navigator.geolocation.getCurrentPosition(
             (position) => {
                 const { latitude, longitude } = position.coords;
-                
-                // Get province info first, then initiate flight
+                // Success: Reverse Geocode & Fly
                 fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&accept-language=th`)
                     .then(res => res.json())
                     .then(data => {
                         const addressObj = data.address;
                         const prov = addressObj.state || addressObj.province;
                         const cleanProv = prov ? prov.replace('จังหวัด', '').trim() : null;
-                        
                         setLocating(false);
-                        // Trigger the FLIGHT in App component (instead of direct map setView)
                         onLocate(latitude, longitude, cleanProv);
                     })
                     .catch(err => {
-                        console.error(err);
                         setLocating(false);
-                        // Even if address fails, we can still fly to coords
                         onLocate(latitude, longitude, null); 
                     });
             },
             (error) => {
-                console.error("Error getting location", error);
-                setLocating(false);
-                alert("ไม่สามารถระบุตำแหน่งได้ กรุณาเปิด GPS");
+                console.warn("GPS Denied/Error, switching to IP fallback...");
+                useAutoPilotFallback();
             },
-            { timeout: 10000, enableHighAccuracy: true }
+            { timeout: 5000, enableHighAccuracy: true }
         );
+    };
+
+    const handleManualProvinceSelect = (p) => {
+        // Need to find coordinates for this province to fly there
+        // Since we don't have coords in the simple list, we will just pass the province name
+        // and let App's geocoding or lookup handle it? 
+        // Actually, handleLocateAndFly in App needs coords to fly FROM space TO target.
+        // We can cheat: Fly to default center of Thailand first? No, we want direct flight.
+        // Let's use the App's existing provinceData to get coords if possible, but HomePage doesn't have it easily.
+        // EASIER: Just pass province name to onLocate, and let App resolve coords from its data.
+        onLocate(null, null, p);
     };
 
     return (
@@ -482,20 +685,92 @@ const HomePage = ({ onStart, isTraveling, onLocate }) => {
             <img src="https://upload.wikimedia.org/wikipedia/commons/a/a9/Flag_of_Thailand.svg" alt="Thai Flag" className="w-24 mb-4 animate-flag-wave shadow-lg" />
             <h1 className="text-5xl md:text-7xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-emerald-400 to-cyan-400 drop-shadow-xl">Winai Innovation</h1>
             <p className="text-slate-300 text-lg mb-8 bg-black/40 px-4 py-1 rounded-full backdrop-blur-sm border border-white/10">Super App เพื่อเกษตรกรไทย</p>
-            <button onClick={onStart} disabled={isTraveling || locating} className={`group relative font-bold py-4 px-10 rounded-2xl shadow-[0_0_30px_rgba(16,185,129,0.6)] transition-all overflow-hidden border border-emerald-400/50 backdrop-blur-md ${isTraveling ? 'bg-emerald-900/40 text-emerald-200 cursor-default scale-105' : 'bg-white/10 hover:bg-emerald-500/30 text-white hover:scale-105 hover:shadow-[0_0_50px_rgba(16,185,129,0.8)]'}`}>
-                <div className={`absolute inset-0 bg-emerald-500/20 transition-transform duration-1000 ${isTraveling ? 'translate-y-0' : 'translate-y-full group-hover:translate-y-0'}`}></div>
-                <span className="relative flex items-center gap-3 text-xl">{isTraveling ? (<><i className="fa-solid fa-plane-up transition-transform duration-700 ease-in-out" style={{ transform: `rotate(90deg)` }}></i> กำลังเดินทาง เข้าสู่เกษตร คราวน์</>) : (<><i className="fa-solid fa-rocket"></i> เข้าสู่เกษตร คราวน์</>)}</span>
-            </button>
-            {/* *** Locate Me Button with Loading State *** */}
-            <button onClick={handleLocateClick} disabled={isTraveling || locating} className="mt-4 px-6 py-2 rounded-full bg-blue-600/80 hover:bg-blue-500 text-white font-bold flex items-center gap-2 transition shadow-lg border border-blue-400/50 text-sm disabled:opacity-50 disabled:cursor-not-allowed">
-                {locating ? <i className="fa-solid fa-spinner fa-spin"></i> : <i className="fa-solid fa-location-crosshairs"></i>}
-                <span>{locating ? 'กำลังระบุพิกัด...' : 'ค้นหาตำแหน่งของฉัน'}</span>
-            </button>
+            
+            {!showManualSelector ? (
+                <>
+                    {/* --- MAIN BUTTON --- */}
+                    <button 
+                        onClick={handleMainEnter} 
+                        disabled={isTraveling || locating} 
+                        className={`group relative font-bold py-4 px-10 rounded-2xl shadow-lg transition-all overflow-hidden border backdrop-blur-md 
+                        ${autoPilotLocation 
+                            ? 'bg-emerald-600/80 hover:bg-emerald-500 text-white border-emerald-400 shadow-[0_0_60px_rgba(16,185,129,0.8)] animate-pulse' // Intensified glow
+                            : 'bg-white/10 hover:bg-emerald-500/30 text-white border-emerald-400/50 hover:shadow-[0_0_30px_rgba(16,185,129,0.5)]'
+                        }
+                        ${isTraveling ? 'scale-105 cursor-default' : 'hover:scale-105'}`}
+                    >
+                        {/* Auto Pilot Glow Effect - BURST ANIMATION */}
+                        {autoPilotLocation && (
+                            <div className="absolute inset-0 z-0">
+                                <div className="absolute inset-0 bg-emerald-400/30 animate-ping rounded-2xl"></div>
+                                <div className="absolute inset-0 bg-white/20 animate-pulse rounded-2xl delay-75"></div>
+                            </div>
+                        )}
+                        
+                        <div className={`absolute inset-0 bg-emerald-500/20 transition-transform duration-1000 ${isTraveling ? 'translate-y-0' : 'translate-y-full group-hover:translate-y-0'}`}></div>
+                        
+                        <span className="relative flex flex-col items-center gap-1 z-10">
+                            <span className="flex items-center gap-3 text-xl">
+                                {isTraveling ? (
+                                    <>กำลังเดินทาง...</>
+                                ) : (
+                                    <><i className="fa-solid fa-rocket"></i> เข้าสู่เกษตร คราวน์</>
+                                )}
+                            </span>
+                            {autoPilotLocation && !isTraveling && (
+                                <span className="text-[10px] uppercase tracking-wider text-emerald-200 font-bold bg-black/20 px-2 rounded-full mt-1">
+                                    <i className="fa-solid fa-circle-check mr-1"></i>ระบบ Auto pilot พร้อมแล้ว
+                                </span>
+                            )}
+                        </span>
+                    </button>
+
+                    {/* --- LOCATE ME BUTTON (Warp/Merge Animation) --- */}
+                    <div className={`transition-all duration-700 ease-in-out transform ${autoPilotLocation ? 'scale-0 opacity-0 -translate-y-10' : 'scale-100 opacity-100 translate-y-0'}`}>
+                        <button onClick={handleLocateClick} disabled={isTraveling || locating} className="mt-4 px-6 py-2 rounded-full bg-blue-600/80 hover:bg-blue-500 text-white font-bold flex items-center gap-2 transition shadow-lg border border-blue-400/50 text-sm disabled:opacity-50 disabled:cursor-not-allowed">
+                            {locating ? <i className="fa-solid fa-spinner fa-spin"></i> : <i className="fa-solid fa-location-crosshairs"></i>}
+                            <span>{locating ? 'กำลังค้นหา...' : 'ค้นหาตำแหน่งของฉัน'}</span>
+                        </button>
+                    </div>
+                </>
+            ) : (
+                /* --- MANUAL SELECTOR MODAL (On Home Page) --- */
+                <div className="animate-fade-in-up w-full max-w-2xl bg-black/60 backdrop-blur-xl border border-white/20 rounded-2xl p-6 shadow-2xl relative">
+                    <button onClick={() => { setShowManualSelector(false); setManualRegion(null); }} className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition"><i className="fa-solid fa-xmark"></i></button>
+                    
+                    {!manualRegion ? (
+                        <>
+                            <h2 className="text-2xl font-bold text-white mb-6">เลือกภูมิภาคของคุณ</h2>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                {Object.keys(appData.regions || {}).map(r => (
+                                    <button key={r} onClick={() => setManualRegion(r)} className="bg-white/5 hover:bg-emerald-500/30 border border-white/10 hover:border-emerald-400 rounded-xl p-4 flex flex-col items-center gap-2 transition hover:scale-105">
+                                        <span className="text-3xl">{r === 'เหนือ' ? '⛰️' : r === 'ใต้' ? '🌊' : r === 'อีสาน' ? '🌾' : '🏙️'}</span>
+                                        <span className="font-bold">{r}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        </>
+                    ) : (
+                        <>
+                            <div className="flex items-center gap-3 mb-4">
+                                <button onClick={() => setManualRegion(null)} className="text-slate-300 hover:text-white"><i className="fa-solid fa-arrow-left"></i></button>
+                                <h2 className="text-xl font-bold text-white">จังหวัดในภาค{manualRegion}</h2>
+                            </div>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 max-h-[300px] overflow-y-auto scrollbar-prominent p-1">
+                                {(appData.regions[manualRegion] || []).sort().map(p => (
+                                    <button key={p} onClick={() => handleManualProvinceSelect(p)} className="bg-white/5 hover:bg-emerald-500/40 border border-white/10 rounded-lg p-2 text-sm font-bold text-slate-200 transition">
+                                        {p}
+                                    </button>
+                                ))}
+                            </div>
+                        </>
+                    )}
+                </div>
+            )}
 
             <div className="mt-8 text-xs text-slate-400 bg-black/30 p-4 rounded-xl backdrop-blur-sm border border-white/5">
                 <p>พัฒนาโดย: Mr.Winai Phanarkat</p>
                 <p>Line: 0926533228 | Email: winayo@gmail.com</p>
-                {/* NEW FACEBOOK BUTTON */}
                 <a href="https://www.facebook.com/winayo1" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 text-blue-400 hover:text-blue-300 transition mt-2 pt-2 border-t border-white/10 font-bold">
                     <i className="fa-brands fa-facebook text-lg"></i>
                     <span>ติดตามผู้พัฒนา</span>
@@ -513,6 +788,7 @@ const App = () => {
     const rotationInterval = useRef(null);
     const [initialAction, setInitialAction] = useState(null);
     const [initialConfig, setInitialConfig] = useState(null);
+    const appData = useRealtimeData ? useRealtimeData() : { provinceData: {} }; // Fetch here to access coords for manual select
 
     useEffect(() => {
         if (mapRef.current) return;
@@ -559,40 +835,30 @@ const App = () => {
         return () => { if (rotationInterval.current) clearInterval(rotationInterval.current); };
     }, [page, travel.active]); // Added travel.active as dependency
 
-    const handleStart = () => {
-        if (!mapRef.current) return;
-
-        // IMMEDIATE STOP of background rotation
-        if (rotationInterval.current) { clearInterval(rotationInterval.current); rotationInterval.current = null; }
-
-        setTravel({ active: true, msg: 'กำลังเข้าสู่เกษตร คราวน์...', rotation: 0 });
-
-        const center = mapRef.current.getCenter();
-        const bearing = getBearing(center.lat, center.lng, DON_MUEANG_COORDS[0], DON_MUEANG_COORDS[1]);
-        
-        setTravel({ active: true, msg: 'เข้าสู่เกษตร คราวน์...', rotation: bearing });
-        
-        mapRef.current.flyTo(DON_MUEANG_COORDS, 6, { // Standard start
-            animate: true,
-            duration: 4,     
-            easeLinearity: 0.1, 
-            noMoveStart: true 
-        });
-        
-        setTimeout(() => { 
-            setPage('kaset'); 
-            setTravel({ active: false, msg: '', rotation: 0 }); 
-        }, 4000);
-    };
-
     // New Handler: Specifically for flying to a user-located coordinate
     const handleLocateAndFly = (lat, lng, province) => {
         if (!mapRef.current) return;
 
+        // If lat/lng missing (Manual Select case), try to find from appData
+        let targetLat = lat;
+        let targetLng = lng;
+        let targetProv = province;
+
+        if ((!targetLat || !targetLng) && province && appData.provinceData && appData.provinceData[province]) {
+            targetLat = appData.provinceData[province].lat;
+            targetLng = appData.provinceData[province].lng;
+        }
+
+        // If still no coords, fallback to default (Don Mueang) but set province config
+        if (!targetLat || !targetLng) {
+            targetLat = DON_MUEANG_COORDS[0];
+            targetLng = DON_MUEANG_COORDS[1];
+        }
+
         // 1. Configure Kaset page to open this province immediately
-        if (province) {
+        if (targetProv) {
             setInitialConfig({ 
-                province: province, 
+                province: targetProv, 
                 category: 'all' 
             });
         }
@@ -601,24 +867,26 @@ const App = () => {
         if (rotationInterval.current) { clearInterval(rotationInterval.current); rotationInterval.current = null; }
 
         // 3. Start Travel Sequence
-        const msg = province ? `กำลังเดินทางสู่ ${province}...` : 'กำลังเดินทางสู่พิกัดของคุณ...';
+        const msg = targetProv ? `กำลังเดินทางสู่ ${targetProv}...` : 'กำลังเดินทางสู่พิกัดของคุณ...';
         
         // Calculate bearing from CURRENT view (floating space) to TARGET
         const center = mapRef.current.getCenter();
-        const bearing = getBearing(center.lat, center.lng, lat, lng);
+        const bearing = getBearing(center.lat, center.lng, targetLat, targetLng);
         
         setTravel({ active: true, msg: msg, rotation: bearing });
 
         // 4. Execute FlyTo Animation (From space to specific lat/lng)
-        mapRef.current.flyTo([lat, lng], 10, { // Zoom in closer (10) for specific location
+        mapRef.current.flyTo([targetLat, targetLng], 10, { // Zoom in closer (10) for specific location
             animate: true,
             duration: 4,
             easeLinearity: 0.1,
             noMoveStart: true
         });
 
-        // 5. Add Marker temporarily to indicate destination (Optional but helpful)
-        L.marker([lat, lng], {
+        // 5. Add Marker temporarily
+        // Clear old markers first if any (optional, but cleaner)
+        // ... (Skipping cleanup for simplicity as page changes anyway)
+        L.marker([targetLat, targetLng], {
             icon: L.divIcon({
                 className: 'custom-user-pin',
                 html: '<div class="w-4 h-4 bg-blue-500 rounded-full border-2 border-white shadow-lg animate-pulse"></div>',
@@ -639,7 +907,7 @@ const App = () => {
         <div className="h-screen w-screen overflow-hidden text-slate-200">
             <div id="global-map"></div>
             <CloudOverlay isActive={travel.active} message={travel.msg} rotation={travel.rotation} />
-            {page === 'home' && <HomePage onStart={handleStart} isTraveling={travel.active} onLocate={handleLocateAndFly} />}
+            {page === 'home' && <HomePage onLocate={handleLocateAndFly} isTraveling={travel.active} />}
             {page === 'kaset' && (<KasetCloudApp mapInstance={mapRef.current} onTravelStart={(msg, rotation) => setTravel({ active: true, msg, rotation })} onTravelEnd={() => setTravel({ active: false, msg: '', rotation: 0 })} onGoHome={handleGoHome} isTraveling={travel.active} initialAction={initialAction} initialConfig={initialConfig} onLocate={handleLocateAndFly} />)}
         </div>
     );
