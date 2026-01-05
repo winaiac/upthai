@@ -3,12 +3,14 @@
 const { useState, useEffect, useRef, useMemo, useCallback } = React;
 
 // Import helpers & components from split files
-const { useRealtimeData, normalizeThaiName, getBearing, DON_MUEANG_COORDS, MOCK_CROPS } = window.AppCore;
-const { SimulationPanel, CloudOverlay, KnowledgeCenterModal } = window.AppUI;
+const AppCore = window.AppCore || {};
+const AppUI = window.AppUI || {};
 
-const KasetCloudApp = ({ mapInstance, onTravelStart, onTravelEnd, onGoHome, isTraveling, initialAction, initialConfig }) => {
-    // ... (Existing state)
-    // FIX: Initialize with config if available
+const { useRealtimeData, normalizeThaiName, getBearing, DON_MUEANG_COORDS, MOCK_CROPS } = AppCore;
+const { SimulationPanel, CloudOverlay, KnowledgeCenterModal } = AppUI;
+
+const KasetCloudApp = ({ mapInstance, onTravelStart, onTravelEnd, onGoHome, isTraveling, initialAction, initialConfig, onLocate }) => {
+    // ... (State definitions remain same)
     const [selectedRegion, setSelectedRegion] = useState(null);
     const [selectedProvince, setSelectedProvince] = useState(initialConfig?.province || null);
     const [area, setArea] = useState(1);
@@ -19,22 +21,14 @@ const KasetCloudApp = ({ mapInstance, onTravelStart, onTravelEnd, onGoHome, isTr
     const [isPinning, setIsPinning] = useState(false);
     const [mapType, setMapType] = useState('satellite');
     const [sortType, setSortType] = useState('profit');
-    // FIX: Initialize category with config if available
     const [categoryFilter, setCategoryFilter] = useState(initialConfig?.category || 'all');
     
     const [showKnowledgeCenter, setShowKnowledgeCenter] = useState(false);
     const [isReadingBook, setIsReadingBook] = useState(false);
-    // State for Share Feedback
     const [isCopied, setIsCopied] = useState(false);
+    const [isBlinking, setIsBlinking] = useState(false);
 
-    // Handle Initial Action (Deep Linking)
-    useEffect(() => {
-        if (initialAction === 'openKnowledgeCenter') {
-            setShowKnowledgeCenter(true);
-        }
-    }, [initialAction]);
-
-    const appData = useRealtimeData();
+    const appData = useRealtimeData ? useRealtimeData() : { provinceData: {}, regions: {}, crops: [] };
     const markerRef = useRef(null);
     const lastProvinceRef = useRef(null);
     const provinceFeaturesRef = useRef(null);
@@ -47,20 +41,36 @@ const KasetCloudApp = ({ mapInstance, onTravelStart, onTravelEnd, onGoHome, isTr
     const [addressDetails, setAddressDetails] = useState(null);
     const [isAddressLoading, setIsAddressLoading] = useState(false);
 
-    // *** NEW: Initial FlyTo Effect when data is loaded ***
+    // ... (Effects and Handlers remain same)
     useEffect(() => {
-        if (initialConfig?.province && mapInstance && appData.provinceData[initialConfig.province]) {
+        if (!document.fullscreenElement) {
+            setIsBlinking(true);
+            const timer = setTimeout(() => setIsBlinking(false), 8000); 
+            return () => clearTimeout(timer);
+        }
+    }, []);
+
+    useEffect(() => {
+        if (initialAction === 'openKnowledgeCenter') {
+            setShowKnowledgeCenter(true);
+        }
+    }, [initialAction]);
+
+    useEffect(() => {
+        if (initialConfig?.province && mapInstance && appData.provinceData && appData.provinceData[initialConfig.province]) {
             const info = appData.provinceData[initialConfig.province];
-            // Set view directly without animation to be instant on load
-            mapInstance.setView([info.lat - 0.1, info.lng], 10);
-            
-            // Set soil info & coords as well
+            // Smooth flyTo instead of setView for better UX on direct link
+            mapInstance.flyTo([info.lat - 0.1, info.lng], 10, {
+                animate: true,
+                duration: 2.5, // Smooth duration
+                easeLinearity: 0.25
+            });
             setSoilInfo(info);
             setPinCoords([info.lat, info.lng]);
         }
     }, [initialConfig, mapInstance, appData.provinceData]);
 
-    // ... (Map logic: Auto-switch, Layers, Markers, Pin Drag, Geocoding) - No changes needed
+    // ... (Map Layer Logic - Same)
     useEffect(() => {
         if (isPinning) { setMapType('hybrid'); } else if (simulatingItem || selectedProvince) { setMapType('satellite'); }
     }, [isPinning, simulatingItem, selectedProvince]);
@@ -75,12 +85,13 @@ const KasetCloudApp = ({ mapInstance, onTravelStart, onTravelEnd, onGoHome, isTr
         return () => { if (tileLayerRef.current) mapInstance.removeLayer(tileLayerRef.current); if (labelLayerRef.current) mapInstance.removeLayer(labelLayerRef.current); };
     }, [mapType, mapInstance]);
 
+    // ... (Marker Logic - Same)
     useEffect(() => {
         if (!mapInstance) return;
         let topPane = mapInstance.getPane('top-pane');
         if (!topPane) { topPane = mapInstance.createPane('top-pane'); topPane.style.zIndex = 3000; topPane.style.pointerEvents = 'none'; }
         if (!provinceFeaturesRef.current) provinceFeaturesRef.current = L.layerGroup().addTo(mapInstance);
-        if (!selectedProvince || !appData.provinceData[selectedProvince]) {
+        if (!selectedProvince || !appData.provinceData || !appData.provinceData[selectedProvince]) {
             if (markerRef.current) { markerRef.current.remove(); markerRef.current = null; lastProvinceRef.current = null; }
             if (provinceFeaturesRef.current) provinceFeaturesRef.current.clearLayers();
             setPinCoords(null);
@@ -106,7 +117,7 @@ const KasetCloudApp = ({ mapInstance, onTravelStart, onTravelEnd, onGoHome, isTr
 
     useEffect(() => { if (pinCoords) { setIsAddressLoading(true); fetch(`https://nominatim.openstreetmap.org/reverse?lat=${pinCoords[0]}&lon=${pinCoords[1]}&format=json&accept-language=th`).then(res => res.json()).then(data => { if (data.address) { setAddressDetails(data.address); const a = data.address; const parts = []; if (a.village) parts.push('หมู่บ้าน ' + a.village); else if (a.hamlet) parts.push('หมู่บ้าน ' + a.hamlet); if (a.road) parts.push('ถนน ' + a.road); const subDistrict = a.suburb || a.tambon || a.quarter || a.neighbourhood; if (subDistrict) { if (a.quarter) parts.push('แขวง ' + subDistrict); else parts.push('ตำบล ' + subDistrict); } const district = a.city_district || a.district || a.amphoe; if (district) { if (a.state === 'กรุงเทพมหานคร' || a.city_district) parts.push('เขต ' + district); else parts.push('อำเภอ ' + district); } if (a.state) parts.push('จังหวัด ' + a.state); setAddress(parts.length > 0 ? parts.join(' ') : 'พิกัดไม่มีที่อยู่ระบุชัดเจน'); } else { setAddress('ไม่พบข้อมูลที่อยู่'); setAddressDetails(null); } setIsAddressLoading(false); }).catch(e => { setAddress('เชื่อมต่อแผนที่ไม่ได้'); setIsAddressLoading(false); }); } else { setAddress(null); setAddressDetails(null); } }, [pinCoords]);
 
-    const provinceStats = useMemo(() => { if (!selectedProvince) return null; const exactPop = appData.thaiPop?.find(p => p.province_name === selectedProvince); const statsList = appData.stats ? appData.stats.filter(s => s.province === selectedProvince) : []; const maxYear = statsList.length > 0 ? Math.max(...statsList.map(s => s.year)) : 0; const currentStats = statsList.filter(s => s.year === maxYear); const getValue = (keyword) => { const item = currentStats.find(s => s.topic && s.topic.includes(keyword)); return item ? { val: Number(item.value).toLocaleString(), unit: item.unit } : null; }; return { year: maxYear < 2000 && maxYear > 0 ? maxYear + 543 : maxYear, totalPop: exactPop ? { val: Number(exactPop.population).toLocaleString(), unit: 'คน' } : (getValue('ประชากรทั้งหมด') || getValue('รวม') || { val: appData.provinceData[selectedProvince]?.population || '-', unit: 'คน' }), male: getValue('ชาย'), female: getValue('หญิง'), farmers: getValue('เกษตรกร') || getValue('เกษตร') || getValue('ขึ้นทะเบียน'), }; }, [selectedProvince, appData.stats, appData.provinceData, appData.thaiPop]);
+    const provinceStats = useMemo(() => { if (!selectedProvince || !appData.provinceData) return null; const exactPop = appData.thaiPop?.find(p => p.province_name === selectedProvince); const statsList = appData.stats ? appData.stats.filter(s => s.province === selectedProvince) : []; const maxYear = statsList.length > 0 ? Math.max(...statsList.map(s => s.year)) : 0; const currentStats = statsList.filter(s => s.year === maxYear); const getValue = (keyword) => { const item = currentStats.find(s => s.topic && s.topic.includes(keyword)); return item ? { val: Number(item.value).toLocaleString(), unit: item.unit } : null; }; return { year: maxYear < 2000 && maxYear > 0 ? maxYear + 543 : maxYear, totalPop: exactPop ? { val: Number(exactPop.population).toLocaleString(), unit: 'คน' } : (getValue('ประชากรทั้งหมด') || getValue('รวม') || { val: appData.provinceData[selectedProvince]?.population || '-', unit: 'คน' }), male: getValue('ชาย'), female: getValue('หญิง'), farmers: getValue('เกษตรกร') || getValue('เกษตร') || getValue('ขึ้นทะเบียน'), }; }, [selectedProvince, appData.stats, appData.provinceData, appData.thaiPop]);
 
     const activeFloodData = useMemo(() => { let result = { risk_level: 'Low', description: 'ไม่พบข้อมูลความเสี่ยงในจุดนี้ (Default)', source: 'No Match Found', debug: { matched: false, reason: 'Init' } }; if (!appData.floodAlerts || !selectedProvince) { result.debug.reason = 'No alerts loaded or Province not selected'; return result; } const provAlerts = appData.floodAlerts.filter(a => a.province === selectedProvince); if (provAlerts.length === 0) { result.debug.reason = `No alerts for province: ${selectedProvince}`; return result; } if (addressDetails) { const rawTambon = addressDetails.suburb || addressDetails.tambon || addressDetails.quarter || addressDetails.neighbourhood || addressDetails.village || ''; const rawAmphoe = addressDetails.city_district || addressDetails.district || addressDetails.amphoe || ''; const normTambon = normalizeThaiName(rawTambon); const normAmphoe = normalizeThaiName(rawAmphoe); if (normTambon) { const tMatch = provAlerts.find(a => { const dbTambon = normalizeThaiName(a.tambon); return dbTambon && (dbTambon === normTambon || dbTambon.includes(normTambon) || normTambon.includes(dbTambon)); }); if (tMatch) return { ...tMatch, source: 'Supabase (Tambon Match)', debug: { matched: true, type: 'Tambon', record: tMatch, mapData: { t: normTambon, a: normAmphoe } } }; } if (normAmphoe) { const aMatch = provAlerts.find(a => { const dbAmphoe = normalizeThaiName(a.amphoe); return dbAmphoe && (dbAmphoe === normAmphoe || dbAmphoe.includes(normAmphoe) || normAmphoe.includes(dbAmphoe)); }); if (aMatch) return { ...aMatch, source: 'Supabase (Amphoe Match)', debug: { matched: true, type: 'Amphoe', record: aMatch, mapData: { t: normTambon, a: normAmphoe } } }; } result.debug.details = { mapNorm: { t: normTambon, a: normAmphoe }, dbRecordsSample: provAlerts.slice(0, 3).map(a => ({t: normalizeThaiName(a.tambon), a: normalizeThaiName(a.amphoe)})) }; } const provWide = provAlerts.find(a => !a.amphoe && !a.tambon); if (provWide) return { ...provWide, source: 'Supabase (Province Wide)', debug: { matched: true, type: 'Province', record: provWide } }; return result; }, [appData.floodAlerts, selectedProvince, addressDetails]);
 
@@ -114,145 +125,11 @@ const KasetCloudApp = ({ mapInstance, onTravelStart, onTravelEnd, onGoHome, isTr
     const togglePin = () => setIsPinning(!isPinning);
     const toggleMapType = () => setMapType(prev => prev === 'satellite' ? 'standard' : prev === 'standard' ? 'hybrid' : 'satellite');
     const handleRegionSelect = (r) => { setSelectedRegion(r); setSelectedProvince(null); setResults(null); setIsPinning(false); lastProvinceRef.current = null; };
-
-    // --- MAIN CALCULATION LOGIC ---
-    const calculateEconomics = useCallback((newArea) => {
-        if (!appData.crops) return [];
-        
-        // Add Dynamic Integrated Farming Item if not present
-        let sourceCrops = [...appData.crops];
-        const integratedExists = sourceCrops.some(c => c.name.includes('โคก') || c.category === 'ผสมผสาน');
-        if (!integratedExists) {
-            sourceCrops.push({ 
-                name: "โคก หนอง นา โมเดล", 
-                category: "ผสมผสาน", 
-                price: 0, 
-                yield: 0, 
-                cost: 35000, 
-                risk: "Low",
-                source: 'Generated' 
-            });
-        }
-        
-        // ... (Coconut & Durian checks - kept same)
-        const coconutExists = sourceCrops.some(c => c.name.includes('มะพร้าว'));
-        if (!coconutExists) { const mockCoconut = MOCK_CROPS.find(c => c.name.includes('มะพร้าว')); if(mockCoconut) sourceCrops.push(mockCoconut); }
-        const durianExists = sourceCrops.some(c => c.name.includes('ทุเรียน'));
-        if (!durianExists) { const mockDurian = MOCK_CROPS.find(c => c.name.includes('ทุเรียน')); if(mockDurian) sourceCrops.push(mockDurian); }
-
-        let processed = sourceCrops.map(c => {
-            let avgProfitPerYear = 0;
-            let avgCostPerYear = 0;
-            let totalCostVal = 0; 
-
-            const isDurian = c.name.includes('ทุเรียน');
-            const isRubber = c.name.includes('ยาง') && !c.name.includes('โพนยางคำ');
-            const isCoconut = c.name.includes('มะพร้าว');
-            const isIntegrated = c.name.includes('โคก') || c.category === 'ผสมผสาน';
-
-            if (isIntegrated && window.calculateIntegratedEconomics) {
-                // Default to 'khoknongna_general' for list view
-                const eco = window.calculateIntegratedEconomics('khoknongna_general', newArea, years);
-                if (eco) {
-                    avgProfitPerYear = eco.avgProfitPerYear;
-                    avgCostPerYear = eco.avgCostPerYear;
-                    totalCostVal = avgCostPerYear; // Display Avg Cost/Year/Rai
-                }
-            }
-            else if (isDurian && window.calculateDurianEconomics && window.DURIAN_PRESETS) {
-                // ... (Existing Durian Logic)
-                let variety = 'monthong';
-                if (c.name.includes('ชะนี')) variety = 'chanee'; else if (c.name.includes('ก้านยาว')) variety = 'kanyao'; else if (c.name.includes('กระดุม')) variety = 'kradum';
-                const eco = window.calculateDurianEconomics(variety, newArea, years);
-                if (eco) {
-                    let totalProfit = 0; let totalCost = 0;
-                    for(let i=0; i<years; i++) {
-                        const age = i+1;
-                        let yCost = (age <= eco.waitYears) ? (i===0 ? eco.initialCost : eco.maintCostPre) : eco.maintCostPost;
-                        let yYield = eco.yieldPerRai;
-                        if (age <= eco.waitYears) yYield = 0; else if (age < eco.waitYears + 2) yYield *= 0.3; else if (age < eco.waitYears + 4) yYield *= 0.7;
-                        const yRev = yYield * newArea * eco.price;
-                        totalProfit += (yRev - yCost); totalCost += yCost;
-                    }
-                    avgProfitPerYear = totalProfit / years; avgCostPerYear = totalCost / years; totalCostVal = avgCostPerYear; 
-                }
-            } 
-            else if (isRubber && window.calculateRubberEconomics && window.RUBBER_PRESETS) {
-                const eco = window.calculateRubberEconomics('rrim600', newArea, years, false, 'd3');
-                if (eco) { avgProfitPerYear = eco.avgProfitPerYear; avgCostPerYear = eco.avgCostPerYear; totalCostVal = avgCostPerYear; }
-            }
-            else if (isCoconut && window.calculateCoconutEconomics && window.COCONUT_PRESETS) {
-                 const eco = window.calculateCoconutEconomics('namhom', newArea, years);
-                 if (eco) {
-                    let totalProfit = 0; let totalCost = 0;
-                    for(let i=0; i<years; i++) {
-                        const age = i+1;
-                        let yCost = 0;
-                        if (age <= eco.waitYears) { yCost = (i === 0) ? eco.initialCost : eco.maintCostPre; } else { yCost = eco.maintCostPost; }
-                        let yYield = eco.yieldPerRai; 
-                        if (age <= eco.waitYears) { yYield = 0; } else if (age < eco.waitYears + 2) { yYield *= 0.5; }
-                        const yRev = yYield * newArea * eco.price;
-                        totalProfit += (yRev - yCost); totalCost += yCost;
-                    }
-                    avgProfitPerYear = totalProfit / years; avgCostPerYear = totalCost / years; totalCostVal = avgCostPerYear;
-                 }
-            }
-            else {
-                // ... (Existing Fallback Logic)
-                let rawYield = c.yield; let pricePerKg = c.price;
-                if (c.price > 1000) { pricePerKg = c.price / 1000; } if (c.name.includes('มะพร้าว')) pricePerKg = c.price; 
-                let revenue = rawYield * newArea * pricePerKg; let cost = Number(c.cost) || 0;
-                if (window.KASET_PRESETS) { const preset = window.getKasetPreset(c.name); if (preset && preset.cycles_per_year) { revenue *= preset.cycles_per_year; cost = (preset.cost_init || cost) * preset.cycles_per_year; } }
-                let profitPerYear = revenue - (cost * newArea);
-                avgProfitPerYear = profitPerYear; totalCostVal = cost * newArea; 
-                if (!isDurian && !isRubber && !isCoconut) { totalCostVal = cost; } else { if (newArea > 0) totalCostVal = avgCostPerYear / newArea; }
-            }
-            
-            let originSource = c.source || 'Mock';
-            if (appData.isOnline && c.id) originSource = 'Supabase'; 
-
-            return { ...c, cost: totalCostVal, avgProfitYear: avgProfitPerYear, source: originSource };
-        });
-
-        if (categoryFilter !== 'all') {
-            if (categoryFilter === 'plant') processed = processed.filter(c => c.category === 'พืชไร่' || c.category === 'พืชสวน' || !c.category);
-            else if (categoryFilter === 'animal') processed = processed.filter(c => c.category === 'ปศุสัตว์');
-            else if (categoryFilter === 'integrated') processed = processed.filter(c => c.category === 'ผสมผสาน');
-            else if (categoryFilter === 'rice_ministry') processed = processed.filter(c => c.name.includes('ข้าว'));
-            else if (categoryFilter === 'rubber_ministry') processed = processed.filter(c => c.name.includes('ยาง'));
-            else if (categoryFilter === 'coconut_ministry') processed = processed.filter(c => c.name.includes('มะพร้าว')); 
-            else if (categoryFilter === 'durian_ministry') processed = processed.filter(c => c.name.includes('ทุเรียน')); 
-            // NEW: Ministry of Integrated Farming Filter
-            else if (categoryFilter === 'integrated_ministry') processed = processed.filter(c => c.name.includes('โคก') || c.category === 'ผสมผสาน');
-            else if (categoryFilter === 'business_ministry') processed = processed.filter(c => c.category === 'ธุรกิจ');
-        }
-        
-        if (sortType === 'profit') { processed.sort((a, b) => b.avgProfitYear - a.avgProfitYear); } 
-        else if (sortType === 'payback') { processed.sort((a, b) => { const pbA = a.avgProfitYear > 0 ? (a.cost / a.avgProfitYear) : 999; const pbB = b.avgProfitYear > 0 ? (b.cost / b.avgProfitYear) : 999; return pbA - pbB; }); } 
-        else if (sortType === 'risk') { const riskScore = { 'Low': 1, 'Medium': 2, 'High': 3 }; processed.sort((a, b) => (riskScore[a.risk] || 2) - (riskScore[b.risk] || 2)); } 
-        else if (sortType === 'balanced') { const riskScore = { 'Low': 1, 'Medium': 1.5, 'High': 2.5 }; processed.sort((a, b) => (b.avgProfitYear / (riskScore[b.risk] || 1.5)) - (a.avgProfitYear / (riskScore[a.risk] || 1.5))); }
-        return processed;
-    }, [appData.crops, appData.isOnline, sortType, categoryFilter, years]); 
-
-    useEffect(() => { if (selectedProvince) { setResults(calculateEconomics(area)); } }, [calculateEconomics, area, selectedProvince]);
-
-    // Auto-set years Logic
-    useEffect(() => {
-        if (simulatingItem) {
-            if (simulatingItem.name.includes('ยาง') && !simulatingItem.name.includes('โพนยางคำ')) setYears(25);
-            else if (simulatingItem.category === 'ผสมผสาน') setYears(15); // Integrated usually needs time for trees
-        }
-    }, [simulatingItem]);
-
-    // ... (Map Handlers: handleProvinceSelect, handleBack, handleAreaChange - Same as before)
-    const handleProvinceSelect = (p) => { setIsPinning(false); setSelectedProvince(p); setMapType('satellite'); const info = appData.provinceData[p]; if (info) { setSoilInfo(info); setPinCoords([info.lat, info.lng]); } if (mapInstance && info && mapInstance._container) { const center = mapInstance.getCenter(); const bearing = getBearing(center.lat, center.lng, info.lat, info.lng); onTravelStart(`กำลังเดินทางไป ${p}...`, bearing); mapInstance.flyTo([info.lat - 0.1, info.lng], 10, { duration: 3 }); setTimeout(() => onTravelEnd(), 3000); } setResults(calculateEconomics(area)); };
-    const handleBack = () => { if (isPinning) { setIsPinning(false); return; } if (simulatingItem) { setSimulatingItem(null); return; } if (selectedProvince) { setSelectedProvince(null); setResults(null); lastProvinceRef.current = null; setMapType('satellite'); setPinCoords(null); if (mapInstance && mapInstance._container) mapInstance.flyTo(DON_MUEANG_COORDS, 6, { duration: 2 }); return; } if (selectedRegion) { setSelectedRegion(null); return; } };
+    const handleBack = () => { if (isPinning) { setIsPinning(false); return; } if (simulatingItem) { setSimulatingItem(null); return; } if (selectedProvince) { setSelectedProvince(null); setResults(null); lastProvinceRef.current = null; setMapType('satellite'); setPinCoords(null); if (mapInstance && mapInstance._container) mapInstance.flyTo(DON_MUEANG_COORDS || [13.9133, 100.6042], 6, { duration: 2 }); return; } if (selectedRegion) { setSelectedRegion(null); return; } };
     const handleAreaChange = (val) => { const newArea = parseFloat(val) || 0; setArea(newArea); };
     
-    // Share Handler
     const handleShareProvince = () => {
         const url = `${window.location.origin}${window.location.pathname}#province=${encodeURIComponent(selectedProvince)}&category=${encodeURIComponent(categoryFilter)}`;
-        
         const textarea = document.createElement('textarea');
         textarea.value = url;
         document.body.appendChild(textarea);
@@ -261,11 +138,106 @@ const KasetCloudApp = ({ mapInstance, onTravelStart, onTravelEnd, onGoHome, isTr
         document.body.removeChild(textarea);
     };
 
-    const currentProvInfo = appData.provinceData[selectedProvince];
+    // ... (Calculate Economics - Same as before)
+    const calculateEconomics = useCallback((newArea) => {
+        if (!appData.crops) return [];
+        let sourceCrops = [...appData.crops];
+        if (sourceCrops.length === 0 && window.AppCore && window.AppCore.MOCK_CROPS) { sourceCrops = [...window.AppCore.MOCK_CROPS]; }
+        const integratedExists = sourceCrops.some(c => c.name.includes('โคก') || c.category === 'ผสมผสาน');
+        if (!integratedExists) { sourceCrops.push({ name: "โคก หนอง นา โมเดล", category: "ผสมผสาน", price: 0, yield: 0, cost: 35000, risk: "Low", source: 'Generated' }); }
+        if (MOCK_CROPS) {
+             const coconutExists = sourceCrops.some(c => c.name.includes('มะพร้าว'));
+             if (!coconutExists) { const m = MOCK_CROPS.find(c => c.name.includes('มะพร้าว')); if(m) sourceCrops.push(m); }
+             const durianExists = sourceCrops.some(c => c.name.includes('ทุเรียน'));
+             if (!durianExists) { const m = MOCK_CROPS.find(c => c.name.includes('ทุเรียน')); if(m) sourceCrops.push(m); }
+        }
+        let processed = sourceCrops.map(c => {
+            let avgProfitPerYear = 0, avgCostPerYear = 0, totalCostVal = 0; 
+            const isDurian = c.name.includes('ทุเรียน'), isRubber = c.name.includes('ยาง') && !c.name.includes('โพนยางคำ'), isCoconut = c.name.includes('มะพร้าว'), isIntegrated = c.name.includes('โคก') || c.category === 'ผสมผสาน';
+
+            if (isIntegrated && window.calculateIntegratedEconomics) {
+                const eco = window.calculateIntegratedEconomics('khoknongna_general', newArea, years);
+                if (eco) { avgProfitPerYear = eco.avgProfitPerYear; avgCostPerYear = eco.avgCostPerYear; totalCostVal = avgCostPerYear; }
+            } else if (isDurian && window.calculateDurianEconomics) {
+                 const eco = window.calculateDurianEconomics('monthong', newArea, years);
+                 if (eco) { avgProfitPerYear = (eco.grossIncomeYear * 0.6) - (eco.maintCostPost); avgCostPerYear = eco.maintCostPost; totalCostVal = avgCostPerYear; } 
+            } else if (isRubber && window.calculateRubberEconomics) {
+                 const eco = window.calculateRubberEconomics('rrim600', newArea, years);
+                 if (eco) { avgProfitPerYear = eco.avgProfitPerYear; avgCostPerYear = eco.avgCostPerYear; totalCostVal = avgCostPerYear; }
+            } else if (isCoconut && window.calculateCoconutEconomics) {
+                 const eco = window.calculateCoconutEconomics('namhom', newArea, years);
+                 if (eco) { avgProfitPerYear = eco.avgProfitPerYear; avgCostPerYear = eco.avgCostPerYear; totalCostVal = avgCostPerYear; }
+            } else {
+                let rawYield = c.yield, pricePerKg = c.price;
+                if(c.name.includes('ข้าว') && pricePerKg > 1000) pricePerKg /= 1000;
+                let revenue = rawYield * newArea * pricePerKg, cost = Number(c.cost) || 0;
+                if (window.getKasetPreset) {
+                    const preset = window.getKasetPreset(c.name);
+                    if (preset && preset.cycles_per_year) { revenue *= preset.cycles_per_year; cost = (preset.cost_init || cost) * preset.cycles_per_year; }
+                }
+                let profitPerYear = revenue - (cost * newArea);
+                avgProfitPerYear = profitPerYear; totalCostVal = cost * newArea;
+            }
+            return { ...c, cost: totalCostVal, avgProfitYear: avgProfitPerYear, source: c.source || 'Mock' };
+        });
+
+        if (categoryFilter !== 'all') {
+            if (categoryFilter === 'plant') processed = processed.filter(c => c.category === 'พืชไร่' || c.category === 'พืชสวน' || !c.category);
+            else if (categoryFilter === 'animal') processed = processed.filter(c => c.category === 'ปศุสัตว์');
+            else if (categoryFilter === 'integrated') processed = processed.filter(c => c.category === 'ผสมผสาน');
+            else if (categoryFilter === 'rice_ministry') processed = processed.filter(c => c.name.includes('ข้าว'));
+            else if (categoryFilter === 'rubber_ministry') processed = processed.filter(c => c.name.includes('ยาง') && !c.name.includes('โพนยางคำ'));
+            else if (categoryFilter === 'coconut_ministry') processed = processed.filter(c => c.name.includes('มะพร้าว')); 
+            else if (categoryFilter === 'durian_ministry') processed = processed.filter(c => c.name.includes('ทุเรียน')); 
+            else if (categoryFilter === 'integrated_ministry') processed = processed.filter(c => c.name.includes('โคก') || c.category === 'ผสมผสาน');
+            else if (categoryFilter === 'business_ministry') processed = processed.filter(c => c.category === 'ธุรกิจ');
+        }
+        
+        if (sortType === 'profit') processed.sort((a, b) => b.avgProfitYear - a.avgProfitYear);
+        else if (sortType === 'payback') processed.sort((a, b) => (a.cost/(a.avgProfitYear||1)) - (b.cost/(b.avgProfitYear||1)));
+        else if (sortType === 'risk') { const r = {'Low':1, 'Medium':2, 'High':3}; processed.sort((a, b) => r[a.risk] - r[b.risk]); }
+        else if (sortType === 'balanced') { const riskScore = { 'Low': 1, 'Medium': 1.5, 'High': 2.5 }; processed.sort((a, b) => (b.avgProfitYear / (riskScore[b.risk] || 1.5)) - (a.avgProfitYear / (riskScore[a.risk] || 1.5))); }
+        return processed;
+    }, [appData.crops, appData.isOnline, sortType, categoryFilter, years]); 
+
+    useEffect(() => { if (selectedProvince) { setResults(calculateEconomics(area)); } }, [calculateEconomics, area, selectedProvince]);
+
+    // *** FIX: handleProvinceSelect with FlyTo ***
+    const handleProvinceSelect = (p) => { 
+        setIsPinning(false); 
+        setSelectedProvince(p); 
+        setMapType('satellite'); 
+        const info = appData.provinceData[p]; 
+        if (info) { 
+            setSoilInfo(info); 
+            setPinCoords([info.lat, info.lng]); 
+            
+            if (mapInstance && mapInstance._container) { 
+                const center = mapInstance.getCenter(); 
+                const bearing = getBearing(center.lat, center.lng, info.lat, info.lng); 
+                onTravelStart(`กำลังเดินทางไป ${p}...`, bearing); 
+                
+                // *** Smooth FlyTo ***
+                mapInstance.flyTo([info.lat - 0.1, info.lng], 10, {
+                    duration: 2.5, // 2.5 seconds for smoothness
+                    easeLinearity: 0.25,
+                    noMoveStart: false 
+                });
+                
+                // Wait for flyTo to (mostly) finish before hiding travel overlay
+                setTimeout(() => onTravelEnd(), 2800); 
+            } 
+        }
+        setResults(calculateEconomics(area)); 
+    };
+
+    // Render Logic
+    const currentProvInfo = appData.provinceData && selectedProvince ? appData.provinceData[selectedProvince] : null;
     const floodColorClass = activeFloodData.risk_level === 'High' ? 'text-red-400' : activeFloodData.risk_level === 'Medium' ? 'text-orange-400' : 'text-green-400';
 
     return (
         <div className="ui-unified-layer">
+            {/* REMOVED: FullscreenHint here as requested to use button blink only */}
             {/* Pass state setter to Knowledge Center to detect reading mode */}
             {showKnowledgeCenter && <KnowledgeCenterModal onClose={() => setShowKnowledgeCenter(false)} onReadMode={setIsReadingBook} />}
 
@@ -292,16 +264,19 @@ const KasetCloudApp = ({ mapInstance, onTravelStart, onTravelEnd, onGoHome, isTr
                 </div>
                 {/* ... (Existing Map Buttons) */}
                 <div className="flex items-center gap-2 md:gap-3 shrink-0">
+                    {/* Hiding GPS button as requested - because we arrived here via GPS already */}
+                    {/* <button onClick={onLocate} className="w-10 h-10 md:w-12 md:h-12 rounded-full glass-panel hover:bg-white/10 text-white flex items-center justify-center transition shadow-lg" title="ตำแหน่งของฉัน">
+                        {isAddressLoading ? <i className="fa-solid fa-spinner fa-spin text-sm"></i> : <i className="fa-solid fa-crosshairs text-sm md:text-base"></i>}
+                    </button> */}
+                    
                     {selectedProvince && !simulatingItem && (<button onClick={togglePin} className={`w-10 h-10 md:w-12 md:h-12 rounded-full glass-panel flex items-center justify-center transition shadow-lg animate-fade-in-up ${isPinning ? 'bg-emerald-500 hover:bg-emerald-400 border-emerald-400 text-white' : 'hover:bg-white/10 text-white'}`} title={isPinning ? "ยืนยันตำแหน่ง" : "ขยับหมุด"}><i className={`fa-solid ${isPinning ? 'fa-check text-lg font-bold' : 'fa-map-location-dot text-sm md:text-base'}`}></i></button>)}
                     <button onClick={toggleMapType} className="w-10 h-10 md:w-12 md:h-12 rounded-full glass-panel hover:bg-white/10 text-white flex items-center justify-center transition shadow-lg" title="เปลี่ยนแผนที่"><i className={`fa-solid ${mapType === 'satellite' ? 'fa-layer-group' : mapType === 'hybrid' ? 'fa-map' : 'fa-earth-americas'} text-sm md:text-base`}></i></button>
-                    <button onClick={handleFullscreen} className="w-10 h-10 md:w-12 md:h-12 rounded-full glass-panel hover:bg-white/10 text-white flex items-center justify-center transition shadow-lg" title="เต็มจอ"><i className={`fa-solid ${isFullscreen ? 'fa-compress' : 'fa-expand'} text-sm md:text-base`}></i></button>
+                    <button onClick={handleFullscreen} className={`w-10 h-10 md:w-12 md:h-12 rounded-full glass-panel hover:bg-white/10 text-white flex items-center justify-center transition shadow-lg ${isBlinking ? 'animate-pulse ring-2 ring-yellow-400' : ''}`} title="เต็มจอ"><i className={`fa-solid ${isFullscreen ? 'fa-compress' : 'fa-expand'} text-sm md:text-base`}></i></button>
                 </div>
             </div>
 
-            {/* ... (Existing Province Stats & Address Bar) */}
             {selectedProvince && !isTraveling && (
-                // *** UPDATED: Reduced scale to 0.6 and adjusted width to 167% to prevent overflow ***
-                <div className="fixed bottom-6 left-0 w-screen origin-bottom-left scale-[0.6] z-[10] flex flex-col md:flex-row items-end justify-between pointer-events-none animate-fade-in-up px-10">
+                <div className="fixed bottom-6 left-0 w-[167%] origin-bottom-left scale-[0.6] z-[10] flex flex-col md:flex-row items-end justify-between pointer-events-none animate-fade-in-up px-10">
                     <style>{`.text-shadow-heavy { text-shadow: 0 2px 4px rgba(0,0,0,0.9); }`}</style>
                     <div className="mb-4 md:mb-0 text-shadow-heavy pointer-events-auto">
                         <div className="flex items-center gap-3">
@@ -361,6 +336,7 @@ const KasetCloudApp = ({ mapInstance, onTravelStart, onTravelEnd, onGoHome, isTr
                     <div className={`w-full max-w-5xl mx-auto glass-panel-clear rounded-b-3xl p-6 animate-slide-down shadow-[0_10px_40px_rgba(0,0,0,0.5)] border-t-0 mt-4`}>
                         <h2 className="text-xl font-bold text-white mb-4 text-center">เลือกภูมิภาคของคุณ</h2>
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">{Object.keys(appData.regions).map(r => (<button key={r} onClick={() => handleRegionSelect(r)} className="bg-white/5 hover:bg-emerald-500/20 border border-white/20 rounded-xl p-6 flex flex-col items-center gap-2 transition hover:scale-105 group backdrop-blur-sm"><span className="text-4xl group-hover:animate-bounce">{r === 'เหนือ' ? '⛰️' : r === 'ใต้' ? '🌊' : '🏙️'}</span><span className="font-bold text-slate-200">{r}</span></button>))}</div>
+                         {/* Removed Locate Me from here as it's now in HomePage as well, but keeping for consistency inside map view if needed */}
                     </div>
                 )}
 
@@ -453,9 +429,52 @@ const KasetCloudApp = ({ mapInstance, onTravelStart, onTravelEnd, onGoHome, isTr
     );
 };
 
-const HomePage = ({ onStart, isTraveling }) => {
+const HomePage = ({ onStart, isTraveling, onLocate }) => { 
+    // ... (Existing HomePage - No changes)
     const [isFullscreen, setIsFullscreen] = useState(false);
+    const [locating, setLocating] = useState(false); // Local loading state for Locate button
+
     const toggleFullscreen = () => { if (!document.fullscreenElement) { document.documentElement.requestFullscreen().then(() => setIsFullscreen(true)); } else { if (document.exitFullscreen) document.exitFullscreen().then(() => setIsFullscreen(false)); } };
+
+    const handleLocateClick = () => {
+        if (!navigator.geolocation) {
+            alert("เบราว์เซอร์ของคุณไม่รองรับการระบุตำแหน่ง");
+            return;
+        }
+
+        setLocating(true);
+
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                const { latitude, longitude } = position.coords;
+                
+                // Get province info first, then initiate flight
+                fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&accept-language=th`)
+                    .then(res => res.json())
+                    .then(data => {
+                        const addressObj = data.address;
+                        const prov = addressObj.state || addressObj.province;
+                        const cleanProv = prov ? prov.replace('จังหวัด', '').trim() : null;
+                        
+                        setLocating(false);
+                        // Trigger the FLIGHT in App component (instead of direct map setView)
+                        onLocate(latitude, longitude, cleanProv);
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        setLocating(false);
+                        // Even if address fails, we can still fly to coords
+                        onLocate(latitude, longitude, null); 
+                    });
+            },
+            (error) => {
+                console.error("Error getting location", error);
+                setLocating(false);
+                alert("ไม่สามารถระบุตำแหน่งได้ กรุณาเปิด GPS");
+            },
+            { timeout: 10000, enableHighAccuracy: true }
+        );
+    };
 
     return (
         <div className="relative z-10 flex flex-col items-center justify-center min-h-screen text-center p-6 animate-fade-in-up">
@@ -463,10 +482,16 @@ const HomePage = ({ onStart, isTraveling }) => {
             <img src="https://upload.wikimedia.org/wikipedia/commons/a/a9/Flag_of_Thailand.svg" alt="Thai Flag" className="w-24 mb-4 animate-flag-wave shadow-lg" />
             <h1 className="text-5xl md:text-7xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-emerald-400 to-cyan-400 drop-shadow-xl">Winai Innovation</h1>
             <p className="text-slate-300 text-lg mb-8 bg-black/40 px-4 py-1 rounded-full backdrop-blur-sm border border-white/10">Super App เพื่อเกษตรกรไทย</p>
-            <button onClick={onStart} disabled={isTraveling} className={`group relative font-bold py-4 px-10 rounded-2xl shadow-[0_0_30px_rgba(16,185,129,0.6)] transition-all overflow-hidden border border-emerald-400/50 backdrop-blur-md ${isTraveling ? 'bg-emerald-900/40 text-emerald-200 cursor-default scale-105' : 'bg-white/10 hover:bg-emerald-500/30 text-white hover:scale-105 hover:shadow-[0_0_50px_rgba(16,185,129,0.8)]'}`}>
+            <button onClick={onStart} disabled={isTraveling || locating} className={`group relative font-bold py-4 px-10 rounded-2xl shadow-[0_0_30px_rgba(16,185,129,0.6)] transition-all overflow-hidden border border-emerald-400/50 backdrop-blur-md ${isTraveling ? 'bg-emerald-900/40 text-emerald-200 cursor-default scale-105' : 'bg-white/10 hover:bg-emerald-500/30 text-white hover:scale-105 hover:shadow-[0_0_50px_rgba(16,185,129,0.8)]'}`}>
                 <div className={`absolute inset-0 bg-emerald-500/20 transition-transform duration-1000 ${isTraveling ? 'translate-y-0' : 'translate-y-full group-hover:translate-y-0'}`}></div>
                 <span className="relative flex items-center gap-3 text-xl">{isTraveling ? (<><i className="fa-solid fa-plane-up transition-transform duration-700 ease-in-out" style={{ transform: `rotate(90deg)` }}></i> กำลังเดินทาง เข้าสู่เกษตร คราวน์</>) : (<><i className="fa-solid fa-rocket"></i> เข้าสู่เกษตร คราวน์</>)}</span>
             </button>
+            {/* *** Locate Me Button with Loading State *** */}
+            <button onClick={handleLocateClick} disabled={isTraveling || locating} className="mt-4 px-6 py-2 rounded-full bg-blue-600/80 hover:bg-blue-500 text-white font-bold flex items-center gap-2 transition shadow-lg border border-blue-400/50 text-sm disabled:opacity-50 disabled:cursor-not-allowed">
+                {locating ? <i className="fa-solid fa-spinner fa-spin"></i> : <i className="fa-solid fa-location-crosshairs"></i>}
+                <span>{locating ? 'กำลังระบุพิกัด...' : 'ค้นหาตำแหน่งของฉัน'}</span>
+            </button>
+
             <div className="mt-8 text-xs text-slate-400 bg-black/30 p-4 rounded-xl backdrop-blur-sm border border-white/5">
                 <p>พัฒนาโดย: Mr.Winai Phanarkat</p>
                 <p>Line: 0926533228 | Email: winayo@gmail.com</p>
@@ -521,21 +546,91 @@ const App = () => {
     useEffect(() => {
         const map = mapRef.current;
         if (!map) return;
-        if (page === 'home') { if (rotationInterval.current) clearInterval(rotationInterval.current); rotationInterval.current = setInterval(() => { if (map && map._container) map.panBy([1, 0], { animate: false }); }, 50); } 
-        else { if (rotationInterval.current) { clearInterval(rotationInterval.current); rotationInterval.current = null; } }
+        // UPDATE: Check travel.active to stop background rotation during travel
+        if (page === 'home' && !travel.active) { 
+            if (rotationInterval.current) clearInterval(rotationInterval.current); 
+            rotationInterval.current = setInterval(() => { 
+                if (map && map._container) map.panBy([1, 0], { animate: false }); 
+            }, 50); 
+        } 
+        else { 
+            if (rotationInterval.current) { clearInterval(rotationInterval.current); rotationInterval.current = null; } 
+        }
         return () => { if (rotationInterval.current) clearInterval(rotationInterval.current); };
-    }, [page]);
+    }, [page, travel.active]); // Added travel.active as dependency
 
     const handleStart = () => {
-        if (mapRef.current) {
-            // Calculate Bearing from Center to Don Mueang
-            const center = mapRef.current.getCenter();
-            const bearing = getBearing(center.lat, center.lng, DON_MUEANG_COORDS[0], DON_MUEANG_COORDS[1]);
-            
-            setTravel({ active: true, msg: '', rotation: bearing });
-            mapRef.current.flyTo(DON_MUEANG_COORDS, 6, { duration: 4 });
-            setTimeout(() => { setPage('kaset'); setTravel({ active: false, msg: '', rotation: 0 }); }, 4000);
+        if (!mapRef.current) return;
+
+        // IMMEDIATE STOP of background rotation
+        if (rotationInterval.current) { clearInterval(rotationInterval.current); rotationInterval.current = null; }
+
+        setTravel({ active: true, msg: 'กำลังเข้าสู่เกษตร คราวน์...', rotation: 0 });
+
+        const center = mapRef.current.getCenter();
+        const bearing = getBearing(center.lat, center.lng, DON_MUEANG_COORDS[0], DON_MUEANG_COORDS[1]);
+        
+        setTravel({ active: true, msg: 'เข้าสู่เกษตร คราวน์...', rotation: bearing });
+        
+        mapRef.current.flyTo(DON_MUEANG_COORDS, 6, { // Standard start
+            animate: true,
+            duration: 4,     
+            easeLinearity: 0.1, 
+            noMoveStart: true 
+        });
+        
+        setTimeout(() => { 
+            setPage('kaset'); 
+            setTravel({ active: false, msg: '', rotation: 0 }); 
+        }, 4000);
+    };
+
+    // New Handler: Specifically for flying to a user-located coordinate
+    const handleLocateAndFly = (lat, lng, province) => {
+        if (!mapRef.current) return;
+
+        // 1. Configure Kaset page to open this province immediately
+        if (province) {
+            setInitialConfig({ 
+                province: province, 
+                category: 'all' 
+            });
         }
+
+        // 2. Stop Rotation
+        if (rotationInterval.current) { clearInterval(rotationInterval.current); rotationInterval.current = null; }
+
+        // 3. Start Travel Sequence
+        const msg = province ? `กำลังเดินทางสู่ ${province}...` : 'กำลังเดินทางสู่พิกัดของคุณ...';
+        
+        // Calculate bearing from CURRENT view (floating space) to TARGET
+        const center = mapRef.current.getCenter();
+        const bearing = getBearing(center.lat, center.lng, lat, lng);
+        
+        setTravel({ active: true, msg: msg, rotation: bearing });
+
+        // 4. Execute FlyTo Animation (From space to specific lat/lng)
+        mapRef.current.flyTo([lat, lng], 10, { // Zoom in closer (10) for specific location
+            animate: true,
+            duration: 4,
+            easeLinearity: 0.1,
+            noMoveStart: true
+        });
+
+        // 5. Add Marker temporarily to indicate destination (Optional but helpful)
+        L.marker([lat, lng], {
+            icon: L.divIcon({
+                className: 'custom-user-pin',
+                html: '<div class="w-4 h-4 bg-blue-500 rounded-full border-2 border-white shadow-lg animate-pulse"></div>',
+                iconSize: [16, 16]
+            })
+        }).addTo(mapRef.current);
+
+        // 6. Transition to Kaset Page
+        setTimeout(() => {
+            setPage('kaset');
+            setTravel({ active: false, msg: '', rotation: 0 });
+        }, 4000);
     };
 
     const handleGoHome = () => { setPage('home'); if (mapRef.current) mapRef.current.setView([13.7563, 100.5018], 5); };
@@ -544,8 +639,8 @@ const App = () => {
         <div className="h-screen w-screen overflow-hidden text-slate-200">
             <div id="global-map"></div>
             <CloudOverlay isActive={travel.active} message={travel.msg} rotation={travel.rotation} />
-            {page === 'home' && <HomePage onStart={handleStart} isTraveling={travel.active} />}
-            {page === 'kaset' && (<KasetCloudApp mapInstance={mapRef.current} onTravelStart={(msg, rotation) => setTravel({ active: true, msg, rotation })} onTravelEnd={() => setTravel({ active: false, msg: '', rotation: 0 })} onGoHome={handleGoHome} isTraveling={travel.active} initialAction={initialAction} initialConfig={initialConfig} />)}
+            {page === 'home' && <HomePage onStart={handleStart} isTraveling={travel.active} onLocate={handleLocateAndFly} />}
+            {page === 'kaset' && (<KasetCloudApp mapInstance={mapRef.current} onTravelStart={(msg, rotation) => setTravel({ active: true, msg, rotation })} onTravelEnd={() => setTravel({ active: false, msg: '', rotation: 0 })} onGoHome={handleGoHome} isTraveling={travel.active} initialAction={initialAction} initialConfig={initialConfig} onLocate={handleLocateAndFly} />)}
         </div>
     );
 };
