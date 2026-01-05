@@ -78,7 +78,7 @@ const COCONUT_STEPS = [
     },
     {
         id: 'maint_young',
-        label: '4. ดูแลยางเล็ก (ปี 1-3)',
+        label: '4. ดูแลมะพร้าวเล็ก (ปี 1-3)',
         val: 4000, // บาท/ไร่/ปี
         type: 'maint_pre',
         desc: 'ปุ๋ยสูตรเสมอ + แมกนีเซียม + กำจัดวัชพืช'
@@ -106,41 +106,90 @@ const COCONUT_STEPS = [
     }
 ];
 
-// 3. ฟังก์ชันคำนวณรายได้มะพร้าว (Coconut Calculation Logic)
+// 3. ฟังก์ชันคำนวณรายได้มะพร้าว (Updated Logic: Loop Calculation)
 const calculateCoconutEconomics = (presetKey, area, years) => {
     // Fallback to 'namhom' if presetKey is invalid
     const preset = COCONUT_PRESETS[presetKey] || COCONUT_PRESETS['namhom'];
     
     if (!preset) return null;
 
-    // คำนวณผลผลิตรวม (Total Yield)
-    // ผลผลิตต่อไร่ = ต้นต่อไร่ x ผลต่อต้น
-    const yieldPerRai = preset.yield_per_tree * preset.trees_per_rai;
+    const yieldPerRaiFull = preset.yield_per_tree * preset.trees_per_rai;
     const price = preset.price;
 
-    const grossIncomePerYear = yieldPerRai * price * area;
+    // คำนวณต้นทุนต่อหน่วย (Per Rai)
+    let initialCostPerRai = 0;
+    COCONUT_STEPS.filter(s => s.type === 'init').forEach(s => initialCostPerRai += s.val);
 
-    // คำนวณต้นทุน
-    let initialCost = 0;
-    COCONUT_STEPS.filter(s => s.type === 'init').forEach(s => initialCost += s.val * area);
+    let maintCostPrePerRai = 0;
+    COCONUT_STEPS.filter(s => s.type === 'maint_pre').forEach(s => maintCostPrePerRai += s.val);
 
-    let maintCostPre = 0; // ช่วงยังไม่ให้ผล
-    COCONUT_STEPS.filter(s => s.type === 'maint_pre').forEach(s => maintCostPre += s.val * area);
+    let maintCostPostPerRai = 0;
+    COCONUT_STEPS.filter(s => s.type === 'maint_post').forEach(s => maintCostPostPerRai += s.val);
 
-    let maintCostPost = 0; // ช่วงให้ผลผลิตแล้ว
-    COCONUT_STEPS.filter(s => s.type === 'maint_post').forEach(s => maintCostPost += s.val * area);
+    // --- NEW LOGIC: Loop คำนวณรายปีเพื่อหาค่าเฉลี่ยที่ถูกต้อง ---
+    let totalRevenueAccumulated = 0;
+    let totalCostAccumulated = 0;
 
+    for (let i = 0; i < years; i++) {
+        const age = i + 1;
+        let yearlyCost = 0;
+        let yearlyRevenue = 0;
+        let currentYieldPerRai = 0;
+
+        // 1. ต้นทุน (Cost)
+        if (age <= preset.wait_years) {
+            // ช่วงยังไม่ให้ผล
+            yearlyCost = (i === 0) ? initialCostPerRai : maintCostPrePerRai;
+        } else {
+            // ช่วงให้ผลแล้ว
+            yearlyCost = maintCostPostPerRai;
+        }
+        
+        // คูณด้วยพื้นที่ (Total Cost for Area)
+        yearlyCost *= area;
+
+        // 2. รายได้ (Revenue)
+        if (age > preset.wait_years) {
+            // คำนวณผลผลิตตามระยะ (Ramp up)
+            if (age < preset.wait_years + 2) {
+                currentYieldPerRai = yieldPerRaiFull * 0.5; // ปีแรกที่ออก ออก 50%
+            } else {
+                currentYieldPerRai = yieldPerRaiFull * 1.0; // ปีต่อมาออกเต็มที่
+            }
+            
+            yearlyRevenue = currentYieldPerRai * area * price;
+        }
+
+        // สะสมค่า
+        totalRevenueAccumulated += yearlyRevenue;
+        totalCostAccumulated += yearlyCost;
+    }
+
+    // คำนวณค่าเฉลี่ย (Average)
+    const avgProfitPerYear = (totalRevenueAccumulated - totalCostAccumulated) / years;
+    const avgCostPerYear = totalCostAccumulated / years;
+
+    // คืนค่ากลับไป (Compatible with previous structure but adding averages)
     return {
         presetName: preset.name,
-        grossIncomeYear: grossIncomePerYear,
-        initialCost: initialCost,
-        maintCostPre: maintCostPre,
-        maintCostPost: maintCostPost,
+        grossIncomeYear: yieldPerRaiFull * price * area, // Peak income (for reference)
+        
+        // Cost Components (for Simulation Panel graph plotting)
+        initialCost: initialCostPerRai * area,
+        maintCostPre: maintCostPrePerRai * area,
+        maintCostPost: maintCostPostPerRai * area,
+        
+        // Parameters
         waitYears: preset.wait_years,
-        yieldPerRai: yieldPerRai,
-        unit: 'ผล', // หน่วยนับ
+        yieldPerRai: yieldPerRaiFull,
+        unit: 'ผล',
         yieldPerTree: preset.yield_per_tree,
-        treesPerRai: preset.trees_per_rai
+        treesPerRai: preset.trees_per_rai,
+        price: price,
+
+        // *** NEW: Calculated Averages for Dashboard ***
+        avgProfitPerYear: avgProfitPerYear,
+        avgCostPerYear: avgCostPerYear
     };
 };
 
