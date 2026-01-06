@@ -1,5 +1,5 @@
 // --- scriptui.js : UI Components (SimulationPanel, Overlay) ---
-// อัปเดตล่าสุด: แก้ไขปัญหา สระ/วรรณยุกต์ภาษาไทยล้นขอบบน ในส่วนหัว Video Modal (Final Fix)
+// อัปเดตล่าสุด: ใช้ ReactDOM.createPortal ใน VideoGalleryModal เพื่อแก้ปัญหา Modal ตกขอบในหน้า Simulation
 
 (function(global) {
     const { useState, useEffect, useRef, useMemo } = React;
@@ -18,7 +18,7 @@
         document.body.removeChild(textarea);
     };
 
-    // --- SUB-COMPONENT: HANDBOOK MODAL (Responsive Fixed) ---
+    // --- SUB-COMPONENT: HANDBOOK MODAL ---
     const HandbookModal = ({ bookData, onClose }) => {
         if (!bookData) return null;
         
@@ -37,8 +37,8 @@
             setTimeout(() => setIsCopied(false), 2000);
         };
 
-        return (
-            <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 animate-fade-in pointer-events-auto">
+        const modalContent = (
+            <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 animate-fade-in pointer-events-auto font-sarabun">
                 <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose}></div>
                 <div className="relative w-full max-w-3xl max-h-[85vh] rounded-2xl border border-emerald-500/50 shadow-[0_0_50px_rgba(16,185,129,0.2)] flex flex-col overflow-hidden bg-slate-900/85 backdrop-blur-xl">
                     <div className="p-5 border-b border-white/10 flex justify-between items-center bg-gradient-to-r from-emerald-900/40 to-white/5">
@@ -83,38 +83,91 @@
                 </div>
             </div>
         );
+
+        // Portal เพื่อแก้ปัญหา Z-Index ใน Simulation Panel
+        if (typeof ReactDOM !== 'undefined' && document.body) {
+            return ReactDOM.createPortal(modalContent, document.body);
+        }
+        return modalContent;
     };
 
-    // --- SUB-COMPONENT: VIDEO GALLERY MODAL (Fixed Thai Font Clipping) ---
-    const VideoGalleryModal = ({ videos, title, onClose }) => {
+    // --- SUB-COMPONENT: VIDEO GALLERY MODAL (Updated with Share Button & Portal) ---
+    const VideoGalleryModal = ({ category, videos: propVideos, title: propTitle, onClose }) => {
+        // รองรับทั้งแบบส่ง category มา (Deep Link) หรือส่ง videos array มาตรงๆ (Legacy)
+        const videos = category && window.AppVideo ? window.AppVideo.getVideos(category) : (propVideos || []);
+        
+        // Mapping Title ภาษาไทยสวยๆ
+        const titleMap = {
+            'durian': 'ทุเรียนคุณภาพ & ส่งออก',
+            'date_palm': 'อินทผาลัม (เงินล้าน)',
+            'mango': 'มะม่วงน้ำดอกไม้สีทอง',
+            'sugarcane': 'อ้อยโรงงาน (30 ตัน/ไร่)',
+            'cassava': 'มันสำปะหลังระบบน้ำหยด',
+            'rice_jasmine': 'ข้าวหอมมะลิ 105',
+            'rice_sticky': 'ข้าวเหนียว กข.6',
+            'farm_cafe': 'ธุรกิจฟาร์มคาเฟ่ & ท่องเที่ยว',
+            'care_elderly': 'ศูนย์ดูแลผู้สูงอายุ (Day Care)',
+            'clinic_physio': 'คลินิกกายภาพบำบัด',
+            'factory_salad': 'โรงงานแปรรูปผักสลัด',
+            'franchise_meatball': 'แฟรนไชส์ลูกชิ้นระเบิด',
+            'affiliate': 'นายหน้า Affiliate (TikTok)',
+            'solar_farm': 'Solar Farm ขายไฟ'
+        };
+        
+        const title = propTitle || titleMap[category] || category || 'วิดีโอแนะนำ';
+
         if (!videos || videos.length === 0) return null;
 
-        return (
-            <div className="fixed inset-0 z-[10001] flex items-center justify-center p-2 sm:p-4 animate-fade-in pointer-events-auto">
+        const handleShare = () => {
+            if (!category) return; // แชร์ไม่ได้ถ้าไม่มี category
+            const url = `${window.location.origin}${window.location.pathname}#video_cat=${category}`;
+            copyToClipboard(url);
+            
+            // Visual Feedback simple
+            const btn = document.getElementById('share-btn-icon-v');
+            if(btn) {
+                btn.className = 'fa-solid fa-check text-emerald-400';
+                setTimeout(() => {
+                    btn.className = 'fa-solid fa-share-nodes';
+                }, 2000);
+            }
+        };
+
+        // ใช้ Portal เพื่อให้ Modal แสดงผลทับทุกอย่างและไม่ถูกตัดขอบ (Overflow) จาก Simulation Panel
+        const modalContent = (
+            <div className="fixed inset-0 z-[10001] flex items-center justify-center p-2 sm:p-4 animate-fade-in pointer-events-auto font-sarabun">
                 <div className="absolute inset-0 bg-black/90 backdrop-blur-sm" onClick={onClose}></div>
                 
                 <div className="relative w-[95%] md:w-full max-w-4xl max-h-[90vh] rounded-2xl border border-red-500/50 shadow-[0_0_50px_rgba(239,68,68,0.2)] flex flex-col overflow-hidden bg-slate-900">
                     
-                    {/* Header: ใช้ flex-row, items-start และลบ overflow-hidden ในส่วน text container */}
+                    {/* Header */}
                     <div className="p-4 sm:p-5 border-b border-white/10 flex flex-row justify-between items-start bg-gradient-to-r from-red-900/40 to-slate-900 shrink-0">
-                        
-                        {/* Title Container */}
                         <div className="flex flex-1 gap-3 pr-2">
                             <div className="w-10 h-10 rounded-full bg-red-600 flex items-center justify-center text-white text-lg shadow-lg shrink-0 mt-1">
                                 <i className="fa-brands fa-youtube"></i>
                             </div>
                             <div className="flex-1 min-w-0 pt-0.5">
-                                {/* ใช้ leading-normal เพื่อให้สระไม่ชนขอบ และ break-words ตัดคำยาว */}
                                 <h2 className="text-base sm:text-lg font-bold text-white leading-normal break-words">
-                                    คลังวิดีโอ: {title}
+                                    คลังวิดีโอ: <span className="text-red-300">{title}</span>
                                 </h2>
-                                <div className="text-[11px] sm:text-xs text-red-300 mt-0.5">รวมเทคนิคจาก YouTube มืออาชีพ</div>
+                                <p className="text-[11px] sm:text-xs text-slate-400 mt-0.5">รวมเทคนิคและความรู้ที่คัดสรรมาแล้ว</p>
                             </div>
                         </div>
                         
-                        <button onClick={onClose} className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-slate-300 hover:text-white transition shrink-0 mt-1">
-                            <i className="fa-solid fa-times"></i>
-                        </button>
+                        <div className="flex gap-2 mt-1 shrink-0">
+                            {category && (
+                                <button 
+                                    onClick={handleShare}
+                                    className="w-8 h-8 rounded-full bg-white/10 hover:bg-emerald-500/20 text-slate-300 hover:text-emerald-400 border border-white/5 hover:border-emerald-500/50 flex items-center justify-center transition"
+                                    title="แชร์หน้านี้"
+                                >
+                                    <i id="share-btn-icon-v" className="fa-solid fa-share-nodes"></i>
+                                </button>
+                            )}
+                            <button onClick={onClose} className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-slate-300 hover:text-white transition">
+                                <i className="fa-solid fa-times"></i>
+                            </button>
+                        </div>
                     </div>
 
                     {/* Content Grid */}
@@ -144,6 +197,11 @@
                 </div>
             </div>
         );
+
+        if (typeof ReactDOM !== 'undefined' && document.body) {
+            return ReactDOM.createPortal(modalContent, document.body);
+        }
+        return modalContent;
     };
 
     // --- COMPONENT: KNOWLEDGE CENTER MODAL ---
@@ -213,7 +271,7 @@
         const [panelTab, setPanelTab] = useState('financial');
         const [customCosts, setCustomCosts] = useState(null);
         const [showHandbook, setShowHandbook] = useState(false);
-        const [showVideo, setShowVideo] = useState(false);
+        const [showVideo, setShowVideo] = useState(false); // Local state for Simulation Panel videos
 
         const isRice = item.name.includes('ข้าว') && !item.name.includes('ข้าวโพด'); 
         const isRubber = item.name.includes('ยาง') && !item.name.includes('โพนยางคำ');
@@ -247,9 +305,7 @@
         const [integratedConfig, setIntegratedConfig] = useState({ model: 'khoknongna_general' });
         const [kasetConfig, setKasetConfig] = useState({ cycles: kasetPreset ? kasetPreset.cycles_per_year : 1 });
 
-        const [riceSteps, setRiceSteps] = useState([]);
         const [kasetSteps, setKasetSteps] = useState([]);
-        const [durianSteps, setDurianSteps] = useState([]);
 
         const lineCanvasRef = useRef(null);
         const lineChartRef = useRef(null);

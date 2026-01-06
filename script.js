@@ -1,12 +1,12 @@
 // --- script.js : Main Entry Point & Map Logic ---
-// อัปเดตล่าสุด: คืนค่า Component "App" ที่หายไป และรวมฟีเจอร์ Video/Dashboard ครบถ้วน
+// อัปเดตล่าสุด: แก้ไข App is not defined และปรับ Footer ให้ขนาดเท่าเมนูกระทรวง (ไม่ใช้ Scale)
 
 const { useState, useEffect, useRef, useMemo, useCallback } = React;
 
 // Import helpers & components from split files
 const AppCore = window.AppCore || {};
 const AppUI = window.AppUI || {};
-const AppVideo = window.AppVideo || {}; // Import AppVideo
+const AppVideo = window.AppVideo || {}; 
 
 const { useRealtimeData, normalizeThaiName, getBearing, DON_MUEANG_COORDS, MOCK_CROPS } = AppCore;
 const { SimulationPanel, CloudOverlay, KnowledgeCenterModal, VideoGalleryModal } = AppUI;
@@ -30,7 +30,9 @@ const KasetCloudApp = ({ mapInstance, onTravelStart, onTravelEnd, onGoHome, isTr
     const [isReadingBook, setIsReadingBook] = useState(false);
     const [isCopied, setIsCopied] = useState(false);
     const [isBlinking, setIsBlinking] = useState(false);
-    const [dashboardVideo, setDashboardVideo] = useState(null); // State สำหรับวิดีโอบน Dashboard
+    
+    // --- VIDEO STATE ---
+    const [videoCategory, setVideoCategory] = useState(null); 
 
     const appData = useRealtimeData ? useRealtimeData() : { provinceData: {}, regions: {}, crops: [] };
     const markerRef = useRef(null);
@@ -44,6 +46,28 @@ const KasetCloudApp = ({ mapInstance, onTravelStart, onTravelEnd, onGoHome, isTr
     const [address, setAddress] = useState(null);
     const [addressDetails, setAddressDetails] = useState(null);
     const [isAddressLoading, setIsAddressLoading] = useState(false);
+
+    // --- EFFECT: Handle Deep Linking ---
+    useEffect(() => {
+        const handleHashChange = () => {
+            const hash = window.location.hash;
+            if (hash.includes('video_cat=')) {
+                const cat = hash.split('video_cat=')[1];
+                if (cat) setVideoCategory(cat);
+            }
+            else if (!hash) {
+                setVideoCategory(null);
+            }
+        };
+        handleHashChange();
+        window.addEventListener('hashchange', handleHashChange);
+        return () => window.removeEventListener('hashchange', handleHashChange);
+    }, []);
+
+    const handleCloseVideo = () => {
+        setVideoCategory(null);
+        history.pushState("", document.title, window.location.pathname + window.location.search);
+    };
 
     // ... (Effects and Handlers)
     useEffect(() => {
@@ -63,7 +87,6 @@ const KasetCloudApp = ({ mapInstance, onTravelStart, onTravelEnd, onGoHome, isTr
     useEffect(() => {
         if (initialConfig?.province && mapInstance && appData.provinceData && appData.provinceData[initialConfig.province]) {
             const info = appData.provinceData[initialConfig.province];
-            // Smooth flyTo instead of setView
             mapInstance.flyTo([info.lat - 0.1, info.lng], 10, {
                 animate: true,
                 duration: 2.5,
@@ -311,8 +334,8 @@ const KasetCloudApp = ({ mapInstance, onTravelStart, onTravelEnd, onGoHome, isTr
         e.stopPropagation();
         const vKey = getVideoKey ? getVideoKey(item) : null;
         const vList = vKey ? getVideos(vKey) : [];
-        if (vList.length > 0) {
-            setDashboardVideo({ title: item.name, videos: vList });
+        if (vList.length > 0 && vKey) {
+            window.location.hash = `video_cat=${vKey}`;
         } else {
             alert('ยังไม่มีวิดีโอสำหรับรายการนี้');
         }
@@ -324,6 +347,13 @@ const KasetCloudApp = ({ mapInstance, onTravelStart, onTravelEnd, onGoHome, isTr
     return (
         <div className="ui-unified-layer">
             {showKnowledgeCenter && <KnowledgeCenterModal onClose={() => setShowKnowledgeCenter(false)} onReadMode={setIsReadingBook} />}
+
+            {videoCategory && (
+                <VideoGalleryModal 
+                    category={videoCategory} 
+                    onClose={handleCloseVideo} 
+                />
+            )}
 
             <div className="w-full max-w-7xl mx-auto flex items-center justify-between pointer-auto px-2 md:px-4 z-[2100] mt-2">
                 <div className="flex items-center gap-2 md:gap-3 shrink-0">
@@ -371,34 +401,35 @@ const KasetCloudApp = ({ mapInstance, onTravelStart, onTravelEnd, onGoHome, isTr
             </div>
 
             {selectedProvince && !isTraveling && (
-                <div className="fixed bottom-6 left-0 w-[167%] origin-bottom-left scale-[0.6] z-[10] flex flex-col md:flex-row items-end justify-between pointer-events-none animate-fade-in-up px-10">
+                <div className="fixed bottom-0 left-0 w-full z-[20] bg-gradient-to-t from-black/90 via-black/60 to-transparent pt-10 pb-4 px-4 md:px-6 flex flex-col md:flex-row items-end justify-between pointer-events-none animate-fade-in-up">
                     <style>{`.text-shadow-heavy { text-shadow: 0 2px 4px rgba(0,0,0,0.9); }`}</style>
-                    <div className="mb-4 md:mb-0 text-shadow-heavy pointer-events-auto">
-                        <div className="flex items-center gap-3">
-                            <h3 className="font-bold text-white text-4xl md:text-5xl leading-none tracking-wide">{selectedProvince}</h3>
-                            <div className="flex gap-2">
-                                <a href="https://www.facebook.com/winayo1" target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-full bg-blue-600 hover:bg-blue-500 text-white flex items-center justify-center transition shadow-lg" title="ติดตามผู้พัฒนา">
-                                    <i className="fa-brands fa-facebook text-lg"></i>
+                    <div className="mb-2 md:mb-0 text-shadow-heavy pointer-events-auto">
+                        <div className="flex items-center gap-2">
+                            <h3 className="font-bold text-white text-3xl md:text-4xl leading-none tracking-wide">{selectedProvince}</h3>
+                            <div className="flex gap-1">
+                                <a href="https://www.facebook.com/winayo1" target="_blank" rel="noopener noreferrer" className="w-6 h-6 rounded-full bg-blue-600 hover:bg-blue-500 text-white flex items-center justify-center transition shadow-lg" title="ติดตามผู้พัฒนา">
+                                    <i className="fa-brands fa-facebook text-xs"></i>
                                 </a>
-                                <button onClick={handleShareProvince} className={`w-8 h-8 rounded-full flex items-center justify-center transition shadow-lg ${isCopied ? 'bg-green-500 text-white' : 'bg-white/20 hover:bg-white/40 text-white'}`} title="แชร์หน้านี้">
-                                    <i className={`fa-solid ${isCopied ? 'fa-check' : 'fa-share-nodes'}`}></i>
+                                <button onClick={handleShareProvince} className={`w-6 h-6 rounded-full flex items-center justify-center transition shadow-lg ${isCopied ? 'bg-green-500 text-white' : 'bg-white/20 hover:bg-white/40 text-white'}`} title="แชร์หน้านี้">
+                                    <i className={`fa-solid ${isCopied ? 'fa-check' : 'fa-share-nodes'} text-xs`}></i>
                                 </button>
                             </div>
                         </div>
                         <div className="mt-1">
-                            {isAddressLoading ? (<span className="text-xs text-yellow-300 animate-pulse"><i className="fa-solid fa-spinner fa-spin mr-1"></i> กำลังค้นหาที่อยู่...</span>) : address ? (<div className="bg-black/40 backdrop-blur-md px-3 py-1.5 rounded-lg text-xs md:text-sm text-emerald-200 border border-emerald-500/30 shadow-lg inline-block max-w-[250px] md:max-w-md truncate"><i className="fa-solid fa-map-location-dot mr-2 text-emerald-400"></i>{address}</div>) : (pinCoords && <span className="text-xs text-slate-400">{pinCoords[0].toFixed(4)}, {pinCoords[1].toFixed(4)}</span>)}
+                            {isAddressLoading ? (<span className="text-[10px] text-yellow-300 animate-pulse"><i className="fa-solid fa-spinner fa-spin mr-1"></i> กำลังค้นหาที่อยู่...</span>) : address ? (<div className="bg-black/40 backdrop-blur-md px-2 py-1 rounded-md text-[10px] text-emerald-200 border border-emerald-500/30 shadow-lg inline-block max-w-[300px] truncate"><i className="fa-solid fa-map-location-dot mr-1 text-emerald-400"></i>{address}</div>) : (pinCoords && <span className="text-[10px] text-slate-400">{pinCoords[0].toFixed(4)}, {pinCoords[1].toFixed(4)}</span>)}
                         </div>
                     </div>
-                    <div className="flex flex-wrap items-end gap-4 md:gap-8 text-shadow-heavy pr-12">
-                        <div className="flex flex-col items-center"><div className="flex items-baseline gap-1"><i className="fa-solid fa-users text-blue-400 text-lg"></i><span className="text-2xl font-bold text-white">{provinceStats?.totalPop?.val || '-'}</span><span className="text-xs text-slate-300">{provinceStats?.totalPop?.unit}</span></div><div className="text-[10px] text-blue-200 font-bold uppercase tracking-wider">ประชากร</div></div>
-                        <div className="flex flex-col items-center"><div className="flex items-baseline gap-1"><i className="fa-solid fa-address-card text-emerald-400 text-lg"></i><span className="text-2xl font-bold text-white">{provinceStats?.farmers?.val || '-'}</span><span className="text-xs text-emerald-200/70">{provinceStats?.farmers?.unit}</span></div><div className="text-[10px] text-emerald-200 font-bold uppercase tracking-wider">เกษตรกร</div></div>
-                        <div className="w-px h-8 bg-white/20 hidden md:block"></div>
-                        <div className="flex flex-col items-center"><div className="flex items-baseline gap-1"><i className="fa-solid fa-flask text-purple-400 text-lg"></i><span className="text-2xl font-bold text-white">{currentProvInfo?.ph || '-'}</span></div><div className="text-[10px] text-purple-200 font-bold uppercase tracking-wider">pH ดิน</div></div>
-                        <div className="flex flex-col items-center"><div className="flex items-baseline gap-1"><i className="fa-solid fa-droplet text-blue-400 text-lg"></i><span className="text-2xl font-bold text-white">{currentProvInfo?.moisture || '-'}</span><span className="text-xs text-blue-200">%</span></div><div className="text-[10px] text-blue-200 font-bold uppercase tracking-wider">ความชื้น</div></div>
+                    <div className="flex flex-wrap items-end gap-3 md:gap-5 text-shadow-heavy justify-end">
+                        <div className="flex flex-col items-center"><div className="flex items-baseline gap-1"><i className="fa-solid fa-users text-blue-400 text-sm"></i><span className="text-sm font-bold text-white">{provinceStats?.totalPop?.val || '-'}</span><span className="text-[9px] text-slate-300">{provinceStats?.totalPop?.unit}</span></div><div className="text-[9px] text-blue-200 font-bold uppercase tracking-wider">ประชากร</div></div>
+                        <div className="flex flex-col items-center"><div className="flex items-baseline gap-1"><i className="fa-solid fa-address-card text-emerald-400 text-sm"></i><span className="text-sm font-bold text-white">{provinceStats?.farmers?.val || '-'}</span><span className="text-[9px] text-emerald-200/70">{provinceStats?.farmers?.unit}</span></div><div className="text-[9px] text-emerald-200 font-bold uppercase tracking-wider">เกษตรกร</div></div>
+                        <div className="w-px h-6 bg-white/20 hidden md:block"></div>
+                        <div className="flex flex-col items-center"><div className="flex items-baseline gap-1"><i className="fa-solid fa-flask text-purple-400 text-sm"></i><span className="text-sm font-bold text-white">{currentProvInfo?.ph || '-'}</span></div><div className="text-[9px] text-purple-200 font-bold uppercase tracking-wider">pH ดิน</div></div>
+                        <div className="flex flex-col items-center"><div className="flex items-baseline gap-1"><i className="fa-solid fa-droplet text-blue-400 text-sm"></i><span className="text-sm font-bold text-white">{currentProvInfo?.moisture || '-'}</span><span className="text-[9px] text-blue-200">%</span></div><div className="text-[9px] text-blue-200 font-bold uppercase tracking-wider">ความชื้น</div></div>
+                        
                         <div className="flex flex-col items-center group relative cursor-help pointer-events-auto">
-                            <div className="flex items-baseline gap-1"><i className={`fa-solid fa-water text-lg ${floodColorClass}`}></i><span className="text-2xl font-bold text-white">{activeFloodData.risk_level}</span></div>
-                            <div className={`text-[10px] font-bold uppercase tracking-wider ${floodColorClass.replace('text', 'bg').replace('400', '500/20')} px-1 rounded`}>เสี่ยงน้ำท่วม</div>
-                            <div className="absolute bottom-full mb-2 hidden group-hover:block w-72 bg-black/95 text-white text-xs p-3 rounded border border-white/20 backdrop-blur-md z-50 shadow-2xl">
+                            <div className="flex items-baseline gap-1"><i className={`fa-solid fa-water text-sm ${floodColorClass}`}></i><span className="text-sm font-bold text-white">{activeFloodData.risk_level}</span></div>
+                            <div className={`text-[9px] font-bold uppercase tracking-wider ${floodColorClass.replace('text', 'bg').replace('400', '500/20')} px-1.5 rounded`}>เสี่ยงน้ำท่วม</div>
+                            <div className="absolute bottom-full mb-2 hidden group-hover:block w-64 bg-black/95 text-white text-xs p-3 rounded border border-white/20 backdrop-blur-md z-50 shadow-2xl origin-bottom-right right-0">
                                 <div className={`font-bold mb-1 text-sm ${floodColorClass}`}>{activeFloodData.risk_level === 'High' ? 'เสี่ยงสูง (High)' : activeFloodData.risk_level === 'Medium' ? 'ปานกลาง (Medium)' : 'ต่ำ (Low)'}</div>
                                 <div className="mb-2 text-[10px] text-slate-300">{activeFloodData.description}</div>
                                 <div className="border-t border-white/20 pt-2 mt-2 bg-white/5 p-2 rounded">
@@ -520,10 +551,6 @@ const KasetCloudApp = ({ mapInstance, onTravelStart, onTravelEnd, onGoHome, isTr
                     </div>
                 )}
             </div>
-
-            {dashboardVideo && (
-                <VideoGalleryModal videos={dashboardVideo.videos} title={dashboardVideo.title} onClose={() => setDashboardVideo(null)} />
-            )}
         </div>
     );
 };
@@ -679,11 +706,13 @@ const App = () => {
         mapRef.current = map;
 
         const hash = window.location.hash;
+        
         if (hash.includes('book')) {
              setPage('kaset'); 
              setInitialAction('openKnowledgeCenter');
              map.setView(DON_MUEANG_COORDS, 6); 
-        } else if (hash.includes('province=')) {
+        } 
+        else if (hash.includes('province=')) {
             const params = new URLSearchParams(hash.substring(1)); 
             const prov = params.get('province');
             const cat = params.get('category');
@@ -692,6 +721,11 @@ const App = () => {
                 setPage('kaset');
             }
         }
+        else if (hash.includes('video_cat=')) {
+            setPage('kaset');
+            map.setView(DON_MUEANG_COORDS, 6);
+        }
+
         return () => { if (map) map.remove(); mapRef.current = null; };
     }, []);
 
