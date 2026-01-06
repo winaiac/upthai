@@ -1,5 +1,5 @@
 // --- scriptui.js : UI Components (SimulationPanel, Overlay) ---
-// อัปเดตล่าสุด: ใช้ ReactDOM.createPortal ใน VideoGalleryModal เพื่อแก้ปัญหา Modal ตกขอบในหน้า Simulation
+// อัปเดตล่าสุด: ปรับ Matrix Rain ให้เป็นทรงก้อนเมฆ โปร่งใส และดูพริ้วไหว
 
 (function(global) {
     const { useState, useEffect, useRef, useMemo } = React;
@@ -18,7 +18,7 @@
         document.body.removeChild(textarea);
     };
 
-    // --- SUB-COMPONENT: HANDBOOK MODAL ---
+    // --- SUB-COMPONENT: HANDBOOK MODAL (Responsive Fixed) ---
     const HandbookModal = ({ bookData, onClose }) => {
         if (!bookData) return null;
         
@@ -84,19 +84,16 @@
             </div>
         );
 
-        // Portal เพื่อแก้ปัญหา Z-Index ใน Simulation Panel
         if (typeof ReactDOM !== 'undefined' && document.body) {
             return ReactDOM.createPortal(modalContent, document.body);
         }
         return modalContent;
     };
 
-    // --- SUB-COMPONENT: VIDEO GALLERY MODAL (Updated with Share Button & Portal) ---
+    // --- SUB-COMPONENT: VIDEO GALLERY MODAL (Responsive Fixed) ---
     const VideoGalleryModal = ({ category, videos: propVideos, title: propTitle, onClose }) => {
-        // รองรับทั้งแบบส่ง category มา (Deep Link) หรือส่ง videos array มาตรงๆ (Legacy)
         const videos = category && window.AppVideo ? window.AppVideo.getVideos(category) : (propVideos || []);
         
-        // Mapping Title ภาษาไทยสวยๆ
         const titleMap = {
             'durian': 'ทุเรียนคุณภาพ & ส่งออก',
             'date_palm': 'อินทผาลัม (เงินล้าน)',
@@ -119,11 +116,10 @@
         if (!videos || videos.length === 0) return null;
 
         const handleShare = () => {
-            if (!category) return; // แชร์ไม่ได้ถ้าไม่มี category
+            if (!category) return; 
             const url = `${window.location.origin}${window.location.pathname}#video_cat=${category}`;
             copyToClipboard(url);
             
-            // Visual Feedback simple
             const btn = document.getElementById('share-btn-icon-v');
             if(btn) {
                 btn.className = 'fa-solid fa-check text-emerald-400';
@@ -133,14 +129,12 @@
             }
         };
 
-        // ใช้ Portal เพื่อให้ Modal แสดงผลทับทุกอย่างและไม่ถูกตัดขอบ (Overflow) จาก Simulation Panel
         const modalContent = (
             <div className="fixed inset-0 z-[10001] flex items-center justify-center p-2 sm:p-4 animate-fade-in pointer-events-auto font-sarabun">
                 <div className="absolute inset-0 bg-black/90 backdrop-blur-sm" onClick={onClose}></div>
                 
                 <div className="relative w-[95%] md:w-full max-w-4xl max-h-[90vh] rounded-2xl border border-red-500/50 shadow-[0_0_50px_rgba(239,68,68,0.2)] flex flex-col overflow-hidden bg-slate-900">
                     
-                    {/* Header */}
                     <div className="p-4 sm:p-5 border-b border-white/10 flex flex-row justify-between items-start bg-gradient-to-r from-red-900/40 to-slate-900 shrink-0">
                         <div className="flex flex-1 gap-3 pr-2">
                             <div className="w-10 h-10 rounded-full bg-red-600 flex items-center justify-center text-white text-lg shadow-lg shrink-0 mt-1">
@@ -170,7 +164,6 @@
                         </div>
                     </div>
 
-                    {/* Content Grid */}
                     <div className="flex-1 overflow-y-auto p-3 sm:p-4 scrollbar-prominent">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             {videos.map((vid, idx) => (
@@ -271,7 +264,7 @@
         const [panelTab, setPanelTab] = useState('financial');
         const [customCosts, setCustomCosts] = useState(null);
         const [showHandbook, setShowHandbook] = useState(false);
-        const [showVideo, setShowVideo] = useState(false); // Local state for Simulation Panel videos
+        const [showVideo, setShowVideo] = useState(false);
 
         const isRice = item.name.includes('ข้าว') && !item.name.includes('ข้าวโพด'); 
         const isRubber = item.name.includes('ยาง') && !item.name.includes('โพนยางคำ');
@@ -736,19 +729,90 @@
         );
     };
 
-    const CloudOverlay = ({ isActive, message, rotation = 0 }) => (
-        <div className={`cloud-container ${isActive ? 'active' : ''}`}>
-            <div className="cloud-layer"></div>
-            {message && (
-                <div className="travel-message flex flex-col items-center">
-                    <div className="text-6xl text-emerald-400 mb-6 drop-shadow-[0_0_15px_rgba(52,211,153,0.8)]">
-                        <i className="fa-solid fa-plane-up transition-transform duration-700 ease-in-out" style={{ transform: `rotate(${rotation}deg)` }}></i>
+    const CloudOverlay = ({ isActive, message, rotation = 0 }) => {
+        // --- MATRIX EFFECT LOGIC ---
+        const canvasRef = useRef(null);
+        
+        useEffect(() => {
+            if (!isActive || !canvasRef.current) return;
+            
+            const canvas = canvasRef.current;
+            const ctx = canvas.getContext('2d');
+            let animationFrameId;
+
+            // Set canvas size
+            const resizeCanvas = () => {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            };
+            window.addEventListener('resize', resizeCanvas);
+            resizeCanvas();
+
+            // Matrix characters (Agricultural + Digital mix)
+            const chars = '01ไอทีเกษตร🌾🌱🚜💧☀💻📱📡AI5G'.split('');
+            const fontSize = 14; // Slightly smaller for denser cloud
+            const columns = canvas.width / fontSize;
+            const drops = Array(Math.floor(columns)).fill(1);
+
+            const draw = () => {
+                // Fade out effect
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                ctx.fillStyle = 'rgba(52, 211, 153, 0.5)'; // Emerald-ish Green, Semi-transparent
+                ctx.font = `${fontSize}px 'Courier Prime', monospace`;
+
+                for (let i = 0; i < drops.length; i++) {
+                    const text = chars[Math.floor(Math.random() * chars.length)];
+                    ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+
+                    if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+                        drops[i] = 0;
+                    }
+                    drops[i]++;
+                }
+                animationFrameId = requestAnimationFrame(draw);
+            };
+
+            draw();
+
+            return () => {
+                cancelAnimationFrame(animationFrameId);
+                window.removeEventListener('resize', resizeCanvas);
+            };
+        }, [isActive]);
+
+        return (
+            <div 
+                className={`cloud-container ${isActive ? 'active' : ''}`} 
+                style={{ backgroundColor: 'transparent' }} // Override black bg
+            >
+                {/* Matrix Canvas Background with Cloud Mask */}
+                <canvas 
+                    ref={canvasRef} 
+                    id="matrix-canvas" 
+                    className="absolute inset-0 z-0"
+                    style={{
+                        maskImage: 'radial-gradient(closest-side, black 40%, transparent 100%)',
+                        WebkitMaskImage: 'radial-gradient(closest-side, black 40%, transparent 100%)',
+                        opacity: 0.7, // Overall transparency
+                    }}
+                ></canvas>
+                
+                {/* Foreground Content */}
+                {message && (
+                    <div className="travel-message flex flex-col items-center z-10">
+                        <div className="text-6xl text-emerald-400 mb-6 drop-shadow-[0_0_15px_rgba(52,211,153,0.8)] animate-pulse">
+                            <i className="fa-solid fa-plane-up transition-transform duration-700 ease-in-out" style={{ transform: `rotate(${rotation}deg)` }}></i>
+                        </div>
+                        <h2 className="text-2xl md:text-3xl font-bold glass-panel-clear px-10 py-6 rounded-full text-white tracking-wide shadow-[0_0_50px_rgba(16,185,129,0.4)] matrix-text border border-emerald-500/30">
+                            {message}
+                        </h2>
                     </div>
-                    <h2 className="text-2xl md:text-3xl font-bold glass-panel-clear px-10 py-6 rounded-full text-white tracking-wide shadow-[0_0_50px_rgba(16,185,129,0.4)]">{message}</h2>
-                </div>
-            )}
-        </div>
-    );
+                )}
+            </div>
+        );
+    };
 
     // Expose Components (FULL EXPORT - DO NOT ABBREVIATE)
     global.AppUI = {

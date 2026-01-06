@@ -11,6 +11,8 @@
 
     <!-- Fonts: Sarabun -->
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <!-- Font: Courier Prime for Matrix Effect -->
+    <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
 
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -46,7 +48,7 @@
         }
 
         /* --- FIX: MAP CONTAINER --- */
-        /* บังคับให้แผนที่เต็มจอเสมอ */
+        /* บังคับให้แผนที่เต็มจอเสมอ ป้องกันปัญหาแผนที่หาย */
         #global-map {
             position: absolute;
             top: 0;
@@ -203,7 +205,7 @@
             pointer-events: auto;
         }
 
-        /* Cloud Overlay */
+        /* --- MATRIX RAIN EFFECT --- */
         .cloud-container {
             position: fixed;
             top: 0;
@@ -215,8 +217,11 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            background: rgba(0, 0, 0, 0.85);
+            /* พื้นหลังดำเข้มแบบ Matrix */
             opacity: 0;
             transition: opacity 0.5s ease-in-out;
+            overflow: hidden;
         }
 
         .cloud-container.active {
@@ -224,14 +229,19 @@
             pointer-events: auto;
         }
 
-        .cloud-layer {
+        /* Matrix Canvas Layer */
+        #matrix-canvas {
             position: absolute;
             top: 0;
             left: 0;
-            right: 0;
-            bottom: 0;
-            background: radial-gradient(circle at center, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.8) 40%, rgba(255, 255, 255, 1) 70%);
-            backdrop-filter: blur(5px);
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+
+        .matrix-text {
+            font-family: 'Courier Prime', monospace;
+            text-shadow: 0 0 5px #0f0;
         }
 
         /* Marker Styles */
