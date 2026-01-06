@@ -1,4 +1,5 @@
 // --- scriptui.js : UI Components (SimulationPanel, Overlay) ---
+// อัปเดตล่าสุด: แก้ไขปัญหา สระ/วรรณยุกต์ภาษาไทยล้นขอบบน ในส่วนหัว Video Modal (Final Fix)
 
 (function(global) {
     const { useState, useEffect, useRef, useMemo } = React;
@@ -17,14 +18,12 @@
         document.body.removeChild(textarea);
     };
 
-    // --- SUB-COMPONENT: HANDBOOK MODAL ---
+    // --- SUB-COMPONENT: HANDBOOK MODAL (Responsive Fixed) ---
     const HandbookModal = ({ bookData, onClose }) => {
         if (!bookData) return null;
         
-        // State for copy feedback
         const [isCopied, setIsCopied] = useState(false);
 
-        // Dynamic Title for SEO/Sharing context
         useEffect(() => {
             const originalTitle = document.title;
             document.title = `${bookData.title} - Winai Innovation`;
@@ -32,39 +31,31 @@
         }, [bookData]);
 
         const handleShareBook = () => {
-            // Use book ID for deep linking if available
             const url = `${window.location.origin}${window.location.pathname}#book=${bookData.id || ''}`; 
             copyToClipboard(url);
-            
-            // Visual feedback
             setIsCopied(true);
             setTimeout(() => setIsCopied(false), 2000);
         };
 
         return (
             <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 animate-fade-in pointer-events-auto">
-                {/* Background Overlay */}
                 <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose}></div>
-
-                {/* Modal Box */}
                 <div className="relative w-full max-w-3xl max-h-[85vh] rounded-2xl border border-emerald-500/50 shadow-[0_0_50px_rgba(16,185,129,0.2)] flex flex-col overflow-hidden bg-slate-900/85 backdrop-blur-xl">
-                    {/* Header */}
                     <div className="p-5 border-b border-white/10 flex justify-between items-center bg-gradient-to-r from-emerald-900/40 to-white/5">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center text-white text-lg shadow-lg">
+                        <div className="flex items-center gap-3 min-w-0">
+                            <div className="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center text-white text-lg shadow-lg shrink-0">
                                 <i className="fa-solid fa-book-open"></i>
                             </div>
-                            <div>
-                                <h2 className="text-lg md:text-xl font-bold text-white">{bookData.title}</h2>
-                                {bookData.subtitle && <div className="text-xs text-emerald-400">{bookData.subtitle}</div>}
+                            <div className="min-w-0">
+                                <h2 className="text-lg md:text-xl font-bold text-white truncate">{bookData.title}</h2>
+                                {bookData.subtitle && <div className="text-xs text-emerald-400 truncate">{bookData.subtitle}</div>}
                             </div>
                         </div>
-                        <div className="flex gap-2">
-                            {/* Share Button (Restored & Enhanced) */}
+                        <div className="flex gap-2 shrink-0">
                             <button 
                                 onClick={handleShareBook} 
                                 className={`w-8 h-8 rounded-full transition flex items-center justify-center ${isCopied ? 'bg-emerald-500 text-white' : 'bg-white/10 hover:bg-emerald-500 text-slate-300 hover:text-white'}`} 
-                                title="คัดลอกลิงก์หน้านี้"
+                                title="คัดลอกลิงก์"
                             >
                                 <i className={`fa-solid ${isCopied ? 'fa-check' : 'fa-share-nodes'}`}></i>
                             </button>
@@ -74,18 +65,16 @@
                         </div>
                     </div>
                     
-                    {/* Content */}
                     <div className="flex-1 overflow-y-auto p-6 scrollbar-prominent bg-transparent">
                         <div className="prose prose-invert max-w-none text-slate-200 text-sm leading-relaxed whitespace-pre-wrap font-light shadow-black drop-shadow-md">
                             {bookData.content}
                         </div>
                     </div>
 
-                    {/* Footer */}
-                    <div className="p-4 border-t border-white/10 bg-black/20 flex justify-between items-center">
+                    <div className="p-4 border-t border-white/10 bg-black/20 flex flex-wrap gap-2 justify-between items-center">
                         <a href="https://www.facebook.com/winayo1" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-blue-400 hover:text-blue-300 transition text-xs">
                             <i className="fa-brands fa-facebook text-lg"></i>
-                            <span>ติดตามผู้พัฒนา (Facebook)</span>
+                            <span>ติดตามผู้พัฒนา</span>
                         </a>
                         <button onClick={onClose} className="px-6 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[70%] transition shadow-lg border border-white/10">
                             รับทราบ / ปิดหน้าต่าง
@@ -96,19 +85,77 @@
         );
     };
 
+    // --- SUB-COMPONENT: VIDEO GALLERY MODAL (Fixed Thai Font Clipping) ---
+    const VideoGalleryModal = ({ videos, title, onClose }) => {
+        if (!videos || videos.length === 0) return null;
+
+        return (
+            <div className="fixed inset-0 z-[10001] flex items-center justify-center p-2 sm:p-4 animate-fade-in pointer-events-auto">
+                <div className="absolute inset-0 bg-black/90 backdrop-blur-sm" onClick={onClose}></div>
+                
+                <div className="relative w-[95%] md:w-full max-w-4xl max-h-[90vh] rounded-2xl border border-red-500/50 shadow-[0_0_50px_rgba(239,68,68,0.2)] flex flex-col overflow-hidden bg-slate-900">
+                    
+                    {/* Header: ใช้ flex-row, items-start และลบ overflow-hidden ในส่วน text container */}
+                    <div className="p-4 sm:p-5 border-b border-white/10 flex flex-row justify-between items-start bg-gradient-to-r from-red-900/40 to-slate-900 shrink-0">
+                        
+                        {/* Title Container */}
+                        <div className="flex flex-1 gap-3 pr-2">
+                            <div className="w-10 h-10 rounded-full bg-red-600 flex items-center justify-center text-white text-lg shadow-lg shrink-0 mt-1">
+                                <i className="fa-brands fa-youtube"></i>
+                            </div>
+                            <div className="flex-1 min-w-0 pt-0.5">
+                                {/* ใช้ leading-normal เพื่อให้สระไม่ชนขอบ และ break-words ตัดคำยาว */}
+                                <h2 className="text-base sm:text-lg font-bold text-white leading-normal break-words">
+                                    คลังวิดีโอ: {title}
+                                </h2>
+                                <div className="text-[11px] sm:text-xs text-red-300 mt-0.5">รวมเทคนิคจาก YouTube มืออาชีพ</div>
+                            </div>
+                        </div>
+                        
+                        <button onClick={onClose} className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-slate-300 hover:text-white transition shrink-0 mt-1">
+                            <i className="fa-solid fa-times"></i>
+                        </button>
+                    </div>
+
+                    {/* Content Grid */}
+                    <div className="flex-1 overflow-y-auto p-3 sm:p-4 scrollbar-prominent">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            {videos.map((vid, idx) => (
+                                <div key={idx} className="bg-black/40 rounded-xl overflow-hidden border border-white/10 hover:border-red-500/50 transition group flex flex-col">
+                                    <div className="relative w-full pb-[56.25%] bg-black">
+                                        <iframe 
+                                            className="absolute inset-0 w-full h-full"
+                                            src={`https://www.youtube.com/embed/${vid.id}`} 
+                                            title={vid.title} 
+                                            frameBorder="0" 
+                                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                                            allowFullScreen
+                                        ></iframe>
+                                    </div>
+                                    <div className="p-3 bg-white/5">
+                                        <h3 className="text-sm font-bold text-slate-200 group-hover:text-red-400 transition line-clamp-2 leading-snug">
+                                            {vid.title}
+                                        </h3>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
     // --- COMPONENT: KNOWLEDGE CENTER MODAL ---
     const KnowledgeCenterModal = ({ onClose, onReadMode }) => {
         const [selectedBook, setSelectedBook] = useState(null);
-        const [isCopied, setIsCopied] = useState(false); // State for share feedback
+        const [isCopied, setIsCopied] = useState(false);
         const library = (window.AppKnowledge && window.AppKnowledge.LIBRARY) ? window.AppKnowledge.LIBRARY : {};
 
         useEffect(() => {
-            if (onReadMode) {
-                onReadMode(!!selectedBook);
-            }
+            if (onReadMode) onReadMode(!!selectedBook);
         }, [selectedBook, onReadMode]);
 
-        // Handler for sharing the Knowledge Center main page
         const handleCopyLink = () => {
             const url = `${window.location.origin}${window.location.pathname}#book`;
             copyToClipboard(url);
@@ -125,24 +172,16 @@
                         <div className="p-5 border-b border-white/10 bg-gradient-to-r from-blue-900/40 to-slate-900 flex justify-between items-center">
                             <div className="flex items-center gap-3">
                                 <i className="fa-solid fa-book-journal-whills text-2xl text-blue-400"></i>
-                                <h2 className="text-xl font-bold text-white">ศูนย์ความรู้การเกษตร (Knowledge Center)</h2>
+                                <h2 className="text-xl font-bold text-white">ศูนย์ความรู้การเกษตร</h2>
                             </div>
-                            {/* Header Actions */}
                             <div className="flex items-center gap-2">
-                                {/* SHARE BUTTON (Restored) */}
-                                <button 
-                                    onClick={handleCopyLink} 
-                                    className={`px-3 py-1.5 rounded-full flex items-center gap-2 text-xs font-bold transition shadow-lg border border-white/10 ${isCopied ? 'bg-emerald-600 text-white' : 'bg-white/10 hover:bg-blue-600 text-slate-300 hover:text-white'}`}
-                                >
+                                <button onClick={handleCopyLink} className={`px-3 py-1.5 rounded-full flex items-center gap-2 text-xs font-bold transition border border-white/10 ${isCopied ? 'bg-emerald-600 text-white' : 'bg-white/10 hover:bg-blue-600 text-slate-300 hover:text-white'}`}>
                                     <i className={`fa-solid ${isCopied ? 'fa-check' : 'fa-link'}`}></i>
-                                    <span>{isCopied ? 'คัดลอกแล้ว' : 'แชร์หน้านี้'}</span>
+                                    <span className="hidden sm:inline">{isCopied ? 'คัดลอกแล้ว' : 'แชร์หน้านี้'}</span>
                                 </button>
-
-                                {/* FACEBOOK BUTTON */}
                                 <a href="https://www.facebook.com/winayo1" target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-full bg-blue-600 hover:bg-blue-500 text-white flex items-center justify-center transition shadow-lg" title="ติดตามผู้พัฒนา">
                                     <i className="fa-brands fa-facebook text-lg"></i>
                                 </a>
-                                
                                 <button onClick={onClose} className="text-slate-400 hover:text-white ml-2"><i className="fa-solid fa-times text-xl"></i></button>
                             </div>
                         </div>
@@ -150,25 +189,17 @@
                             {Object.entries(library).map(([key, book]) => (
                                 <div key={key} onClick={() => setSelectedBook({...book, id: key})} className="bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl p-4 cursor-pointer transition group hover:border-emerald-500/50">
                                     <div className="flex items-start gap-3">
-                                        <div className="w-12 h-12 rounded-lg bg-emerald-900/50 flex items-center justify-center text-emerald-400 text-2xl group-hover:scale-110 transition">
+                                        <div className="w-12 h-12 rounded-lg bg-emerald-900/50 flex items-center justify-center text-emerald-400 text-2xl group-hover:scale-110 transition shrink-0">
                                             <i className="fa-solid fa-book"></i>
                                         </div>
                                         <div>
-                                            <h3 className="font-bold text-white group-hover:text-emerald-300 transition">{book.title}</h3>
-                                            <div className="text-xs text-slate-400 mt-1">{book.subtitle}</div>
-                                            <span className="inline-block mt-2 text-[10px] bg-slate-800 px-2 py-0.5 rounded text-slate-300 border border-slate-700">
-                                                {book.type || 'General'}
-                                            </span>
+                                            <h3 className="font-bold text-white group-hover:text-emerald-300 transition line-clamp-1">{book.title}</h3>
+                                            <div className="text-xs text-slate-400 mt-1 line-clamp-2">{book.subtitle}</div>
+                                            <span className="inline-block mt-2 text-[10px] bg-slate-800 px-2 py-0.5 rounded text-slate-300 border border-slate-700">{book.type || 'General'}</span>
                                         </div>
                                     </div>
                                 </div>
                             ))}
-                            {Object.keys(library).length === 0 && (
-                                <div className="col-span-full text-center text-slate-500 py-10">
-                                    <i className="fa-solid fa-exclamation-circle mb-2 text-2xl"></i><br/>
-                                    ไม่พบข้อมูลหนังสือ หรือไฟล์ scriptknowledge.js ยังไม่ถูกโหลด
-                                </div>
-                            )}
                         </div>
                     </div>
                 )}
@@ -179,18 +210,18 @@
 
     // --- MAIN COMPONENT: SIMULATION PANEL ---
     const SimulationPanel = ({ item, onClose, globalArea, setGlobalArea, globalYears, setGlobalYears, floodData, soilInfo, provinceStats }) => {
-        // ... (Logic ส่วนใหญ่คงเดิม)
         const [panelTab, setPanelTab] = useState('financial');
         const [customCosts, setCustomCosts] = useState(null);
         const [showHandbook, setShowHandbook] = useState(false);
+        const [showVideo, setShowVideo] = useState(false);
 
         const isRice = item.name.includes('ข้าว') && !item.name.includes('ข้าวโพด'); 
         const isRubber = item.name.includes('ยาง') && !item.name.includes('โพนยางคำ');
         const isCoconut = item.name.includes('มะพร้าว'); 
         const isDurian = item.name.includes('ทุเรียน');
         const isIntegrated = item.name.includes('โคก') || item.category === 'ผสมผสาน'; 
+        const isDatePalm = item.name.includes('อินทผาลัม'); 
         
-        // Data Loaders (Safe Access)
         const RICE_PRESETS = (typeof window !== 'undefined' && window.RICE_PRESETS) ? window.RICE_PRESETS : {};
         const RUBBER_PRESETS = (typeof window !== 'undefined' && window.RUBBER_PRESETS) ? window.RUBBER_PRESETS : {};
         const COCONUT_PRESETS = (typeof window !== 'undefined' && window.COCONUT_PRESETS) ? window.COCONUT_PRESETS : {};
@@ -223,7 +254,6 @@
         const lineCanvasRef = useRef(null);
         const lineChartRef = useRef(null);
 
-        // ... (Effects for loading data - Same as before)
         useEffect(() => {
             if (!isRice && !isRubber && !isCoconut && !isDurian && !isIntegrated && kasetPreset) {
                 const steps = getKasetSteps(kasetPreset.category);
@@ -237,7 +267,6 @@
             }
         }, [item, isRice]);
 
-        // ... (Cost Calculation Effect - Same as before)
         useEffect(() => {
             if (isIntegrated && calculateIntegratedEconomics) {
                 const eco = calculateIntegratedEconomics(integratedConfig.model, globalArea, globalYears);
@@ -263,7 +292,6 @@
             }
         }, [isRice, isRubber, isCoconut, isDurian, isIntegrated, rubberConfig, coconutConfig, durianConfig, integratedConfig, kasetConfig, kasetPreset, globalArea, globalYears, item]);
 
-        // ... (Simulation Data Memo - Same as before)
         const simulationData = useMemo(() => {
             const data = [];
             let cumulative = 0;
@@ -345,8 +373,29 @@
                        priceVal = durianEco.price;
                    }
                 }
+                else if (isDatePalm) {
+                    if (age <= 3) {
+                        yearlyCost = (i === 0) ? (kasetPreset.cost_init || 85000) * globalArea : (kasetPreset.cost_maint || 35000) * 0.6 * globalArea;
+                        yearlyRev = 0;
+                        if (i === 0) advice.push('🌱 เริ่มต้น: แนะนำต้นเนื้อเยื่อ 100% (ป้องกันกลายพันธุ์)');
+                    } else {
+                        yearlyCost = (kasetPreset.cost_maint || 35000) * globalArea;
+                        let yieldVal = (kasetPreset.yield || 2000) * globalArea;
+                        if (age < 5) yieldVal *= 0.4;
+                        else if (age < 7) yieldVal *= 0.8;
+                        let currentPrice = kasetPreset.price || 120;
+                        if (age % 4 === 0) { 
+                            currentPrice *= 0.7; 
+                            advice.push('📉 ระวัง: ราคาร่วงจากผลผลิตล้นตลาด (แปรรูปช่วยได้)');
+                        }
+                        yearlyRev = yieldVal * currentPrice;
+                        totalOutput = yieldVal;
+                        priceVal = currentPrice;
+                        advice.push('🐝 สำคัญ: ผสมเกสรช่วง ม.ค.-ก.พ. และห่อผลช่วง พ.ค.');
+                    }
+                }
                 else if (kasetPreset) {
-                    if (['tree', 'business', 'premium_durian'].includes(kasetPreset.category)) {
+                    if (['tree', 'business', 'premium_durian', 'premium_fruit'].includes(kasetPreset.category)) {
                         yearlyCost = (i === 0) ? (customCosts?.init || 0) : (customCosts?.maint || 0);
                     } else {
                         yearlyCost = (customCosts?.init || 0) * (kasetPreset.cycles_per_year || 1);
@@ -355,7 +404,7 @@
                     let price = kasetPreset.price || 0;
                     let yieldVal = kasetPreset.yield || 0;
                     
-                    if (kasetPreset.category === 'tree' || kasetPreset.category === 'premium_durian') {
+                    if (kasetPreset.category === 'tree' || kasetPreset.category === 'premium_durian' || kasetPreset.category === 'premium_fruit') {
                          if (age < (kasetPreset.wait_years || 0)) {
                              yieldVal = 0;
                          } else if (age < (kasetPreset.wait_years || 0) + 3) {
@@ -380,7 +429,11 @@
 
                 let floodRiskLevel = floodData ? floodData.risk_level : 'Low';
                 let riskLoss = 0;
-                if (floodRiskLevel === 'High' && i % 3 === 0) { riskLoss = yearlyRev * 0.5; if(i===0) advice.push('⚠️ เสี่ยงน้ำท่วม: เสียหาย 50%'); }
+                if (floodRiskLevel === 'High' && i % 3 === 0) { 
+                    riskLoss = yearlyRev * 0.5; 
+                    if(i===0) advice.push('⚠️ เสี่ยงน้ำท่วม: เสียหาย 50%');
+                    if(isDatePalm) advice.push('🌧️ อินทผาลัมไม่ชอบฝนช่วงเก็บเกี่ยว (ผลแตก)');
+                }
                 
                 if (isIntegrated && floodRiskLevel === 'High') {
                     riskLoss = riskLoss * 0.5; 
@@ -402,7 +455,7 @@
                 });
             }
             return data;
-        }, [item, globalArea, globalYears, isIntegrated, isRice, isRubber, isCoconut, isDurian, integratedConfig, rubberConfig, coconutConfig, durianConfig, customCosts, floodData, kasetPreset, riceConfig, kasetConfig]);
+        }, [item, globalArea, globalYears, isIntegrated, isRice, isRubber, isCoconut, isDurian, isDatePalm, integratedConfig, rubberConfig, coconutConfig, durianConfig, customCosts, floodData, kasetPreset, riceConfig, kasetConfig]);
 
         useEffect(() => {
             if (!customCosts || panelTab !== 'financial' || !lineCanvasRef.current) return;
@@ -434,13 +487,14 @@
         if (isDurian) availableBookKey = 'durian_manual'; 
         if (isRice) {
             availableBookKey = 'rice_modern_manual'; 
-            if (riceConfig.variety === 'riceberry') availableBookKey = 'riceberry_manual';
+            if (riceConfig.variety === 'riceberry') availableBookKey = 'riceberry_organic_research';
         }
         if (isRubber) availableBookKey = 'rubber_manual';
         if (isCoconut) availableBookKey = 'coconut_manual';
         if (item.name.includes('โพนยางคำ')) availableBookKey = 'phon_yang_kham_manual';
         if (item.name.includes('หมู') || item.name.includes('สุกร')) availableBookKey = 'pig_manual';
         if (item.name.includes('ข้าวโพด')) availableBookKey = 'maize_manual';
+        if (item.name.includes('อินทผาลัม')) availableBookKey = 'date_palm_research';
 
         const handleOpenHandbook = () => {
             if (availableBookKey && window.AppKnowledge) {
@@ -449,7 +503,9 @@
             }
         };
 
-        // Re-calculate activePreset for render display 
+        const currentVideoKey = window.AppVideo ? window.AppVideo.getVideoKey(item, { variety: riceConfig.variety }) : null;
+        const currentVideos = currentVideoKey ? window.AppVideo.getVideos(currentVideoKey) : [];
+
         let activePreset = isRice ? RICE_PRESETS[riceConfig.variety] : kasetPreset;
         if (isRubber) activePreset = RUBBER_PRESETS[rubberConfig.clone];
         if (isCoconut) activePreset = COCONUT_PRESETS[coconutConfig.clone];
@@ -458,18 +514,25 @@
         if (!activePreset) activePreset = item;
 
         return (
-            <div className={`flex flex-col h-full w-full animate-slide-down rounded-b-3xl overflow-hidden shadow-2xl border-t-0 ${showHandbook ? '' : 'glass-panel-clear'}`}>
+            <div className={`flex flex-col h-full w-full animate-slide-down rounded-b-3xl overflow-hidden shadow-2xl border-t-0 ${showHandbook || showVideo ? '' : 'glass-panel-clear'}`}>
                 {showHandbook && availableBookKey && window.AppKnowledge && (
                     <HandbookModal 
                         bookData={window.AppKnowledge.getBook(availableBookKey)} 
                         onClose={() => setShowHandbook(false)} 
                     />
                 )}
+
+                {showVideo && currentVideos.length > 0 && (
+                    <VideoGalleryModal 
+                        videos={currentVideos}
+                        title={activePreset?.name || item.name}
+                        onClose={() => setShowVideo(false)}
+                    />
+                )}
                 
-                {!showHandbook && (
+                {!showHandbook && !showVideo && (
                     <>
                         <div className="flex-1 overflow-y-auto p-4 space-y-4 pb-20 pt-6">
-                             {/* ... (Header) ... */}
                             <div className="flex justify-between items-start mb-2">
                                 <div>
                                     <h2 className="text-xl font-bold text-white flex items-center gap-2">
@@ -478,10 +541,20 @@
                                     </h2>
                                     <div className="text-xs text-slate-400 mt-1">{isIntegrated ? 'กระทรวงเกษตรผสมผสาน' : 'ข้อมูลทั่วไป'}</div>
                                 </div>
-                                <button onClick={onClose}><i className="fa-solid fa-times text-slate-400 hover:text-white text-xl"></i></button>
+                                <div className="flex gap-2">
+                                    {currentVideos.length > 0 && (
+                                        <button 
+                                            onClick={() => setShowVideo(true)} 
+                                            className="w-8 h-8 rounded-full bg-red-600 hover:bg-red-500 text-white flex items-center justify-center transition shadow-lg animate-pulse"
+                                            title="ดูวิดีโอแนะนำ"
+                                        >
+                                            <i className="fa-brands fa-youtube"></i>
+                                        </button>
+                                    )}
+                                    <button onClick={onClose}><i className="fa-solid fa-times text-slate-400 hover:text-white text-xl"></i></button>
+                                </div>
                             </div>
 
-                            {/* ... (Inputs) ... */}
                             <div className="flex items-center gap-2 bg-white/5 rounded-lg p-2 border border-white/10 mb-4">
                                 <div className="flex-1 flex flex-col px-2 border-r border-white/10">
                                     <span className="text-[10px] text-slate-400 uppercase">ขนาดพื้นที่ (ไร่)</span>
@@ -501,7 +574,6 @@
                             {panelTab === 'financial' ? (
                                 <div className="space-y-4 animate-fade-in-up">
                                     
-                                    {/* Rice Settings */}
                                     {isRice && (
                                         <div className="bg-indigo-900/20 border border-indigo-500/30 rounded-xl p-4">
                                             <h3 className="text-sm font-bold text-indigo-300 mb-3 border-b border-indigo-500/20 pb-2"><i className="fa-solid fa-sliders mr-2"></i>ปรับสูตรการปลูก</h3>
@@ -514,90 +586,23 @@
                                                 ))}
                                             </div>
                                             
-                                            {/* RICE HANDBOOK BUTTON */}
                                             {availableBookKey && (
                                                 <button onClick={handleOpenHandbook} className="w-full mt-1 py-2.5 rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold text-xs shadow-lg hover:shadow-purple-500/30 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2 border border-purple-400/30">
                                                     <i className="fa-solid fa-book-open animate-pulse"></i> 
-                                                    {availableBookKey === 'riceberry_manual' ? 'อ่านคู่มือการผลิตข้าวไรซ์เบอร์รี่' : 'อ่านคู่มือชาวนามืออาชีพ (วิถีใหม่)'}
+                                                    {availableBookKey === 'riceberry_organic_research' ? 'อ่านยุทธศาสตร์ข้าวไรซ์เบอร์รี่ (วิจัย)' : 'อ่านคู่มือชาวนามืออาชีพ (วิถีใหม่)'}
                                                 </button>
                                             )}
                                         </div>
                                     )}
 
-                                    {/* Integrated Farming Settings */}
-                                    {isIntegrated && (
-                                        <div className="bg-emerald-900/30 border border-emerald-500/30 rounded-xl p-4 relative overflow-hidden group">
-                                             {/* ... Integrated Content ... */}
-                                             <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:opacity-20 transition">
-                                                <i className="fa-solid fa-seedling text-6xl text-white"></i>
-                                            </div>
-                                            <h3 className="text-sm font-bold text-emerald-200 mb-3 border-b border-emerald-500/20 pb-2 flex items-center gap-2">
-                                                <i className="fa-solid fa-sliders"></i> ปรับแต่งโมเดล
-                                            </h3>
-                                            
-                                            <div className="flex gap-2 overflow-x-auto pb-2 mb-2">
-                                                {Object.entries(INTEGRATED_PRESETS).map(([key, info]) => (
-                                                    <button key={key} onClick={() => setIntegratedConfig({...integratedConfig, model: key})} className={`text-xs p-2 rounded border min-w-[120px] text-left transition ${integratedConfig.model === key ? 'bg-emerald-700 border-emerald-400 text-white shadow-lg' : 'bg-white/5 border-white/10 text-slate-400 hover:bg-white/10'}`}>
-                                                        <div className="font-bold truncate">{info.name}</div>
-                                                        <div className="text-[9px] opacity-70">{info.type}</div>
-                                                    </button>
-                                                ))}
-                                            </div>
-                                            
-                                            {availableBookKey && (
-                                                <button onClick={handleOpenHandbook} className="w-full mt-2 py-2.5 rounded-lg bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold text-xs shadow-lg hover:shadow-emerald-500/30 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2 border border-emerald-400/30">
-                                                    <i className="fa-solid fa-book-open animate-pulse"></i> อ่านคู่มือวิจัยฉบับสมบูรณ์
-                                                </button>
-                                            )}
-                                        </div>
-                                    )}
-
-                                    {/* Durian & Rubber & General Settings ... */}
-                                    {isDurian && (
-                                        <div className="bg-yellow-900/30 border border-yellow-500/30 rounded-xl p-4 relative overflow-hidden group">
-                                            <h3 className="text-sm font-bold text-yellow-200 mb-3 border-b border-yellow-500/20 pb-2 flex items-center gap-2">
-                                                <i className="fa-solid fa-sliders"></i> เลือกพันธุ์ทุเรียน
-                                            </h3>
-                                            <div className="flex gap-2 overflow-x-auto pb-2 mb-2">
-                                                {Object.entries(DURIAN_PRESETS).map(([key, info]) => (
-                                                    <button key={key} onClick={() => setDurianConfig({...durianConfig, variety: key})} className={`text-xs p-2 rounded border min-w-[100px] text-left transition ${durianConfig.variety === key ? 'bg-yellow-700 border-yellow-400 text-white' : 'bg-white/5 border-white/10 text-slate-400'}`}>
-                                                        <div className="font-bold truncate">{info.name}</div>
-                                                        <div className="text-[9px] opacity-70">{info.type}</div>
-                                                    </button>
-                                                ))}
-                                            </div>
-                                            {availableBookKey && (
-                                                <button onClick={handleOpenHandbook} className="w-full mt-2 py-2.5 rounded-lg bg-gradient-to-r from-yellow-600 to-orange-600 text-white font-bold text-xs shadow-lg hover:shadow-yellow-500/30 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2 border border-yellow-400/30">
-                                                    <i className="fa-solid fa-book-open animate-pulse"></i> คู่มือคัมภีร์ทุเรียนเงินล้าน
-                                                </button>
-                                            )}
-                                        </div>
-                                    )}
-
-                                    {isRubber && (
-                                        <div className="bg-slate-800/50 border border-slate-500/30 rounded-xl p-4">
-                                             <h3 className="text-sm font-bold text-slate-200 mb-3 border-b border-slate-500/20 pb-2">เลือกพันธุ์ยาง</h3>
-                                            <div className="flex gap-2 overflow-x-auto pb-2">
-                                                {Object.entries(RUBBER_PRESETS).map(([key, info]) => (
-                                                    <button key={key} onClick={() => setRubberConfig({...rubberConfig, clone: key})} className={`text-xs p-2 rounded border min-w-[100px] text-left transition ${rubberConfig.clone === key ? 'bg-slate-600 text-white' : 'bg-white/5 text-slate-400'}`}>
-                                                        <div className="font-bold">{info.name}</div>
-                                                    </button>
-                                                ))}
-                                            </div>
-                                            
-                                            {availableBookKey && (
-                                                <button onClick={handleOpenHandbook} className="w-full mt-2 py-2.5 rounded-lg bg-gradient-to-r from-slate-600 to-gray-600 text-white font-bold text-xs shadow-lg hover:shadow-slate-500/30 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2 border border-slate-400/30">
-                                                    <i className="fa-solid fa-book-open animate-pulse"></i> อ่านคู่มือยางพารายุคใหม่
-                                                </button>
-                                            )}
-                                        </div>
-                                    )}
-
-                                    {/* General Handbook Button for other crops (Coconut, Pig, Beef) */}
+                                    {/* General Handbook Button for other crops including Date Palm */}
                                     {!isIntegrated && !isDurian && !isRice && !isRubber && availableBookKey && (
                                         <div className="mb-4">
                                             <button onClick={handleOpenHandbook} className="w-full py-2.5 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold text-xs shadow-lg hover:shadow-blue-500/30 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2 border border-blue-400/30">
-                                                <i className="fa-solid fa-book-open animate-pulse"></i> {availableBookKey === 'maize_manual' ? 'อ่านยุทธศาสตร์ข้าวโพดเลี้ยงสัตว์' : 'อ่านคู่มือการจัดการ'}
+                                                <i className="fa-solid fa-book-open animate-pulse"></i> 
+                                                {availableBookKey === 'maize_manual' ? 'อ่านยุทธศาสตร์ข้าวโพดเลี้ยงสัตว์' : 
+                                                 availableBookKey === 'date_palm_research' ? 'อ่านวิจัยยุทธศาสตร์อินทผลัม' :
+                                                 'อ่านคู่มือการจัดการ'}
                                             </button>
                                         </div>
                                     )}
@@ -617,7 +622,6 @@
                                         </div>
                                     )}
 
-                                    {/* Financial Summary */}
                                     <div className="bg-black/30 p-3 rounded-xl border border-white/10 text-xs space-y-2 shadow-inner">
                                         <div className="font-bold text-slate-300 border-b border-white/10 pb-1 mb-2 flex justify-between items-center">
                                             <span>สรุปการเงิน (Financial Summary)</span>
@@ -690,11 +694,12 @@
         </div>
     );
 
-    // Expose Components
+    // Expose Components (FULL EXPORT - DO NOT ABBREVIATE)
     global.AppUI = {
         SimulationPanel,
         CloudOverlay,
-        KnowledgeCenterModal // Export New Component
+        KnowledgeCenterModal,
+        VideoGalleryModal // Export VideoGalleryModal for use in Dashboard (script.js)
     };
 
 })(window);

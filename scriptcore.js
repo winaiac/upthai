@@ -1,4 +1,5 @@
 // --- scriptcore.js : จัดการข้อมูลพื้นฐาน, Supabase และ Custom Hooks ---
+// อัปเดตล่าสุด: เพิ่ม "อินทผาลัม" ใน MOCK_CROPS ตามโครงสร้างที่คุณใช้งานอยู่
 
 (function(global) {
     const { useState, useEffect, useMemo } = React;
@@ -18,7 +19,10 @@
     // --- HELPER FUNCTIONS ---
     const normalizeThaiName = (name) => {
         if (!name || typeof name !== 'string') return '';
-        return name.replace(/^(ตำบล|ต\.|แขวง|อำเภอ|อ\.|เขต|จังหวัด|จ\.|เทศบาล|อบต\.)\s*/g, '').trim();
+        const n = name.replace(/^(ตำบล|ต\.|แขวง|อำเภอ|อ\.|เขต|จังหวัด|จ\.|เทศบาล|อบต\.)\s*/g, '').trim();
+        // เพิ่ม Mapping อินทผาลัม
+        if (n.includes('อินทผาลัม')) return 'date_palm';
+        return n;
     };
 
     const getBearing = (startLat, startLng, destLat, destLng) => {
@@ -69,11 +73,14 @@
         // --- กระทรวงทุเรียน ---
         { name: "ทุเรียนหมอนทอง (Monthong)", category: "พืชสวน", price: 150, yield: 2500, cost: 65000, risk: "High", unit: "kg", yieldUnit: "กิโลกรัม", market: "ส่งออกจีน (Premium)", source: 'Mock (Ministry Presets)' },
         
+        // *** เพิ่ม: อินทผาลัม (Date Palm) ***
+        { name: "อินทผาลัม (Date Palm)", category: "พืชสวน", price: 150, yield: 2000, cost: 45000, risk: "High", unit: "kg", yieldUnit: "กิโลกรัม", market: "ตลาดสุขภาพ/CLMV", source: 'Mock' },
+
         // --- กระทรวงชาวนา ---
         { name: "ข้าวหอมมะลิ 105", category: "พืชไร่", price: 15500, yield: 460, cost: 4500, risk: "Low", unit: "ton", yieldUnit: "กิโลกรัม", market: "โรงสี / สหกรณ์", source: 'Mock' },
         { name: "ข้าวไรซ์เบอร์รี่ (Riceberry)", category: "พืชไร่", price: 25000, yield: 500, cost: 6500, risk: "Medium", unit: "ton", yieldUnit: "กิโลกรัม", market: "ตลาดสุขภาพ", source: 'Mock' },
         
-        // *** ADDED: New Rice Varieties for Dashboard ***
+        // Rice Varieties
         { name: "ปทุมธานี 1 (ข้าวหอมปทุม)", category: "พืชไร่", price: 11500, yield: 750, cost: 4500, risk: "Low", unit: "ton", yieldUnit: "กิโลกรัม", market: "ตลาดกลาง/โรงสี", source: 'Mock' },
         { name: "กข79 (ข้าวพื้นนุ่ม)", category: "พืชไร่", price: 10500, yield: 900, cost: 4500, risk: "Low", unit: "ton", yieldUnit: "กิโลกรัม", market: "ตลาดข้าวนุ่ม", source: 'Mock' },
         { name: "ข้าวเหนียว กข.6", category: "พืชไร่", price: 12500, yield: 666, cost: 4000, risk: "Low", unit: "ton", yieldUnit: "กิโลกรัม", market: "ตลาดข้าวเหนียว", source: 'Mock' },

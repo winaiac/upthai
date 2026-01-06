@@ -1,25 +1,45 @@
 // --- scriptkaset.js : Logic สำหรับพืชเศรษฐกิจและปศุสัตว์ (General Agriculture) ---
-// อัปเดตล่าสุด: บูรณาการยุทธศาสตร์สวนทุเรียนสมัยใหม่ (Modern Durian Orchard Management) & ข้าวโพดเลี้ยงสัตว์
+// อัปเดตล่าสุด: ตรวจสอบความถูกต้องของ Key 'date_palm' เพื่อให้เชื่อมโยงกับ Dashboard ได้
 
 // 1. ข้อมูลพืชและสัตว์เศรษฐกิจ (Kaset Presets)
 const KASET_PRESETS = {
     // --- พืชสวน (Orchards) ---
     'durian': {
-        name: 'ทุเรียนหมอนทอง (Modern Farm - Mock)',
+        name: 'ทุเรียนหมอนทอง (Modern Farm)',
         category: 'premium_durian', 
-        price: 150, // ราคาเกรดส่งออก A
-        yield: 2500, // กก./ไร่ (เป้าหมาย 2.5 ตัน)
+        price: 150, 
+        yield: 2500, 
         lifespan: 25,
-        wait_years: 6, // แก้ไข: ระยะเวลาเริ่มให้ผลผลิตจริงตามสรีรวิทยา (ไม่ใช่ 3 ปี)
-        cost_init: 85000, // รวมค่าปรับที่ดิน ยกโคก ระบบน้ำอัจฉริยะ
-        cost_maint: 45000, // รวมค่าปุ๋ย ยา IPM และแรงงานฝีมือปัดดอก/แต่งลูก
+        wait_years: 6, 
+        cost_init: 85000, 
+        cost_maint: 45000, 
         risk: 'High',
-        desc: 'ราชาทุเรียนส่งออกจีน (90%) ต้องได้มาตรฐาน GACC/GAP Zero Tolerance สารตกค้าง',
+        desc: 'ราชาทุเรียนส่งออกจีน (90%) ต้องได้มาตรฐาน GACC/GAP Zero Tolerance',
         marketData: {
             exportDestinations: "จีน (ขยายสู่เมืองรอง), ตลาดพรีเมียม",
             globalDemand: "High (Buyer's Market)",
             trend: "การแข่งขันสูงจากเวียดนาม ต้องเน้นคุณภาพ",
-            analysis: "ทำสวนทุเรียนคือการทำธุรกิจความเสี่ยงสูง ผลตอบแทนสูง ต้องมีความรู้เรื่องสรีรวิทยาพืชอย่างลึกซึ้ง"
+            analysis: "ความเสี่ยงสูง ผลตอบแทนสูง ต้องมีความรู้เรื่องสรีรวิทยาพืช"
+        }
+    },
+    // *** อินทผาลัม (ต้องมีรายการนี้) ***
+    'date_palm': {
+        name: 'อินทผาลัม (Barhi - เนื้อเยื่อ)',
+        category: 'premium_fruit', 
+        price: 150, // ราคาเฉลี่ยหน้าสวน
+        yield: 2000, // กก./ไร่
+        lifespan: 30,
+        wait_years: 4, 
+        cost_init: 95000, 
+        cost_maint: 35000, 
+        risk: 'High',
+        desc: 'พืชเศรษฐกิจใหม่ ทนแล้ง/ดินเค็ม ผลสดหวานกรอบ ต้องการการดูแลประณีต (ผสมเกสร)',
+        marketData: {
+            exportDestinations: "ตลาดสุขภาพ, CLMV",
+            globalDemand: "Medium",
+            localDemand: "High (Health Trend)",
+            trend: "เน้นการท่องเที่ยวเชิงเกษตรและการแปรรูป",
+            analysis: "ระวังฝนช่วงเก็บเกี่ยว (ก.ค.-ส.ค.) ทำให้ผลแตกเสียหาย"
         }
     },
     'mango': {
@@ -36,55 +56,71 @@ const KASET_PRESETS = {
         marketData: {
             demand: "Medium-High",
             trend: "แปรรูปและส่งออกผลสด",
-            analysis: "ควรทำนอกฤดูเพื่อเลี่ยงรากาตกต่ำช่วงเมษา-พฤษภา"
+            analysis: "ควรทำนอกฤดูเพื่อเลี่ยงราคาตกต่ำช่วงเมษา-พฤษภา"
         }
     },
     // --- พืชไร่ (Field Crops) ---
     'cassava': {
         name: 'มันสำปะหลัง (Cassava)',
         category: 'field_crop',
-        price: 2.80, // ราคาหัวมันสด เชื้อแป้ง 25%
-        yield: 4000, // กก./ไร่ (เป้าหมาย 4-5 ตัน)
-        lifespan: 1, // พืชล้มลุก
+        price: 2.80, 
+        yield: 4500, 
+        lifespan: 1, 
         cycles_per_year: 1,
-        cost_init: 5500, // ค่าเตรียมดิน ท่อนพันธุ์ ปุ๋ย
-        cost_maint: 2000, // ค่ากำจัดวัชพืช
+        cost_init: 5500, 
+        cost_maint: 2000, 
         risk: 'Medium',
         desc: 'พืชพลังงานและอุตสาหกรรมแป้ง ทนแล้งได้ดี แต่ราคาผันผวนตามตลาดโลก',
         marketData: {
             demand: "High (Industrial)",
             trend: "เอทานอลและแป้งมันส่งออกจีน",
-            analysis: "ควรระวังโรคใบด่างมันสำปะหลัง (CMD) ที่ระบาดหนัก"
+            analysis: "ควรระวังโรคใบด่างมันสำปะหลัง (CMD)"
         }
     },
-    // *** NEW: Maize (ข้าวโพดเลี้ยงสัตว์) ***
     'maize': {
         name: 'ข้าวโพดเลี้ยงสัตว์ (Maize)',
         category: 'field_crop',
-        price: 9.50, // ราคาหน้าโรงงาน (ความชื้น 14.5%)
-        yield: 1200, // กก./ไร่ (พันธุ์ลูกผสม)
+        price: 9.50, 
+        yield: 1200, 
         lifespan: 1,
-        cycles_per_year: 2, // ปลูกได้ 2 รอบ (ข้าวโพดหลังนา/ข้าวโพดฝน)
-        cost_init: 4500, // ค่าเมล็ด ปุ๋ย เตรียมดิน
-        cost_maint: 1500, // ค่าฉีดพ่นหนอนกระทู้
+        cycles_per_year: 2, 
+        cost_init: 4500, 
+        cost_maint: 1500, 
         risk: 'Medium',
         desc: 'วัตถุดิบหลักอาหารสัตว์ ตลาดต้องการสูง แต่ต้นทุนปุ๋ยยาและหนอนกระทู้ลายจุดคือปัญหาหลัก',
         marketData: {
             demand: "Very High (Domestic Feed)",
             trend: "ขาดแคลนในประเทศ ต้องนำเข้า",
-            analysis: "โรงงานอาหารสัตว์ประกันราคาขั้นต่ำ เหมาะปลูกหลังนาเพื่อตัดวงจรเพลี้ยในนาข้าว"
+            analysis: "โรงงานอาหารสัตว์ประกันราคาขั้นต่ำ เหมาะปลูกหลังนา"
+        }
+    },
+    'sugarcane': {
+        name: 'อ้อยโรงงาน (Sugarcane)',
+        category: 'field_crop',
+        price: 1100, 
+        yield: 12000, 
+        lifespan: 1,
+        cycles_per_year: 1,
+        cost_init: 8000,
+        cost_maint: 3000,
+        risk: 'Medium',
+        desc: 'พืชไร่ส่งโรงงานน้ำตาล ระบบโควตา',
+        marketData: {
+            demand: "Stable",
+            trend: "Bio-Complex",
+            analysis: "ต้องมีโควตากับโรงงาน"
         }
     },
     // --- ปศุสัตว์ (Livestock) ---
     'cow_ponyangkham': {
         name: 'โคขุนโพนยางคำ (Premium Beef)',
         category: 'animal',
-        price: 110, // ราคาเนื้อแดง/กก. หรือ ขายตัว (คิดเฉลี่ยกำไรต่อตัว) -> Profit calc logic adjust needed or use simpler yield
-        yield: 1, // ต่อตัว
-        lifespan: 2, // ระยะขุน
+        price: 105, 
+        yield: 500, 
+        lifespan: 2, 
         cycles_per_year: 0.5,
-        cost_init: 35000, // ค่าลูกวัว + โรงเรือน
-        cost_maint: 25000, // ค่าอาหารข้น/หยาบ
+        cost_init: 35000, 
+        cost_maint: 25000, 
         risk: 'Medium',
         desc: 'เนื้อโคเกรดพรีเมียม ไขมันแทรก ยางโพนยางคำสกลนคร',
         marketData: {
@@ -96,13 +132,13 @@ const KASET_PRESETS = {
     'pig_farming': {
         name: 'สุกรขุน (Fattening Pig)',
         category: 'animal',
-        price: 80, // ราคาหน้าฟาร์ม (บาท/กก.)
-        yield: 100, // น้ำหนักจับ (กก./ตัว)
-        lifespan: 0.5, // 5-6 เดือน
+        price: 75, 
+        yield: 100, 
+        lifespan: 0.5, 
         cycles_per_year: 2,
-        cost_init: 2500, // ค่าลูกหมู
-        cost_maint: 4500, // ค่าอาหารและวัคซีน
-        risk: 'High', // โรคระบาด ASF
+        cost_init: 2500, 
+        cost_maint: 4500, 
+        risk: 'High', 
         desc: 'เลี้ยงขุน 5-6 เดือน ระวังโรค ASF ต้องมีระบบ Biosecurity',
         marketData: {
             demand: "High",
@@ -114,11 +150,11 @@ const KASET_PRESETS = {
     'farm_cafe': {
         name: 'Farm Cafe & Bistro',
         category: 'business',
-        price: 500, // รายได้เฉลี่ยต่อหัว
-        yield: 5000, // ลูกค้าต่อปี (สมมติ)
+        price: 300, 
+        yield: 3000, 
         lifespan: 10,
-        cost_init: 1500000, // ลงทุนก่อสร้าง
-        cost_maint: 500000, // ค่าจ้าง/วัตถุดิบ/น้ำไฟ ต่อปี
+        cost_init: 1000000, 
+        cost_maint: 400000, 
         risk: 'High',
         desc: 'ธุรกิจท่องเที่ยวเชิงเกษตร จุดเช็คอิน ถ่ายรูป อาหารเครื่องดื่ม',
         marketData: {
@@ -129,50 +165,58 @@ const KASET_PRESETS = {
     }
 };
 
-// 2. ฟังก์ชัน Helper (ถ้าจำเป็น)
+// 2. ฟังก์ชัน Helper
 const getKasetPreset = (name) => {
     if (!name) return null;
-    if (name.includes('ทุเรียน')) return KASET_PRESETS['durian'];
-    if (name.includes('มะม่วง')) return KASET_PRESETS['mango'];
-    if (name.includes('มันสำปะหลัง')) return KASET_PRESETS['cassava'];
-    if (name.includes('ข้าวโพด')) return KASET_PRESETS['maize']; // Added Maize
-    if (name.includes('โคขุน') || name.includes('โพนยางคำ')) return KASET_PRESETS['cow_ponyangkham'];
-    if (name.includes('หมู') || name.includes('สุกร')) return KASET_PRESETS['pig_farming'];
-    if (name.includes('Cafe') || name.includes('คาเฟ่')) return KASET_PRESETS['farm_cafe'];
+    const n = name.toLowerCase();
+    
+    if (n.includes('ทุเรียน')) return KASET_PRESETS['durian'];
+    if (n.includes('อินทผาลัม')) return KASET_PRESETS['date_palm']; // สำคัญ: ต้องมีบรรทัดนี้
+    if (n.includes('มะม่วง')) return KASET_PRESETS['mango'];
+    if (n.includes('มันสำปะหลัง')) return KASET_PRESETS['cassava'];
+    if (n.includes('ข้าวโพด')) return KASET_PRESETS['maize'];
+    if (n.includes('อ้อย')) return KASET_PRESETS['sugarcane'];
+    
+    if (n.includes('โค') || n.includes('วัว') || n.includes('โพนยางคำ')) return KASET_PRESETS['cow_ponyangkham'];
+    if (n.includes('หมู') || n.includes('สุกร')) return KASET_PRESETS['pig_farming'];
+    
+    if (n.includes('cafe') || n.includes('คาเฟ่')) return KASET_PRESETS['farm_cafe'];
+    
     return null;
 };
 
-// 3. ฟังก์ชันสร้าง Steps (สำหรับแสดงใน UI)
+// 3. ฟังก์ชันสร้าง Steps (Cost Breakdown)
 const getKasetSteps = (category) => {
     switch (category) {
         case 'premium_durian':
-        case 'tree': // พืชสวน
+        case 'premium_fruit': // ใช้กับอินทผาลัม
+        case 'tree': 
             return [
-                { id: 'prep', label: '1. เตรียมดิน/ยกโคก', val: 5000, desc: 'ปรับสภาพดิน/ระบบน้ำ' },
-                { id: 'plant', label: '2. ค่ากล้า/ปลูก', val: 3000, desc: 'พันธุ์ดี' },
-                { id: 'care_pre', label: '3. ดูแลก่อนให้ผล', val: 4000, desc: 'ปุ๋ย/ยา/ตัดแต่ง (ต่อปี)' },
-                { id: 'care_post', label: '4. ดูแลระยะให้ผล', val: 8000, desc: 'บำรุงผล/ทำสาว (ต่อปี)' }
+                { id: 'prep', label: '1. เตรียมดิน/ยกโคก', val: 10000, desc: 'ปรับสภาพดิน/ระบบน้ำ' },
+                { id: 'plant', label: '2. ค่ากล้า/ปลูก', val: 40000, desc: 'พันธุ์ดี (เนื้อเยื่อ/เสียบยอด)' },
+                { id: 'care_pre', label: '3. ดูแลก่อนให้ผล', val: 15000, desc: 'ปุ๋ย/ยา/ตัดแต่ง (ต่อปี)' },
+                { id: 'care_post', label: '4. ดูแลระยะให้ผล', val: 25000, desc: 'บำรุงผล/ผสมเกสร/ห่อผล' }
             ];
         case 'field_crop': // พืชไร่
             return [
-                { id: 'plow', label: '1. เตรียมดิน', val: 600, desc: 'ไถดะ/ไถแปร' },
-                { id: 'seed', label: '2. เมล็ด/ท่อนพันธุ์', val: 800, desc: 'ต่อไร่' },
-                { id: 'care', label: '3. ปุ๋ย/ยา/กำจัดหญ้า', val: 2500, desc: 'ตลอดฤดู' },
-                { id: 'harvest', label: '4. เก็บเกี่ยว', val: 800, desc: 'ค่ารถเกี่ยว/ขุด' }
+                { id: 'plow', label: '1. เตรียมดิน', val: 800, desc: 'ไถดะ/ไถแปร/ยกร่อง' },
+                { id: 'seed', label: '2. เมล็ด/ท่อนพันธุ์', val: 1200, desc: 'ต่อไร่ (ลูกผสม)' },
+                { id: 'care', label: '3. ปุ๋ย/ยา/กำจัดหญ้า', val: 3000, desc: 'ตลอดฤดู' },
+                { id: 'harvest', label: '4. เก็บเกี่ยว', val: 1000, desc: 'ค่ารถเกี่ยว/ขุด' }
             ];
         case 'animal': // ปศุสัตว์
             return [
-                { id: 'breed', label: '1. ซื้อพ่อ/แม่พันธุ์', val: 20000, desc: 'ลูกวัวหย่านม' },
-                { id: 'feed', label: '2. ค่าอาหารข้น/หยาบ', val: 10000, desc: 'ต่อตัว/ปี' },
-                { id: 'med', label: '3. วัคซีน/ยา', val: 1000, desc: 'ถ่ายพยาธิ/ปากเท้าเปื่อย' },
-                { id: 'labor', label: '4. ค่าแรง/โรงเรือน', val: 4000, desc: 'เฉลี่ยต่อตัว' }
+                { id: 'breed', label: '1. ซื้อพ่อ/แม่พันธุ์', val: 20000, desc: 'ลูกสัตว์ตั้งต้น' },
+                { id: 'feed', label: '2. ค่าอาหารข้น/หยาบ', val: 12000, desc: 'ต่อตัว/รอบ' },
+                { id: 'med', label: '3. วัคซีน/ยา', val: 1500, desc: 'ป้องกันโรค' },
+                { id: 'labor', label: '4. ค่าแรง/โรงเรือน', val: 5000, desc: 'เฉลี่ยต่อตัว' }
             ];
         case 'business': // ธุรกิจ
             return [
                 { id: 'construct', label: '1. ก่อสร้าง/ตกแต่ง', val: 800000, desc: 'อาคาร/สวน' },
-                { id: 'equip', label: '2. อุปกรณ์/เครื่องครัว', val: 300000, desc: 'เครื่องชงกาแฟ/ครัว' },
+                { id: 'equip', label: '2. อุปกรณ์/เครื่องครัว', val: 200000, desc: 'เครื่องชงกาแฟ/ครัว' },
                 { id: 'marketing', label: '3. การตลาด/โปรโมท', val: 50000, desc: 'Ads/Social Media' },
-                { id: 'staff', label: '4. ค่าจ้างพนักงาน', val: 200000, desc: 'ต่อปี' }
+                { id: 'staff', label: '4. ค่าจ้างพนักงาน', val: 150000, desc: 'ต่อปี' }
             ];
         default:
             return [];
