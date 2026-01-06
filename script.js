@@ -26,13 +26,11 @@ const KasetCloudApp = ({ mapInstance, onTravelStart, onTravelEnd, onGoHome, isTr
     const [sortType, setSortType] = useState('profit');
     const [categoryFilter, setCategoryFilter] = useState(initialConfig?.category || 'all');
     
+    // States for Knowledge/Video Panels
     const [showKnowledgeCenter, setShowKnowledgeCenter] = useState(false);
-    const [isReadingBook, setIsReadingBook] = useState(false);
-    const [isCopied, setIsCopied] = useState(false);
-    const [isBlinking, setIsBlinking] = useState(false);
-    
-    // --- VIDEO STATE ---
     const [videoCategory, setVideoCategory] = useState(null); 
+    const [isBlinking, setIsBlinking] = useState(false);
+    const [isReadingBook, setIsReadingBook] = useState(false);
 
     const appData = useRealtimeData ? useRealtimeData() : { provinceData: {}, regions: {}, crops: [] };
     const markerRef = useRef(null);
@@ -46,6 +44,7 @@ const KasetCloudApp = ({ mapInstance, onTravelStart, onTravelEnd, onGoHome, isTr
     const [address, setAddress] = useState(null);
     const [addressDetails, setAddressDetails] = useState(null);
     const [isAddressLoading, setIsAddressLoading] = useState(false);
+    const [isCopied, setIsCopied] = useState(false);
 
     // --- EFFECT: Handle Deep Linking ---
     useEffect(() => {
@@ -53,7 +52,12 @@ const KasetCloudApp = ({ mapInstance, onTravelStart, onTravelEnd, onGoHome, isTr
             const hash = window.location.hash;
             if (hash.includes('video_cat=')) {
                 const cat = hash.split('video_cat=')[1];
-                if (cat) setVideoCategory(cat);
+                if (cat) {
+                    setVideoCategory(cat);
+                    // Close other panels to focus on video
+                    setSimulatingItem(null);
+                    setShowKnowledgeCenter(false);
+                }
             }
             else if (!hash) {
                 setVideoCategory(null);
@@ -112,7 +116,7 @@ const KasetCloudApp = ({ mapInstance, onTravelStart, onTravelEnd, onGoHome, isTr
         return () => { if (tileLayerRef.current) mapInstance.removeLayer(tileLayerRef.current); if (labelLayerRef.current) mapInstance.removeLayer(labelLayerRef.current); };
     }, [mapType, mapInstance]);
 
-    // ... (Marker Logic)
+    // ... (Marker Logic - Simplified for brevity, same as before)
     useEffect(() => {
         if (!mapInstance) return;
         let topPane = mapInstance.getPane('top-pane');
@@ -141,18 +145,23 @@ const KasetCloudApp = ({ mapInstance, onTravelStart, onTravelEnd, onGoHome, isTr
     }, [selectedProvince, mapInstance, appData.provinceData]);
 
     useEffect(() => { if (markerRef.current) { const el = markerRef.current.getElement(); if (!el) return; const inner = el.querySelector('.pin-inner'); if (isPinning) { markerRef.current.dragging.enable(); if (inner) inner.classList.add('scale-125', 'ring-4', 'ring-emerald-400/50'); } else { markerRef.current.dragging.disable(); if (inner) inner.classList.remove('scale-125', 'ring-4', 'ring-emerald-400/50'); } } }, [isPinning, selectedProvince]);
-
     useEffect(() => { if (pinCoords) { setIsAddressLoading(true); fetch(`https://nominatim.openstreetmap.org/reverse?lat=${pinCoords[0]}&lon=${pinCoords[1]}&format=json&accept-language=th`).then(res => res.json()).then(data => { if (data.address) { setAddressDetails(data.address); const a = data.address; const parts = []; if (a.village) parts.push('หมู่บ้าน ' + a.village); else if (a.hamlet) parts.push('หมู่บ้าน ' + a.hamlet); if (a.road) parts.push('ถนน ' + a.road); const subDistrict = a.suburb || a.tambon || a.quarter || a.neighbourhood; if (subDistrict) { if (a.quarter) parts.push('แขวง ' + subDistrict); else parts.push('ตำบล ' + subDistrict); } const district = a.city_district || a.district || a.amphoe; if (district) { if (a.state === 'กรุงเทพมหานคร' || a.city_district) parts.push('เขต ' + district); else parts.push('อำเภอ ' + district); } if (a.state) parts.push('จังหวัด ' + a.state); setAddress(parts.length > 0 ? parts.join(' ') : 'พิกัดไม่มีที่อยู่ระบุชัดเจน'); } else { setAddress('ไม่พบข้อมูลที่อยู่'); setAddressDetails(null); } setIsAddressLoading(false); }).catch(e => { setAddress('เชื่อมต่อแผนที่ไม่ได้'); setIsAddressLoading(false); }); } else { setAddress(null); setAddressDetails(null); } }, [pinCoords]);
 
     const provinceStats = useMemo(() => { if (!selectedProvince || !appData.provinceData) return null; const exactPop = appData.thaiPop?.find(p => p.province_name === selectedProvince); const statsList = appData.stats ? appData.stats.filter(s => s.province === selectedProvince) : []; const maxYear = statsList.length > 0 ? Math.max(...statsList.map(s => s.year)) : 0; const currentStats = statsList.filter(s => s.year === maxYear); const getValue = (keyword) => { const item = currentStats.find(s => s.topic && s.topic.includes(keyword)); return item ? { val: Number(item.value).toLocaleString(), unit: item.unit } : null; }; return { year: maxYear < 2000 && maxYear > 0 ? maxYear + 543 : maxYear, totalPop: exactPop ? { val: Number(exactPop.population).toLocaleString(), unit: 'คน' } : (getValue('ประชากรทั้งหมด') || getValue('รวม') || { val: appData.provinceData[selectedProvince]?.population || '-', unit: 'คน' }), male: getValue('ชาย'), female: getValue('หญิง'), farmers: getValue('เกษตรกร') || getValue('เกษตร') || getValue('ขึ้นทะเบียน'), }; }, [selectedProvince, appData.stats, appData.provinceData, appData.thaiPop]);
-
     const activeFloodData = useMemo(() => { let result = { risk_level: 'Low', description: 'ไม่พบข้อมูลความเสี่ยงในจุดนี้ (Default)', source: 'No Match Found', debug: { matched: false, reason: 'Init' } }; if (!appData.floodAlerts || !selectedProvince) { result.debug.reason = 'No alerts loaded or Province not selected'; return result; } const provAlerts = appData.floodAlerts.filter(a => a.province === selectedProvince); if (provAlerts.length === 0) { result.debug.reason = `No alerts for province: ${selectedProvince}`; return result; } if (addressDetails) { const rawTambon = addressDetails.suburb || addressDetails.tambon || addressDetails.quarter || addressDetails.neighbourhood || addressDetails.village || ''; const rawAmphoe = addressDetails.city_district || addressDetails.district || addressDetails.amphoe || ''; const normTambon = normalizeThaiName(rawTambon); const normAmphoe = normalizeThaiName(rawAmphoe); if (normTambon) { const tMatch = provAlerts.find(a => { const dbTambon = normalizeThaiName(a.tambon); return dbTambon && (dbTambon === normTambon || dbTambon.includes(normTambon) || normTambon.includes(dbTambon)); }); if (tMatch) return { ...tMatch, source: 'Supabase (Tambon Match)', debug: { matched: true, type: 'Tambon', record: tMatch, mapData: { t: normTambon, a: normAmphoe } } }; } if (normAmphoe) { const aMatch = provAlerts.find(a => { const dbAmphoe = normalizeThaiName(a.amphoe); return dbAmphoe && (dbAmphoe === normAmphoe || dbAmphoe.includes(normAmphoe) || normAmphoe.includes(dbAmphoe)); }); if (aMatch) return { ...aMatch, source: 'Supabase (Amphoe Match)', debug: { matched: true, type: 'Amphoe', record: aMatch, mapData: { t: normTambon, a: normAmphoe } } }; } result.debug.details = { mapNorm: { t: normTambon, a: normAmphoe }, dbRecordsSample: provAlerts.slice(0, 3).map(a => ({t: normalizeThaiName(a.tambon), a: normalizeThaiName(a.amphoe)})) }; } const provWide = provAlerts.find(a => !a.amphoe && !a.tambon); if (provWide) return { ...provWide, source: 'Supabase (Province Wide)', debug: { matched: true, type: 'Province', record: provWide } }; return result; }, [appData.floodAlerts, selectedProvince, addressDetails]);
 
     const handleFullscreen = () => { if (!document.fullscreenElement) document.documentElement.requestFullscreen().then(() => setIsFullscreen(true)); else if (document.exitFullscreen) document.exitFullscreen().then(() => setIsFullscreen(false)); };
     const togglePin = () => setIsPinning(!isPinning);
     const toggleMapType = () => setMapType(prev => prev === 'satellite' ? 'standard' : prev === 'standard' ? 'hybrid' : 'satellite');
     const handleRegionSelect = (r) => { setSelectedRegion(r); setSelectedProvince(null); setResults(null); setIsPinning(false); lastProvinceRef.current = null; };
-    const handleBack = () => { if (isPinning) { setIsPinning(false); return; } if (simulatingItem) { setSimulatingItem(null); return; } if (selectedProvince) { setSelectedProvince(null); setResults(null); lastProvinceRef.current = null; setMapType('satellite'); setPinCoords(null); if (mapInstance && mapInstance._container) mapInstance.flyTo(DON_MUEANG_COORDS || [13.9133, 100.6042], 6, { duration: 2 }); return; } if (selectedRegion) { setSelectedRegion(null); return; } };
+    const handleBack = () => { 
+        if (showKnowledgeCenter) { setShowKnowledgeCenter(false); return; }
+        if (videoCategory) { setVideoCategory(null); return; }
+        if (isPinning) { setIsPinning(false); return; } 
+        if (simulatingItem) { setSimulatingItem(null); return; } 
+        if (selectedProvince) { setSelectedProvince(null); setResults(null); lastProvinceRef.current = null; setMapType('satellite'); setPinCoords(null); if (mapInstance && mapInstance._container) mapInstance.flyTo(DON_MUEANG_COORDS || [13.9133, 100.6042], 6, { duration: 2 }); return; } 
+        if (selectedRegion) { setSelectedRegion(null); return; } 
+    };
     const handleAreaChange = (val) => { const newArea = parseFloat(val) || 0; setArea(newArea); };
     
     const handleShareProvince = () => {
@@ -230,7 +239,6 @@ const KasetCloudApp = ({ mapInstance, onTravelStart, onTravelEnd, onGoHome, isTr
 
     const handleProvinceSelect = (p) => { 
         if (p === selectedProvince) return; 
-
         setIsPinning(false); 
         setSelectedProvince(p); 
         setMapType('satellite'); 
@@ -238,18 +246,11 @@ const KasetCloudApp = ({ mapInstance, onTravelStart, onTravelEnd, onGoHome, isTr
         if (info) { 
             setSoilInfo(info); 
             setPinCoords([info.lat, info.lng]); 
-            
             if (mapInstance && mapInstance._container) { 
                 const center = mapInstance.getCenter(); 
                 const bearing = getBearing(center.lat, center.lng, info.lat, info.lng); 
                 onTravelStart(`กำลังเดินทางไป ${p}...`, bearing); 
-                
-                mapInstance.flyTo([info.lat - 0.1, info.lng], 10, {
-                    duration: 2.5, 
-                    easeLinearity: 0.25,
-                    noMoveStart: false 
-                });
-                
+                mapInstance.flyTo([info.lat - 0.1, info.lng], 10, { duration: 2.5, easeLinearity: 0.25, noMoveStart: false });
                 setTimeout(() => onTravelEnd(), 2800); 
             } 
         }
@@ -267,36 +268,25 @@ const KasetCloudApp = ({ mapInstance, onTravelStart, onTravelEnd, onGoHome, isTr
     }, [selectedRegion, selectedProvince, appData.regions]);
 
     const handleGPSLocation = () => {
-        if (!navigator.geolocation) {
-            alert("อุปกรณ์ของคุณไม่รองรับ GPS");
-            return;
-        }
-        
+        if (!navigator.geolocation) { alert("อุปกรณ์ของคุณไม่รองรับ GPS"); return; }
         onTravelStart("กำลังระบุพิกัด GPS...", 0);
-
         navigator.geolocation.getCurrentPosition(
             (position) => {
                 const { latitude, longitude } = position.coords;
-                if (pinCoords && Math.abs(pinCoords[0] - latitude) < 0.0001 && Math.abs(pinCoords[1] - longitude) < 0.0001) {
-                    onTravelEnd(); return;
-                }
-
+                if (pinCoords && Math.abs(pinCoords[0] - latitude) < 0.0001 && Math.abs(pinCoords[1] - longitude) < 0.0001) { onTravelEnd(); return; }
                 fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&accept-language=th`)
                     .then(res => res.json())
                     .then(data => {
                         const addressObj = data.address;
                         const prov = addressObj.state || addressObj.province;
                         const cleanProv = prov ? prov.replace('จังหวัด', '').trim() : null;
-
                         if (cleanProv && appData.provinceData && appData.provinceData[cleanProv]) {
                             const info = appData.provinceData[cleanProv];
                             setSelectedProvince(cleanProv);
                             const reg = Object.keys(appData.regions).find(r => appData.regions[r].includes(cleanProv));
                             if (reg) setSelectedRegion(reg);
-                            
                             setSoilInfo(info);
                             setPinCoords([latitude, longitude]); 
-                            
                             if (mapInstance && mapInstance._container) {
                                 const center = mapInstance.getCenter();
                                 const bearing = getBearing(center.lat, center.lng, latitude, longitude);
@@ -305,22 +295,11 @@ const KasetCloudApp = ({ mapInstance, onTravelStart, onTravelEnd, onGoHome, isTr
                                 setTimeout(() => onTravelEnd(), 3200);
                             }
                             setResults(calculateEconomics(area));
-                        } else {
-                            onTravelEnd();
-                            alert("ไม่พบข้อมูลจังหวัดสำหรับพิกัดนี้");
-                        }
+                        } else { onTravelEnd(); alert("ไม่พบข้อมูลจังหวัดสำหรับพิกัดนี้"); }
                     })
-                    .catch(err => {
-                        console.error(err);
-                        onTravelEnd();
-                        alert("เชื่อมต่อแผนที่ล้มเหลว");
-                    });
+                    .catch(err => { console.error(err); onTravelEnd(); alert("เชื่อมต่อแผนที่ล้มเหลว"); });
             },
-            (err) => {
-                console.warn(err);
-                onTravelEnd();
-                alert("กรุณาเปิด GPS เพื่อระบุตำแหน่ง");
-            }
+            (err) => { console.warn(err); onTravelEnd(); alert("กรุณาเปิด GPS เพื่อระบุตำแหน่ง"); }
         );
     };
 
@@ -335,7 +314,9 @@ const KasetCloudApp = ({ mapInstance, onTravelStart, onTravelEnd, onGoHome, isTr
         const vKey = getVideoKey ? getVideoKey(item) : null;
         const vList = vKey ? getVideos(vKey) : [];
         if (vList.length > 0 && vKey) {
-            window.location.hash = `video_cat=${vKey}`;
+            setVideoCategory(vKey);
+            setShowKnowledgeCenter(false);
+            setSimulatingItem(null);
         } else {
             alert('ยังไม่มีวิดีโอสำหรับรายการนี้');
         }
@@ -346,23 +327,18 @@ const KasetCloudApp = ({ mapInstance, onTravelStart, onTravelEnd, onGoHome, isTr
 
     return (
         <div className="ui-unified-layer">
-            {showKnowledgeCenter && <KnowledgeCenterModal onClose={() => setShowKnowledgeCenter(false)} onReadMode={setIsReadingBook} />}
-
-            {videoCategory && (
-                <VideoGalleryModal 
-                    category={videoCategory} 
-                    onClose={handleCloseVideo} 
-                />
-            )}
-
             <div className="w-full max-w-7xl mx-auto flex items-center justify-between pointer-auto px-2 md:px-4 z-[2100] mt-2">
                 <div className="flex items-center gap-2 md:gap-3 shrink-0">
                     <button onClick={onGoHome} className="w-10 h-10 md:w-12 md:h-12 rounded-full glass-panel hover:bg-white/10 text-white flex items-center justify-center transition shadow-lg group" title="หน้าแรก"><i className="fa-solid fa-house text-sm md:text-base group-hover:text-emerald-400"></i></button>
                     {(selectedRegion || selectedProvince) && (<button onClick={handleBack} className="w-10 h-10 md:w-12 md:h-12 rounded-full glass-panel hover:bg-white/10 text-white flex items-center justify-center transition shadow-lg animate-fade-in-up" title="ย้อนกลับ"><i className="fa-solid fa-arrow-left text-sm md:text-base"></i></button>)}
                 </div>
                 <div className="flex-1 flex justify-center px-2 min-w-0">
-                    {simulatingItem ? (
-                        <div className="glass-panel rounded-full px-4 py-1.5 flex items-center gap-2 shadow-[0_0_20px_rgba(16,185,129,0.3)] animate-fade-in-up max-w-full overflow-hidden"><i className="fa-solid fa-chart-line text-emerald-400 animate-pulse"></i><span className="text-sm md:text-base font-bold text-white truncate">{simulatingItem.name}</span></div>
+                    {simulatingItem || showKnowledgeCenter || videoCategory ? (
+                        <div className="glass-panel rounded-full px-4 py-1.5 flex items-center gap-2 shadow-[0_0_20px_rgba(16,185,129,0.3)] animate-fade-in-up max-w-full overflow-hidden">
+                            {showKnowledgeCenter ? <><i className="fa-solid fa-book-journal-whills text-blue-400 animate-pulse"></i><span className="text-sm md:text-base font-bold text-white truncate">ศูนย์ความรู้</span></> :
+                             videoCategory ? <><i className="fa-brands fa-youtube text-red-400 animate-pulse"></i><span className="text-sm md:text-base font-bold text-white truncate">คลังวิดีโอ</span></> :
+                             <><i className="fa-solid fa-chart-line text-emerald-400 animate-pulse"></i><span className="text-sm md:text-base font-bold text-white truncate">{simulatingItem.name}</span></>}
+                        </div>
                     ) : selectedProvince ? (
                         <div className="glass-panel rounded-full px-1 py-1 flex items-center gap-1 md:gap-2 shadow-[0_0_20px_rgba(0,0,0,0.3)] animate-fade-in-up max-w-full overflow-hidden">
                             <div className="flex items-center gap-2 pl-3 pr-2 border-r border-white/20 shrink-0 min-w-[80px]"><div className="relative"><i className="fa-solid fa-seedling text-emerald-400 text-lg"></i><span className="absolute -top-0.5 -right-0.5 flex h-2.5 w-2.5"><span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${appData.isOnline ? 'bg-green-400' : 'bg-orange-400'}`}></span><span className={`relative inline-flex rounded-full h-2.5 w-2.5 border border-black/50 ${appData.isOnline ? 'bg-green-500' : 'bg-orange-500'}`}></span></span></div><div className="flex flex-col leading-none hidden sm:flex"><span className="text-xs font-bold text-emerald-100">พืชแนะนำ</span><span className={`text-[8px] font-bold uppercase tracking-wide mt-0.5 ${appData.isOnline ? 'text-green-300' : 'text-orange-300'}`}>{appData.isOnline ? '● SUPABASE' : '○ MOCK DATA'}</span></div></div>
@@ -394,7 +370,7 @@ const KasetCloudApp = ({ mapInstance, onTravelStart, onTravelEnd, onGoHome, isTr
                     )}
                 </div>
                 <div className="flex items-center gap-2 md:gap-3 shrink-0">
-                    {selectedProvince && !simulatingItem && (<button onClick={togglePin} className={`w-10 h-10 md:w-12 md:h-12 rounded-full glass-panel flex items-center justify-center transition shadow-lg animate-fade-in-up ${isPinning ? 'bg-emerald-500 hover:bg-emerald-400 border-emerald-400 text-white' : 'hover:bg-white/10 text-white'}`} title={isPinning ? "ยืนยันตำแหน่ง" : "ขยับหมุด"}><i className={`fa-solid ${isPinning ? 'fa-check text-lg font-bold' : 'fa-map-location-dot text-sm md:text-base'}`}></i></button>)}
+                    {selectedProvince && !simulatingItem && !showKnowledgeCenter && !videoCategory && (<button onClick={togglePin} className={`w-10 h-10 md:w-12 md:h-12 rounded-full glass-panel flex items-center justify-center transition shadow-lg animate-fade-in-up ${isPinning ? 'bg-emerald-500 hover:bg-emerald-400 border-emerald-400 text-white' : 'hover:bg-white/10 text-white'}`} title={isPinning ? "ยืนยันตำแหน่ง" : "ขยับหมุด"}><i className={`fa-solid ${isPinning ? 'fa-check text-lg font-bold' : 'fa-map-location-dot text-sm md:text-base'}`}></i></button>)}
                     <button onClick={toggleMapType} className="w-10 h-10 md:w-12 md:h-12 rounded-full glass-panel hover:bg-white/10 text-white flex items-center justify-center transition shadow-lg" title="เปลี่ยนแผนที่"><i className={`fa-solid ${mapType === 'satellite' ? 'fa-layer-group' : mapType === 'hybrid' ? 'fa-map' : 'fa-earth-americas'} text-sm md:text-base`}></i></button>
                     <button onClick={handleFullscreen} className={`w-10 h-10 md:w-12 md:h-12 rounded-full glass-panel hover:bg-white/10 text-white flex items-center justify-center transition shadow-lg ${isBlinking ? 'animate-pulse ring-2 ring-yellow-400' : ''}`} title="เต็มจอ"><i className={`fa-solid ${isFullscreen ? 'fa-compress' : 'fa-expand'} text-sm md:text-base`}></i></button>
                 </div>
@@ -456,7 +432,7 @@ const KasetCloudApp = ({ mapInstance, onTravelStart, onTravelEnd, onGoHome, isTr
             )}
 
             <div className={`w-full flex-1 flex flex-col items-center transition-all duration-700 ease-in-out transform ${isTraveling || isPinning ? '-translate-y-20 opacity-0' : 'translate-y-0 opacity-100'} ${isTraveling || isPinning ? 'pointer-events-none' : 'pointer-events-auto'}`}>
-                {!selectedRegion && !selectedProvince && !simulatingItem && (
+                {!selectedRegion && !selectedProvince && !simulatingItem && !showKnowledgeCenter && !videoCategory && (
                     <div className={`w-full max-w-5xl mx-auto glass-panel-clear rounded-b-3xl p-6 animate-slide-down shadow-[0_10px_40px_rgba(0,0,0,0.5)] border-t-0 mt-4`}>
                         <h2 className="text-xl font-bold text-white mb-4 text-center">เลือกภูมิภาคของคุณ</h2>
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">{Object.keys(appData.regions).map(r => (<button key={r} onClick={() => handleRegionSelect(r)} className="bg-white/5 hover:bg-emerald-500/20 border border-white/20 rounded-xl p-6 flex flex-col items-center gap-2 transition hover:scale-105 group backdrop-blur-sm"><span className="text-4xl group-hover:animate-bounce">{r === 'เหนือ' ? '⛰️' : r === 'ใต้' ? '🌊' : '🏙️'}</span><span className="font-bold text-slate-200">{r}</span></button>))}</div>
@@ -470,84 +446,88 @@ const KasetCloudApp = ({ mapInstance, onTravelStart, onTravelEnd, onGoHome, isTr
                     </div>
                 )}
 
-                {selectedProvince && !simulatingItem && !isReadingBook && (
+                {/* CONTENT AREA: Results / Knowledge / Video / Simulation */}
+                {(selectedProvince || showKnowledgeCenter || videoCategory) && !isReadingBook && (
                     <div className={`w-full max-w-5xl mx-auto flex flex-col h-[80vh] animate-slide-down mt-2`}>
-                        <div className="flex-1 glass-panel-clear rounded-b-3xl overflow-hidden flex flex-col shadow-xl border-t-0">
-                            <div className="flex flex-wrap gap-2 p-3 border-b border-white/10 items-center justify-between bg-black/20">
-                                <div className="flex gap-1 overflow-x-auto scrollbar-prominent pb-1">
-                                    <button onClick={() => setShowKnowledgeCenter(true)} className="px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap bg-blue-600 text-white shadow-[0_4px_0_rgb(30,58,138)] active:shadow-none active:translate-y-1 hover:bg-blue-500 transition-all mr-1 border border-blue-400/30"><i className="fa-solid fa-book-journal-whills mr-1"></i>ศูนย์ความรู้</button>
-                                    <button onClick={() => setCategoryFilter('plant')} className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap transition-all active:translate-y-1 ${categoryFilter === 'plant' ? 'bg-emerald-500 text-white shadow-[0_4px_0_rgb(6,95,70)]' : 'bg-white/10 text-slate-300 hover:bg-white/20 shadow-[0_4px_0_rgba(255,255,255,0.1)]'}`}>พืชไร่/สวน</button>
-                                    <button onClick={() => setCategoryFilter('animal')} className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap transition-all active:translate-y-1 ${categoryFilter === 'animal' ? 'bg-orange-500 text-white shadow-[0_4px_0_rgb(154,52,18)]' : 'bg-white/10 text-slate-300 hover:bg-white/20 shadow-[0_4px_0_rgba(255,255,255,0.1)]'}`}>ฟาร์มสัตว์</button>
-                                    <button onClick={() => setCategoryFilter('integrated')} className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap transition-all active:translate-y-1 ${categoryFilter === 'integrated' ? 'bg-blue-500 text-white shadow-[0_4px_0_rgb(30,58,138)]' : 'bg-white/10 text-slate-300 hover:bg-white/20 shadow-[0_4px_0_rgba(255,255,255,0.1)]'}`}>เกษตรผสมผสาน</button>
-                                    <button onClick={() => setCategoryFilter('rice_ministry')} className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap transition-all active:translate-y-1 ${categoryFilter === 'rice_ministry' ? 'bg-indigo-500 text-white shadow-[0_4px_0_rgb(55,48,163)]' : 'bg-white/10 text-slate-300 hover:bg-white/20 shadow-[0_4px_0_rgba(255,255,255,0.1)]'}`}><i className="fa-solid fa-shekel-sign mr-1"></i>กระทรวงชาวนา</button>
-                                    <button onClick={() => setCategoryFilter('rubber_ministry')} className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap transition-all active:translate-y-1 ${categoryFilter === 'rubber_ministry' ? 'bg-slate-200 text-slate-900 shadow-[0_4px_0_rgb(100,116,139)]' : 'bg-white/10 text-slate-300 hover:bg-white/20 shadow-[0_4px_0_rgba(255,255,255,0.1)]'}`}><i className="fa-solid fa-droplet mr-1"></i>กระทรวงยางพารา</button>
-                                    <button onClick={() => setCategoryFilter('coconut_ministry')} className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap transition-all active:translate-y-1 ${categoryFilter === 'coconut_ministry' ? 'bg-green-600 text-white shadow-[0_4px_0_rgb(20,83,45)]' : 'bg-white/10 text-slate-300 hover:bg-white/20 shadow-[0_4px_0_rgba(255,255,255,0.1)]'}`}><i className="fa-solid fa-tree mr-1"></i>กระทรวงมะพร้าว</button>
-                                    <button onClick={() => setCategoryFilter('durian_ministry')} className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap transition-all active:translate-y-1 ${categoryFilter === 'durian_ministry' ? 'bg-yellow-600 text-white shadow-[0_4px_0_rgb(161,98,7)]' : 'bg-white/10 text-slate-300 hover:bg-white/20 shadow-[0_4px_0_rgba(255,255,255,0.1)]'}`}><i className="fa-solid fa-crown mr-1"></i>กระทรวงทุเรียน</button>
-                                    <button onClick={() => setCategoryFilter('integrated_ministry')} className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap transition-all active:translate-y-1 ${categoryFilter === 'integrated_ministry' ? 'bg-emerald-700 text-white shadow-[0_4px_0_rgb(6,78,59)]' : 'bg-white/10 text-slate-300 hover:bg-white/20 shadow-[0_4px_0_rgba(255,255,255,0.1)]'}`}><i className="fa-solid fa-layer-group mr-1"></i>กระทรวงเกษตรผสมผสาน</button>
-                                    <button onClick={() => setCategoryFilter('business_ministry')} className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap transition-all active:translate-y-1 ${categoryFilter === 'business_ministry' ? 'bg-purple-600 text-white shadow-[0_4px_0_rgb(107,33,168)]' : 'bg-white/10 text-slate-300 hover:bg-white/20 shadow-[0_4px_0_rgba(255,255,255,0.1)]'}`}><i className="fa-solid fa-briefcase mr-1"></i>กระทรวงพี่เลี้ยงธุรกิจ</button>
-                                    <button onClick={() => setCategoryFilter('all')} className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap transition-all active:translate-y-1 ${categoryFilter === 'all' ? 'bg-emerald-500 text-white shadow-[0_4px_0_rgb(6,95,70)]' : 'bg-white/10 text-slate-300 hover:bg-white/20 shadow-[0_4px_0_rgba(255,255,255,0.1)]'}`}>ทั้งหมด</button>
+                        {showKnowledgeCenter ? (
+                            <KnowledgeCenterModal onClose={() => setShowKnowledgeCenter(false)} />
+                        ) : videoCategory ? (
+                            <VideoGalleryModal category={videoCategory} onClose={() => setVideoCategory(null)} />
+                        ) : simulatingItem ? (
+                            <SimulationPanel item={simulatingItem} onClose={() => setSimulatingItem(null)} globalArea={area} setGlobalArea={setArea} globalYears={years} setGlobalYears={setYears} floodData={activeFloodData} soilInfo={currentProvInfo} provinceStats={provinceStats} />
+                        ) : (
+                            /* DEFAULT RESULT LIST */
+                            <div className="flex-1 glass-panel-clear rounded-b-3xl overflow-hidden flex flex-col shadow-xl border-t-0">
+                                <div className="flex flex-wrap gap-2 p-3 border-b border-white/10 items-center justify-between bg-black/20">
+                                    <div className="flex gap-1 overflow-x-auto scrollbar-prominent pb-1">
+                                        <button onClick={() => setShowKnowledgeCenter(true)} className="px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap bg-blue-600 text-white shadow-[0_4px_0_rgb(30,58,138)] active:shadow-none active:translate-y-1 hover:bg-blue-500 transition-all mr-1 border border-blue-400/30"><i className="fa-solid fa-book-journal-whills mr-1"></i>ศูนย์ความรู้</button>
+                                        <button onClick={() => setCategoryFilter('plant')} className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap transition-all active:translate-y-1 ${categoryFilter === 'plant' ? 'bg-emerald-500 text-white shadow-[0_4px_0_rgb(6,95,70)]' : 'bg-white/10 text-slate-300 hover:bg-white/20 shadow-[0_4px_0_rgba(255,255,255,0.1)]'}`}>พืชไร่/สวน</button>
+                                        <button onClick={() => setCategoryFilter('animal')} className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap transition-all active:translate-y-1 ${categoryFilter === 'animal' ? 'bg-orange-500 text-white shadow-[0_4px_0_rgb(154,52,18)]' : 'bg-white/10 text-slate-300 hover:bg-white/20 shadow-[0_4px_0_rgba(255,255,255,0.1)]'}`}>ฟาร์มสัตว์</button>
+                                        <button onClick={() => setCategoryFilter('integrated')} className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap transition-all active:translate-y-1 ${categoryFilter === 'integrated' ? 'bg-blue-500 text-white shadow-[0_4px_0_rgb(30,58,138)]' : 'bg-white/10 text-slate-300 hover:bg-white/20 shadow-[0_4px_0_rgba(255,255,255,0.1)]'}`}>เกษตรผสมผสาน</button>
+                                        <button onClick={() => setCategoryFilter('rice_ministry')} className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap transition-all active:translate-y-1 ${categoryFilter === 'rice_ministry' ? 'bg-indigo-500 text-white shadow-[0_4px_0_rgb(55,48,163)]' : 'bg-white/10 text-slate-300 hover:bg-white/20 shadow-[0_4px_0_rgba(255,255,255,0.1)]'}`}><i className="fa-solid fa-shekel-sign mr-1"></i>กระทรวงชาวนา</button>
+                                        <button onClick={() => setCategoryFilter('rubber_ministry')} className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap transition-all active:translate-y-1 ${categoryFilter === 'rubber_ministry' ? 'bg-slate-200 text-slate-900 shadow-[0_4px_0_rgb(100,116,139)]' : 'bg-white/10 text-slate-300 hover:bg-white/20 shadow-[0_4px_0_rgba(255,255,255,0.1)]'}`}><i className="fa-solid fa-droplet mr-1"></i>กระทรวงยางพารา</button>
+                                        <button onClick={() => setCategoryFilter('coconut_ministry')} className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap transition-all active:translate-y-1 ${categoryFilter === 'coconut_ministry' ? 'bg-green-600 text-white shadow-[0_4px_0_rgb(20,83,45)]' : 'bg-white/10 text-slate-300 hover:bg-white/20 shadow-[0_4px_0_rgba(255,255,255,0.1)]'}`}><i className="fa-solid fa-tree mr-1"></i>กระทรวงมะพร้าว</button>
+                                        <button onClick={() => setCategoryFilter('durian_ministry')} className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap transition-all active:translate-y-1 ${categoryFilter === 'durian_ministry' ? 'bg-yellow-600 text-white shadow-[0_4px_0_rgb(161,98,7)]' : 'bg-white/10 text-slate-300 hover:bg-white/20 shadow-[0_4px_0_rgba(255,255,255,0.1)]'}`}><i className="fa-solid fa-crown mr-1"></i>กระทรวงทุเรียน</button>
+                                        <button onClick={() => setCategoryFilter('integrated_ministry')} className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap transition-all active:translate-y-1 ${categoryFilter === 'integrated_ministry' ? 'bg-emerald-700 text-white shadow-[0_4px_0_rgb(6,78,59)]' : 'bg-white/10 text-slate-300 hover:bg-white/20 shadow-[0_4px_0_rgba(255,255,255,0.1)]'}`}><i className="fa-solid fa-layer-group mr-1"></i>กระทรวงเกษตรผสมผสาน</button>
+                                        <button onClick={() => setCategoryFilter('business_ministry')} className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap transition-all active:translate-y-1 ${categoryFilter === 'business_ministry' ? 'bg-purple-600 text-white shadow-[0_4px_0_rgb(107,33,168)]' : 'bg-white/10 text-slate-300 hover:bg-white/20 shadow-[0_4px_0_rgba(255,255,255,0.1)]'}`}><i className="fa-solid fa-briefcase mr-1"></i>กระทรวงพี่เลี้ยงธุรกิจ</button>
+                                        <button onClick={() => setCategoryFilter('all')} className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap transition-all active:translate-y-1 ${categoryFilter === 'all' ? 'bg-emerald-500 text-white shadow-[0_4px_0_rgb(6,95,70)]' : 'bg-white/10 text-slate-300 hover:bg-white/20 shadow-[0_4px_0_rgba(255,255,255,0.1)]'}`}>ทั้งหมด</button>
+                                    </div>
+                                    <div className="flex gap-1">
+                                        <button onClick={() => setSortType('profit')} className={`w-8 h-8 rounded-full flex items-center justify-center border transition-all active:translate-y-0.5 ${sortType === 'profit' ? 'bg-yellow-500/20 border-yellow-500 text-yellow-400 shadow-[0_0_10px_rgba(234,179,8,0.5)]' : 'border-white/10 text-slate-400 shadow-sm'}`} title="ผลตอบแทนสูง"><i className="fa-solid fa-sack-dollar"></i></button>
+                                        <button onClick={() => setSortType('payback')} className={`w-8 h-8 rounded-full flex items-center justify-center border transition-all active:translate-y-0.5 ${sortType === 'payback' ? 'bg-purple-500/20 border-purple-500 text-purple-400 shadow-[0_0_10px_rgba(168,85,247,0.5)]' : 'border-white/10 text-slate-400 shadow-sm'}`} title="คืนทุนไว"><i className="fa-solid fa-stopwatch"></i></button>
+                                        <button onClick={() => setSortType('risk')} className={`w-8 h-8 rounded-full flex items-center justify-center border transition-all active:translate-y-0.5 ${sortType === 'risk' ? 'bg-green-500/20 border-green-500 text-green-400 shadow-[0_0_10px_rgba(34,197,94,0.5)]' : 'border-white/10 text-slate-400 shadow-sm'}`} title="ความเสี่ยงต่ำ"><i className="fa-solid fa-shield-halved"></i></button>
+                                        <button onClick={() => setSortType('balanced')} className={`w-8 h-8 rounded-full flex items-center justify-center border transition-all active:translate-y-0.5 ${sortType === 'balanced' ? 'bg-blue-500/20 border-blue-500 text-blue-400 shadow-[0_0_10px_rgba(59,130,246,0.5)]' : 'border-white/10 text-slate-400 shadow-sm'}`} title="แนะนำ"><i className="fa-solid fa-star"></i></button>
+                                    </div>
                                 </div>
-                                <div className="flex gap-1">
-                                    <button onClick={() => setSortType('profit')} className={`w-8 h-8 rounded-full flex items-center justify-center border transition-all active:translate-y-0.5 ${sortType === 'profit' ? 'bg-yellow-500/20 border-yellow-500 text-yellow-400 shadow-[0_0_10px_rgba(234,179,8,0.5)]' : 'border-white/10 text-slate-400 shadow-sm'}`} title="ผลตอบแทนสูง"><i className="fa-solid fa-sack-dollar"></i></button>
-                                    <button onClick={() => setSortType('payback')} className={`w-8 h-8 rounded-full flex items-center justify-center border transition-all active:translate-y-0.5 ${sortType === 'payback' ? 'bg-purple-500/20 border-purple-500 text-purple-400 shadow-[0_0_10px_rgba(168,85,247,0.5)]' : 'border-white/10 text-slate-400 shadow-sm'}`} title="คืนทุนไว"><i className="fa-solid fa-stopwatch"></i></button>
-                                    <button onClick={() => setSortType('risk')} className={`w-8 h-8 rounded-full flex items-center justify-center border transition-all active:translate-y-0.5 ${sortType === 'risk' ? 'bg-green-500/20 border-green-500 text-green-400 shadow-[0_0_10px_rgba(34,197,94,0.5)]' : 'border-white/10 text-slate-400 shadow-sm'}`} title="ความเสี่ยงต่ำ"><i className="fa-solid fa-shield-halved"></i></button>
-                                    <button onClick={() => setSortType('balanced')} className={`w-8 h-8 rounded-full flex items-center justify-center border transition-all active:translate-y-0.5 ${sortType === 'balanced' ? 'bg-blue-500/20 border-blue-500 text-blue-400 shadow-[0_0_10px_rgba(59,130,246,0.5)]' : 'border-white/10 text-slate-400 shadow-sm'}`} title="แนะนำ"><i className="fa-solid fa-star"></i></button>
-                                </div>
-                            </div>
-                            
-                            <div className="flex-1 overflow-y-auto scrollbar-prominent pb-44 pt-2">
-                                {results && results.length > 0 ? results.map((item, idx) => {
-                                    const hasVideo = getVideoKey && getVideos(getVideoKey(item)).length > 0;
-                                    return (
-                                        <div key={idx} onClick={() => setSimulatingItem(item)} className="p-4 border-b border-white/10 hover:bg-white/5 cursor-pointer flex flex-col justify-between group transition relative overflow-hidden">
-                                            {item.source && item.source.includes('Supabase') && <div className="absolute left-0 top-0 bottom-0 w-1 bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.8)]"></div>}
-                                            
-                                            <div className="flex items-center justify-between w-full">
-                                                <div className="flex items-center gap-4">
-                                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold border group-hover:scale-110 transition backdrop-blur-sm shrink-0 ${item.category === 'ธุรกิจ' ? 'bg-purple-500/20 text-purple-400 border-purple-500/30' : 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'}`}>{idx + 1}</div>
-                                                    <div>
-                                                        <div className="font-bold text-white group-hover:text-yellow-400 transition flex items-center gap-2">
-                                                            {item.name}
-                                                            {item.category === 'ปศุสัตว์' && <i className="fa-solid fa-cow text-orange-400 text-xs"></i>}
-                                                            {item.category === 'ผสมผสาน' && <i className="fa-solid fa-layer-group text-emerald-300 text-xs"></i>}
-                                                            {item.category === 'ธุรกิจ' && <i className="fa-solid fa-briefcase text-purple-400 text-xs"></i>}
-                                                            {item.source && item.source.includes('Supabase') ? (
-                                                                <span className="text-[9px] px-1.5 py-0.5 rounded border border-green-500 bg-green-900/80 text-green-300 uppercase tracking-wider font-bold ml-2 shadow-[0_0_5px_rgba(34,197,94,0.5)]">● LIVE DB</span>
-                                                            ) : (
-                                                                <span className="text-[9px] px-1.5 py-0.5 rounded border border-slate-600 bg-slate-800/50 text-slate-400 uppercase tracking-wider font-bold ml-2">○ MOCK</span>
-                                                            )}
+                                
+                                <div className="flex-1 overflow-y-auto scrollbar-prominent pb-44 pt-2">
+                                    {results && results.length > 0 ? results.map((item, idx) => {
+                                        const hasVideo = getVideoKey && getVideos(getVideoKey(item)).length > 0;
+                                        return (
+                                            <div key={idx} onClick={() => setSimulatingItem(item)} className="p-4 border-b border-white/10 hover:bg-white/5 cursor-pointer flex flex-col justify-between group transition relative overflow-hidden">
+                                                {item.source && item.source.includes('Supabase') && <div className="absolute left-0 top-0 bottom-0 w-1 bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.8)]"></div>}
+                                                
+                                                <div className="flex items-center justify-between w-full">
+                                                    <div className="flex items-center gap-4">
+                                                        <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold border group-hover:scale-110 transition backdrop-blur-sm shrink-0 ${item.category === 'ธุรกิจ' ? 'bg-purple-500/20 text-purple-400 border-purple-500/30' : 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'}`}>{idx + 1}</div>
+                                                        <div>
+                                                            <div className="font-bold text-white group-hover:text-yellow-400 transition flex items-center gap-2">
+                                                                {item.name}
+                                                                {item.category === 'ปศุสัตว์' && <i className="fa-solid fa-cow text-orange-400 text-xs"></i>}
+                                                                {item.category === 'ผสมผสาน' && <i className="fa-solid fa-layer-group text-emerald-300 text-xs"></i>}
+                                                                {item.category === 'ธุรกิจ' && <i className="fa-solid fa-briefcase text-purple-400 text-xs"></i>}
+                                                                {item.source && item.source.includes('Supabase') ? (
+                                                                    <span className="text-[9px] px-1.5 py-0.5 rounded border border-green-500 bg-green-900/80 text-green-300 uppercase tracking-wider font-bold ml-2 shadow-[0_0_5px_rgba(34,197,94,0.5)]">● LIVE DB</span>
+                                                                ) : (
+                                                                    <span className="text-[9px] px-1.5 py-0.5 rounded border border-slate-600 bg-slate-800/50 text-slate-400 uppercase tracking-wider font-bold ml-2">○ MOCK</span>
+                                                                )}
+                                                            </div>
+                                                            <div className="text-xs text-slate-300">{item.category === 'ธุรกิจ' ? 'ลงทุน:' : 'ลงทุนเฉลี่ย:'} {(item.cost || 0).toLocaleString()} ฿/{item.category === 'ธุรกิจ' ? 'สาขา' : (item.category === 'ปศุสัตว์' ? 'ตัว/รุ่น' : 'ไร่/ปี')}</div>
                                                         </div>
-                                                        <div className="text-xs text-slate-300">{item.category === 'ธุรกิจ' ? 'ลงทุน:' : 'ลงทุนเฉลี่ย:'} {(item.cost || 0).toLocaleString()} ฿/{item.category === 'ธุรกิจ' ? 'สาขา' : (item.category === 'ปศุสัตว์' ? 'ตัว/รุ่น' : 'ไร่/ปี')}</div>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <div className="text-[10px] text-slate-400">กำไรเฉลี่ย/ปี</div>
+                                                        <div className="font-bold text-yellow-400 text-lg drop-shadow-md">{(item.avgProfitYear || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })} ฿</div>
                                                     </div>
                                                 </div>
-                                                <div className="text-right">
-                                                    <div className="text-[10px] text-slate-400">กำไรเฉลี่ย/ปี</div>
-                                                    <div className="font-bold text-yellow-400 text-lg drop-shadow-md">{(item.avgProfitYear || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })} ฿</div>
+
+                                                <div className="flex items-center justify-end gap-2 mt-3 pt-2 border-t border-white/5 w-full">
+                                                    {hasVideo && (
+                                                        <button onClick={(e) => handleVideoClick(e, item)} className="px-3 py-1.5 rounded-md bg-red-500/20 hover:bg-red-500 text-red-400 hover:text-white text-xs font-bold transition flex items-center gap-1.5 border border-red-500/30 group-hover:border-red-400/50">
+                                                            <i className="fa-brands fa-youtube text-sm"></i> วิดีโอ
+                                                        </button>
+                                                    )}
+                                                    <button className="px-3 py-1.5 rounded-md bg-emerald-600/90 hover:bg-emerald-500 text-white text-xs font-bold transition shadow-md flex items-center gap-1.5 border border-emerald-500/50 group-hover:scale-105">
+                                                        <i className="fa-solid fa-calculator text-sm"></i> คำนวณกำไร
+                                                    </button>
                                                 </div>
                                             </div>
-
-                                            <div className="flex items-center justify-end gap-2 mt-3 pt-2 border-t border-white/5 w-full">
-                                                {hasVideo && (
-                                                    <button onClick={(e) => handleVideoClick(e, item)} className="px-3 py-1.5 rounded-md bg-red-500/20 hover:bg-red-500 text-red-400 hover:text-white text-xs font-bold transition flex items-center gap-1.5 border border-red-500/30 group-hover:border-red-400/50">
-                                                        <i className="fa-brands fa-youtube text-sm"></i> วิดีโอ
-                                                    </button>
-                                                )}
-                                                <button className="px-3 py-1.5 rounded-md bg-emerald-600/90 hover:bg-emerald-500 text-white text-xs font-bold transition shadow-md flex items-center gap-1.5 border border-emerald-500/50 group-hover:scale-105">
-                                                    <i className="fa-solid fa-calculator text-sm"></i> คำนวณกำไร
-                                                </button>
-                                            </div>
-                                        </div>
-                                    );
-                                }) : <div className="p-10 text-center text-slate-500">ไม่พบข้อมูลตามเงื่อนไข</div>}
+                                        );
+                                    }) : <div className="p-10 text-center text-slate-500">ไม่พบข้อมูลตามเงื่อนไข</div>}
+                                </div>
+                                <div className="w-full h-4 flex items-center justify-center cursor-pointer bg-white/5"><div className="w-12 h-1 bg-white/20 rounded-full"></div></div>
                             </div>
-                            <div className="w-full h-4 flex items-center justify-center cursor-pointer bg-white/5"><div className="w-12 h-1 bg-white/20 rounded-full"></div></div>
-                        </div>
-                    </div>
-                )}
-
-                {simulatingItem && (
-                    <div className={`w-full max-w-5xl mx-auto h-[80vh] animate-slide-down z-[2050] mt-2`}>
-                        <SimulationPanel item={simulatingItem} onClose={() => setSimulatingItem(null)} globalArea={area} setGlobalArea={setArea} globalYears={years} setGlobalYears={setYears} floodData={activeFloodData} soilInfo={currentProvInfo} provinceStats={provinceStats} />
+                        )}
                     </div>
                 )}
             </div>
@@ -555,6 +535,7 @@ const KasetCloudApp = ({ mapInstance, onTravelStart, onTravelEnd, onGoHome, isTr
     );
 };
 
+// ... (HomePage, App, and Root remain the same)
 const HomePage = ({ onLocate, isTraveling }) => { 
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [locating, setLocating] = useState(false); 
