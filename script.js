@@ -1,5 +1,5 @@
 // --- script.js : Main Entry Point & Map Logic ---
-// อัปเดตล่าสุด: เพิ่ม Transition Effect (Cloud/Matrix) เมื่อเข้าใช้งานผ่านลิงก์แชร์ (#sim_item)
+// อัปเดตล่าสุด: FULL CODE 100% (ปรับสไตล์คำขวัญโปร่งใส ไม่เป็นฝ้า ค่อยๆ มา/จาง)
 
 const { useState, useEffect, useRef, useMemo, useCallback } = React;
 
@@ -12,25 +12,35 @@ const { useRealtimeData, normalizeThaiName, getBearing, DON_MUEANG_COORDS, MOCK_
 const { SimulationPanel, CloudOverlay, KnowledgeCenterModal, VideoGalleryModal } = AppUI;
 const { getVideoKey, getVideos } = AppVideo;
 
+// --- 1. KASET CLOUD APP COMPONENT ---
 const KasetCloudApp = ({ mapInstance, onTravelStart, onTravelEnd, onGoHome, isTraveling, initialAction, initialConfig, onLocate }) => {
     // ... (State definitions)
     const [selectedRegion, setSelectedRegion] = useState(null);
     const [selectedProvince, setSelectedProvince] = useState(initialConfig?.province || null);
-    const [area, setArea] = useState(initialConfig?.area || 1); // รับค่า area เริ่มต้น
-    const [years, setYears] = useState(initialConfig?.years || 25); // รับค่า years เริ่มต้น
+    const [area, setArea] = useState(initialConfig?.area || 1); 
+    const [years, setYears] = useState(initialConfig?.years || 25); 
     const [results, setResults] = useState(null);
     const [simulatingItem, setSimulatingItem] = useState(null);
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [isPinning, setIsPinning] = useState(false);
     const [mapType, setMapType] = useState('satellite');
     const [sortType, setSortType] = useState('profit');
-    const [categoryFilter, setCategoryFilter] = useState(initialConfig?.category || 'all');
+    
+    const [categoryFilter, setCategoryFilter] = useState(initialConfig?.category || 'rice_ministry');
     
     // States for Knowledge/Video Panels
     const [showKnowledgeCenter, setShowKnowledgeCenter] = useState(false);
     const [videoCategory, setVideoCategory] = useState(null); 
     const [isBlinking, setIsBlinking] = useState(false);
     const [isReadingBook, setIsReadingBook] = useState(false);
+
+    // State สำหรับสภาพอากาศ
+    const [weatherData, setWeatherData] = useState(null);
+    const [expandWeather, setExpandWeather] = useState(false);
+
+    // State สำหรับคำขวัญ (ควบคุม Animation ด้วย class)
+    const [showSlogan, setShowSlogan] = useState(false);
+    const [sloganClass, setSloganClass] = useState('opacity-0 translate-y-10'); // เริ่มต้นแบบซ่อน
 
     const appData = useRealtimeData ? useRealtimeData() : { provinceData: {}, regions: {}, crops: [] };
     const markerRef = useRef(null);
@@ -58,9 +68,8 @@ const KasetCloudApp = ({ mapInstance, onTravelStart, onTravelEnd, onGoHome, isTr
                     setShowKnowledgeCenter(false);
                 }
             }
-            // เพิ่มการดักจับ #sim_item (ถ้ามีการเปลี่ยน hash ในหน้าเดิม)
             else if (hash.includes('sim_item=')) {
-                // Logic นี้จะถูกจัดการหลักๆ ใน App component แต่ใส่ไว้เผื่อ reload
+                // Handled in App component usually, but kept here for safety
             }
             else if (!hash) {
                 setVideoCategory(null);
@@ -91,6 +100,35 @@ const KasetCloudApp = ({ mapInstance, onTravelStart, onTravelEnd, onGoHome, isTr
         }
     }, [initialAction]);
 
+    // Handle Slogan Timer & Animation
+    useEffect(() => {
+        if (selectedProvince) {
+            setShowSlogan(true);
+            // 1. Start Fade In
+            setTimeout(() => setSloganClass('opacity-100 translate-y-0 transition-all duration-1000 ease-out'), 100);
+
+            // 2. Start Fade Out (ก่อนหมดเวลาเล็กน้อย)
+            const fadeOutTimer = setTimeout(() => {
+                setSloganClass('opacity-0 -translate-y-10 transition-all duration-1000 ease-in');
+            }, 8000); // เริ่มจางตอนวินาทีที่ 8
+
+            // 3. Remove from DOM
+            const removeTimer = setTimeout(() => {
+                setShowSlogan(false);
+                setSloganClass('opacity-0 translate-y-10'); // Reset position
+            }, 9000); // หายไปตอนวินาทีที่ 9
+
+            return () => {
+                clearTimeout(fadeOutTimer);
+                clearTimeout(removeTimer);
+            };
+        } else {
+            setShowSlogan(false);
+            setSloganClass('opacity-0 translate-y-10');
+        }
+    }, [selectedProvince]);
+
+
     useEffect(() => {
         if (initialConfig?.province && mapInstance && appData.provinceData && appData.provinceData[initialConfig.province]) {
             const info = appData.provinceData[initialConfig.province];
@@ -103,6 +141,56 @@ const KasetCloudApp = ({ mapInstance, onTravelStart, onTravelEnd, onGoHome, isTr
             setPinCoords([info.lat, info.lng]);
         }
     }, [initialConfig, mapInstance, appData.provinceData]);
+
+    // --- WEATHER API FETCHING ---
+    useEffect(() => {
+        if (!selectedProvince || !appData.provinceData || !appData.provinceData[selectedProvince]) {
+            setWeatherData(null);
+            setExpandWeather(false); // Reset expansion when province changes
+            return;
+        }
+
+        const info = appData.provinceData[selectedProvince];
+        const fetchWeather = async () => {
+            try {
+                // ใช้ Open-Meteo API (ฟรี ไม่ต้องใช้ Key)
+                const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${info.lat}&longitude=${info.lng}&current_weather=true&daily=weathercode,temperature_2m_max,temperature_2m_min&timezone=Asia%2FBangkok`);
+                const data = await res.json();
+                setWeatherData(data);
+            } catch (err) {
+                console.error("Weather fetch failed:", err);
+            }
+        };
+
+        fetchWeather();
+    }, [selectedProvince, appData.provinceData]);
+
+    // Helper: แปลงรหัสสภาพอากาศเป็นไอคอน
+    const getWeatherIcon = (code) => {
+        if (code === 0) return 'fa-sun text-yellow-400';
+        if (code === 1 || code === 2 || code === 3) return 'fa-cloud-sun text-blue-200';
+        if (code >= 45 && code <= 48) return 'fa-smog text-slate-400';
+        if (code >= 51 && code <= 67) return 'fa-cloud-rain text-blue-400';
+        if (code >= 80 && code <= 99) return 'fa-cloud-showers-heavy text-blue-500';
+        return 'fa-cloud text-slate-200';
+    };
+
+    // Helper: แปลงรหัสสภาพอากาศเป็นคำอธิบายไทยสั้นๆ
+    const getWeatherDesc = (code) => {
+        if (code === 0) return 'ฟ้าโปร่ง';
+        if (code <= 3) return 'มีเมฆบางส่วน';
+        if (code <= 48) return 'หมอก';
+        if (code <= 67) return 'ฝนตกปรอยๆ';
+        if (code >= 80) return 'ฝนตกหนัก';
+        return 'ปกติ';
+    };
+
+    // Helper: วันในสัปดาห์
+    const getDayName = (dateString) => {
+        const days = ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'];
+        const d = new Date(dateString);
+        return days[d.getDay()];
+    };
 
     // ... (Map Layer Logic)
     useEffect(() => {
@@ -119,7 +207,7 @@ const KasetCloudApp = ({ mapInstance, onTravelStart, onTravelEnd, onGoHome, isTr
         return () => { if (tileLayerRef.current) mapInstance.removeLayer(tileLayerRef.current); if (labelLayerRef.current) mapInstance.removeLayer(labelLayerRef.current); };
     }, [mapType, mapInstance]);
 
-    // ... (Marker Logic - Simplified for brevity)
+    // ... (Marker Logic)
     useEffect(() => {
         if (!mapInstance) return;
         let topPane = mapInstance.getPane('top-pane');
@@ -150,7 +238,7 @@ const KasetCloudApp = ({ mapInstance, onTravelStart, onTravelEnd, onGoHome, isTr
     useEffect(() => { if (markerRef.current) { const el = markerRef.current.getElement(); if (!el) return; const inner = el.querySelector('.pin-inner'); if (isPinning) { markerRef.current.dragging.enable(); if (inner) inner.classList.add('scale-125', 'ring-4', 'ring-emerald-400/50'); } else { markerRef.current.dragging.disable(); if (inner) inner.classList.remove('scale-125', 'ring-4', 'ring-emerald-400/50'); } } }, [isPinning, selectedProvince]);
     useEffect(() => { if (pinCoords) { setIsAddressLoading(true); fetch(`https://nominatim.openstreetmap.org/reverse?lat=${pinCoords[0]}&lon=${pinCoords[1]}&format=json&accept-language=th`).then(res => res.json()).then(data => { if (data.address) { setAddressDetails(data.address); const a = data.address; const parts = []; if (a.village) parts.push('หมู่บ้าน ' + a.village); else if (a.hamlet) parts.push('หมู่บ้าน ' + a.hamlet); if (a.road) parts.push('ถนน ' + a.road); const subDistrict = a.suburb || a.tambon || a.quarter || a.neighbourhood; if (subDistrict) { if (a.quarter) parts.push('แขวง ' + subDistrict); else parts.push('ตำบล ' + subDistrict); } const district = a.city_district || a.district || a.amphoe; if (district) { if (a.state === 'กรุงเทพมหานคร' || a.city_district) parts.push('เขต ' + district); else parts.push('อำเภอ ' + district); } if (a.state) parts.push('จังหวัด ' + a.state); setAddress(parts.length > 0 ? parts.join(' ') : 'พิกัดไม่มีที่อยู่ระบุชัดเจน'); } else { setAddress('ไม่พบข้อมูลที่อยู่'); setAddressDetails(null); } setIsAddressLoading(false); }).catch(e => { setAddress('เชื่อมต่อแผนที่ไม่ได้'); setIsAddressLoading(false); }); } else { setAddress(null); setAddressDetails(null); } }, [pinCoords]);
 
-    const provinceStats = useMemo(() => { if (!selectedProvince || !appData.provinceData) return null; const exactPop = appData.thaiPop?.find(p => p.province_name === selectedProvince); const statsList = appData.stats ? appData.stats.filter(s => s.province === selectedProvince) : []; const maxYear = statsList.length > 0 ? Math.max(...statsList.map(s => s.year)) : 0; const currentStats = statsList.filter(s => s.year === maxYear); const getValue = (keyword) => { const item = currentStats.find(s => s.topic && s.topic.includes(keyword)); return item ? { val: Number(item.value).toLocaleString(), unit: item.unit } : null; }; return { year: maxYear < 2000 && maxYear > 0 ? maxYear + 543 : maxYear, totalPop: exactPop ? { val: Number(exactPop.population).toLocaleString(), unit: 'คน' } : (getValue('ประชากรทั้งหมด') || getValue('รวม') || { val: appData.provinceData[selectedProvince]?.population || '-', unit: 'คน' }), male: getValue('ชาย'), female: getValue('หญิง'), farmers: getValue('เกษตรกร') || getValue('เกษตร') || getValue('ขึ้นทะเบียน'), }; }, [selectedProvince, appData.stats, appData.provinceData, appData.thaiPop]);
+    const provinceStats = useMemo(() => { if (!selectedProvince || !appData.provinceData) return null; const exactPop = appData.thaiPop?.find(p => p.province_name === selectedProvince); const statsList = appData.stats ? appData.stats.filter(s => s.province === selectedProvince) : []; const maxYear = statsList.length > 0 ? Math.max(...statsList.map(s => s.year)) : 0; const currentStats = statsList.filter(s => s.year === maxYear); const getValue = (keyword) => { const item = currentStats.find(s => s.topic && s.topic.includes(keyword)); return item ? { val: Number(item.value).toLocaleString(), unit: item.unit } : null; }; return { year: maxYear < 2000 && maxYear > 0 ? maxYear + 543 : maxYear, totalPop: exactPop ? { val: Number(exactPop.population).toLocaleString(), unit: 'คน' } : (getValue('ประชากรทั้งหมด') || getValue('รวม') || { val: appData.provinceData[selectedProvince]?.population || '-', unit: 'คน' }), male: getValue('ชาย'), female: getValue('หญิง'), farmers: getValue('เกษตรกร') || getValue('เกษตร') || getValue('ขึ้นทะเบียน'), slogan: appData.provinceData[selectedProvince]?.slogan }; }, [selectedProvince, appData.stats, appData.provinceData, appData.thaiPop]);
     const activeFloodData = useMemo(() => { let result = { risk_level: 'Low', description: 'ไม่พบข้อมูลความเสี่ยงในจุดนี้ (Default)', source: 'No Match Found', debug: { matched: false, reason: 'Init' } }; if (!appData.floodAlerts || !selectedProvince) { result.debug.reason = 'No alerts loaded or Province not selected'; return result; } const provAlerts = appData.floodAlerts.filter(a => a.province === selectedProvince); if (provAlerts.length === 0) { result.debug.reason = `No alerts for province: ${selectedProvince}`; return result; } if (addressDetails) { const rawTambon = addressDetails.suburb || addressDetails.tambon || addressDetails.quarter || addressDetails.neighbourhood || addressDetails.village || ''; const rawAmphoe = addressDetails.city_district || addressDetails.district || addressDetails.amphoe || ''; const normTambon = normalizeThaiName(rawTambon); const normAmphoe = normalizeThaiName(rawAmphoe); if (normTambon) { const tMatch = provAlerts.find(a => { const dbTambon = normalizeThaiName(a.tambon); return dbTambon && (dbTambon === normTambon || dbTambon.includes(normTambon) || normTambon.includes(dbTambon)); }); if (tMatch) return { ...tMatch, source: 'Supabase (Tambon Match)', debug: { matched: true, type: 'Tambon', record: tMatch, mapData: { t: normTambon, a: normAmphoe } } }; } if (normAmphoe) { const aMatch = provAlerts.find(a => { const dbAmphoe = normalizeThaiName(a.amphoe); return dbAmphoe && (dbAmphoe === normAmphoe || dbAmphoe.includes(normAmphoe) || normAmphoe.includes(dbAmphoe)); }); if (aMatch) return { ...aMatch, source: 'Supabase (Amphoe Match)', debug: { matched: true, type: 'Amphoe', record: aMatch, mapData: { t: normTambon, a: normAmphoe } } }; } result.debug.details = { mapNorm: { t: normTambon, a: normAmphoe }, dbRecordsSample: provAlerts.slice(0, 3).map(a => ({t: normalizeThaiName(a.tambon), a: normalizeThaiName(a.amphoe)})) }; } const provWide = provAlerts.find(a => !a.amphoe && !a.tambon); if (provWide) return { ...provWide, source: 'Supabase (Province Wide)', debug: { matched: true, type: 'Province', record: provWide } }; return result; }, [appData.floodAlerts, selectedProvince, addressDetails]);
 
     const handleFullscreen = () => { if (!document.fullscreenElement) document.documentElement.requestFullscreen().then(() => setIsFullscreen(true)); else if (document.exitFullscreen) document.exitFullscreen().then(() => setIsFullscreen(false)); };
@@ -219,14 +307,11 @@ const KasetCloudApp = ({ mapInstance, onTravelStart, onTravelEnd, onGoHome, isTr
             return { ...c, cost: totalCostVal, avgProfitYear: avgProfitPerYear, source: c.source || 'Mock' };
         });
 
-        // Filter for specific categories is intentionally removed when searching for a specific simulation item via Deep Link
-        // But for general list, we apply filter.
-        
         if (categoryFilter !== 'all') {
             if (categoryFilter === 'plant') processed = processed.filter(c => c.category === 'พืชไร่' || c.category === 'พืชสวน' || !c.category);
             else if (categoryFilter === 'animal') processed = processed.filter(c => c.category === 'ปศุสัตว์');
             else if (categoryFilter === 'integrated') processed = processed.filter(c => c.category === 'ผสมผสาน');
-            else if (categoryFilter === 'rice_ministry') processed = processed.filter(c => c.name.includes('ข้าว'));
+            else if (categoryFilter === 'rice_ministry') processed = processed.filter(c => c.name.includes('ข้าว') && !c.name.includes('หมูปิ้ง'));
             else if (categoryFilter === 'rubber_ministry') processed = processed.filter(c => c.name.includes('ยาง') && !c.name.includes('โพนยางคำ'));
             else if (categoryFilter === 'coconut_ministry') processed = processed.filter(c => c.name.includes('มะพร้าว')); 
             else if (categoryFilter === 'durian_ministry') processed = processed.filter(c => c.name.includes('ทุเรียน')); 
@@ -246,20 +331,7 @@ const KasetCloudApp = ({ mapInstance, onTravelStart, onTravelEnd, onGoHome, isTr
     // --- NEW: Trigger Simulation from Deep Link ---
     useEffect(() => {
         if (initialConfig?.simItem) {
-            // Need to calculate economics to get the full item object (costs, yield, etc.)
-            // We temporarily bypass the category filter by calculating with 'all' or finding in full mock
-            
-            // Note: calculateEconomics depends on categoryFilter. We might miss the item if it's filtered out.
-            // So we'll try to find it in the raw list first via a direct helper or temporarily ignoring filter
-            
-            // Best approach: Force find in the full generated list
             const allItems = calculateEconomics(initialConfig.area || area);
-            // Re-calculate might filter based on 'categoryFilter' state which defaults to 'all' or initialConfig.category
-            // If the shared link doesn't have category, we might default to 'all'.
-            
-            // Better: find in MOCK_CROPS directly if needed, or rely on 'all'
-            // Let's rely on 'calculateEconomics' returning it if category is 'all'.
-            
             const found = allItems.find(c => c.name === initialConfig.simItem);
             
             if (found) {
@@ -267,16 +339,15 @@ const KasetCloudApp = ({ mapInstance, onTravelStart, onTravelEnd, onGoHome, isTr
                 if (initialConfig.area) setArea(initialConfig.area);
                 if (initialConfig.years) setYears(initialConfig.years);
             } else {
-                // If not found (maybe filtered), try to find in MOCK directly to show *something*
                 const rawMock = window.AppCore.MOCK_CROPS || [];
                 const mockFound = rawMock.find(c => c.name === initialConfig.simItem);
                 if (mockFound) {
-                     setSimulatingItem({ ...mockFound, cost: mockFound.cost * (initialConfig.area || 1), avgProfitYear: 0 }); // Rough fallback
+                     setSimulatingItem({ ...mockFound, cost: mockFound.cost * (initialConfig.area || 1), avgProfitYear: 0 }); 
                      setArea(initialConfig.area || 1);
                 }
             }
         }
-    }, [initialConfig, calculateEconomics]); // Run when initialConfig is set from App component
+    }, [initialConfig, calculateEconomics]); 
 
     const handleProvinceSelect = (p) => { 
         if (p === selectedProvince) return; 
@@ -418,52 +489,103 @@ const KasetCloudApp = ({ mapInstance, onTravelStart, onTravelEnd, onGoHome, isTr
             </div>
 
             {selectedProvince && !isTraveling && (
-                <div className="fixed bottom-0 left-0 w-full z-[20] bg-gradient-to-t from-black/90 via-black/60 to-transparent pt-10 pb-4 px-4 md:px-6 flex flex-col md:flex-row items-end justify-between pointer-events-none animate-fade-in-up">
+                <div className="fixed bottom-0 left-0 w-full z-[20] bg-gradient-to-t from-black/90 via-black/60 to-transparent pt-10 pb-4 px-4 md:px-6 flex flex-col items-end justify-between pointer-events-none animate-fade-in-up">
                     <style>{`.text-shadow-heavy { text-shadow: 0 2px 4px rgba(0,0,0,0.9); }`}</style>
-                    <div className="mb-2 md:mb-0 text-shadow-heavy pointer-events-auto">
-                        <div className="flex items-center gap-2">
-                            <h3 className="font-bold text-white text-3xl md:text-4xl leading-none tracking-wide">{selectedProvince}</h3>
-                            <div className="flex gap-1">
-                                <a href="https://www.facebook.com/winayo1" target="_blank" rel="noopener noreferrer" className="w-6 h-6 rounded-full bg-blue-600 hover:bg-blue-500 text-white flex items-center justify-center transition shadow-lg" title="ติดตามผู้พัฒนา">
-                                    <i className="fa-brands fa-facebook text-xs"></i>
-                                </a>
-                                <button onClick={handleShareProvince} className={`w-6 h-6 rounded-full flex items-center justify-center transition shadow-lg ${isCopied ? 'bg-green-500 text-white' : 'bg-white/20 hover:bg-white/40 text-white'}`} title="แชร์หน้านี้">
-                                    <i className={`fa-solid ${isCopied ? 'fa-check' : 'fa-share-nodes'} text-xs`}></i>
-                                </button>
+                    <div className="w-full flex flex-col md:flex-row items-end justify-between gap-2">
+                        {/* LEFT: Province Info & Address */}
+                        <div className="mb-2 md:mb-0 text-shadow-heavy pointer-events-auto">
+                            <div className="flex items-center gap-2">
+                                <h3 className="font-bold text-white text-3xl md:text-4xl leading-none tracking-wide">{selectedProvince}</h3>
+                                <div className="flex gap-1">
+                                    <a href="https://www.facebook.com/winayo1" target="_blank" rel="noopener noreferrer" className="w-6 h-6 rounded-full bg-blue-600 hover:bg-blue-500 text-white flex items-center justify-center transition shadow-lg" title="ติดตามผู้พัฒนา">
+                                        <i className="fa-brands fa-facebook text-xs"></i>
+                                    </a>
+                                    <button onClick={handleShareProvince} className={`w-6 h-6 rounded-full flex items-center justify-center transition shadow-lg ${isCopied ? 'bg-green-500 text-white' : 'bg-white/20 hover:bg-white/40 text-white'}`} title="แชร์หน้านี้">
+                                        <i className={`fa-solid ${isCopied ? 'fa-check' : 'fa-share-nodes'} text-xs`}></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div className="mt-1">
+                                {isAddressLoading ? (<span className="text-[10px] text-yellow-300 animate-pulse"><i className="fa-solid fa-spinner fa-spin mr-1"></i> กำลังค้นหาที่อยู่...</span>) : address ? (<div className="bg-black/40 backdrop-blur-md px-2 py-1 rounded-md text-[10px] text-emerald-200 border border-emerald-500/30 shadow-lg inline-block max-w-[300px] truncate"><i className="fa-solid fa-map-location-dot mr-1 text-emerald-400"></i>{address}</div>) : (pinCoords && <span className="text-[10px] text-slate-400">{pinCoords[0].toFixed(4)}, {pinCoords[1].toFixed(4)}</span>)}
                             </div>
                         </div>
-                        <div className="mt-1">
-                            {isAddressLoading ? (<span className="text-[10px] text-yellow-300 animate-pulse"><i className="fa-solid fa-spinner fa-spin mr-1"></i> กำลังค้นหาที่อยู่...</span>) : address ? (<div className="bg-black/40 backdrop-blur-md px-2 py-1 rounded-md text-[10px] text-emerald-200 border border-emerald-500/30 shadow-lg inline-block max-w-[300px] truncate"><i className="fa-solid fa-map-location-dot mr-1 text-emerald-400"></i>{address}</div>) : (pinCoords && <span className="text-[10px] text-slate-400">{pinCoords[0].toFixed(4)}, {pinCoords[1].toFixed(4)}</span>)}
+
+                    {/* --- Slogan Overlay (New: Transparent Style) --- */}
+                    {showSlogan && provinceStats?.slogan && (
+                         <div className={`absolute bottom-32 left-1/2 -translate-x-1/2 w-full max-w-2xl text-center pointer-events-none z-50 ${sloganClass}`}>
+                            <div className="bg-black/40 p-4 rounded-xl border border-white/10 shadow-none backdrop-blur-none">
+                                <i className="fa-solid fa-quote-left text-emerald-400 text-xl mb-2 opacity-60"></i>
+                                <h2 className="text-xl md:text-2xl font-bold text-white leading-relaxed text-shadow-heavy font-sarabun tracking-wide">
+                                    {provinceStats.slogan}
+                                </h2>
+                                <i className="fa-solid fa-quote-right text-emerald-400 text-xl mt-2 opacity-60"></i>
+                            </div>
                         </div>
-                    </div>
-                    <div className="flex flex-wrap items-end gap-3 md:gap-5 text-shadow-heavy justify-end">
-                        <div className="flex flex-col items-center"><div className="flex items-baseline gap-1"><i className="fa-solid fa-users text-blue-400 text-sm"></i><span className="text-sm font-bold text-white">{provinceStats?.totalPop?.val || '-'}</span><span className="text-[9px] text-slate-300">{provinceStats?.totalPop?.unit}</span></div><div className="text-[9px] text-blue-200 font-bold uppercase tracking-wider">ประชากร</div></div>
-                        <div className="flex flex-col items-center"><div className="flex items-baseline gap-1"><i className="fa-solid fa-address-card text-emerald-400 text-sm"></i><span className="text-sm font-bold text-white">{provinceStats?.farmers?.val || '-'}</span><span className="text-[9px] text-emerald-200/70">{provinceStats?.farmers?.unit}</span></div><div className="text-[9px] text-emerald-200 font-bold uppercase tracking-wider">เกษตรกร</div></div>
-                        <div className="w-px h-6 bg-white/20 hidden md:block"></div>
-                        <div className="flex flex-col items-center"><div className="flex items-baseline gap-1"><i className="fa-solid fa-flask text-purple-400 text-sm"></i><span className="text-sm font-bold text-white">{currentProvInfo?.ph || '-'}</span></div><div className="text-[9px] text-purple-200 font-bold uppercase tracking-wider">pH ดิน</div></div>
-                        <div className="flex flex-col items-center"><div className="flex items-baseline gap-1"><i className="fa-solid fa-droplet text-blue-400 text-sm"></i><span className="text-sm font-bold text-white">{currentProvInfo?.moisture || '-'}</span><span className="text-[9px] text-blue-200">%</span></div><div className="text-[9px] text-blue-200 font-bold uppercase tracking-wider">ความชื้น</div></div>
-                        
-                        <div className="flex flex-col items-center group relative cursor-help pointer-events-auto">
-                            <div className="flex items-baseline gap-1"><i className={`fa-solid fa-water text-sm ${floodColorClass}`}></i><span className="text-sm font-bold text-white">{activeFloodData.risk_level}</span></div>
-                            <div className={`text-[9px] font-bold uppercase tracking-wider ${floodColorClass.replace('text', 'bg').replace('400', '500/20')} px-1.5 rounded`}>เสี่ยงน้ำท่วม</div>
-                            <div className="absolute bottom-full mb-2 hidden group-hover:block w-64 bg-black/95 text-white text-xs p-3 rounded border border-white/20 backdrop-blur-md z-50 shadow-2xl origin-bottom-right right-0">
-                                <div className={`font-bold mb-1 text-sm ${floodColorClass}`}>{activeFloodData.risk_level === 'High' ? 'เสี่ยงสูง (High)' : activeFloodData.risk_level === 'Medium' ? 'ปานกลาง (Medium)' : 'ต่ำ (Low)'}</div>
-                                <div className="mb-2 text-[10px] text-slate-300">{activeFloodData.description}</div>
-                                <div className="border-t border-white/20 pt-2 mt-2 bg-white/5 p-2 rounded">
-                                    <div className="text-[9px] font-bold text-cyan-400 mb-1 flex justify-between"><span>DEBUGGER:</span><span className={activeFloodData.debug?.matched ? 'text-green-400' : 'text-red-400'}>{activeFloodData.debug?.matched ? 'MATCHED' : 'NO MATCH'}</span></div>
-                                    <div className="grid grid-cols-[70px_1fr] gap-x-2 gap-y-1 text-[9px] text-slate-400">
-                                        <span className="text-slate-500">Source:</span> <span className="text-white truncate">{activeFloodData.source}</span>
-                                        <span className="text-orange-300 font-bold mt-1 col-span-2">1. Map Data (Nominatim):</span>
-                                        <span className="text-slate-500 pl-2">Raw Tambon:</span> <span className="truncate" title={activeFloodData.debug?.details?.mapNorm?.t}>{activeFloodData.debug?.details?.mapNorm?.t || '-'}</span>
-                                        <span className="text-slate-500 pl-2">Raw Amphoe:</span> <span className="truncate" title={activeFloodData.debug?.details?.mapNorm?.a}>{activeFloodData.debug?.details?.mapNorm?.a || '-'}</span>
-                                        <span className="text-green-300 font-bold mt-1 col-span-2">2. DB Match Candidate:</span>
-                                        {activeFloodData.debug?.record ? (
-                                            <>
-                                                <span className="text-slate-500 pl-2">DB Tambon:</span> <span>{activeFloodData.debug.record.tambon || '-'}</span>
-                                                <span className="text-slate-500 pl-2">DB Amphoe:</span> <span>{activeFloodData.debug.record.amphoe || '-'}</span>
-                                                <span className="text-slate-500 pl-2">Risk:</span> <span className={floodColorClass}>{activeFloodData.debug.record.risk_level}</span>
-                                            </>
-                                        ) : ( <div className="col-span-2 text-red-400 italic pl-2">* ไม่พบข้อมูลตรงกันใน DB</div> )}
+                    )}
+
+                        {/* RIGHT: Weather & Stats (รวมอยู่ใน Flex Group เดียวกัน) */}
+                        <div className="flex flex-wrap items-end gap-3 text-shadow-heavy justify-end">
+                            
+                            {/* Weather Card (Moved Here) */}
+                            {weatherData && weatherData.current_weather && (
+                                <div 
+                                    onClick={() => setExpandWeather(!expandWeather)} 
+                                    className="bg-black/60 backdrop-blur-md rounded-xl p-2 border border-white/10 pointer-events-auto flex gap-3 shadow-lg cursor-pointer hover:bg-black/70 transition-all relative group h-[48px] items-center"
+                                    title={expandWeather ? "ย่อพยากรณ์อากาศ" : "ดูพยากรณ์ล่วงหน้า 7 วัน"}
+                                >
+                                    <div className={`flex flex-col items-center min-w-[60px] ${expandWeather ? 'border-r border-white/10 pr-3' : ''}`}>
+                                        <div className="flex items-center gap-2">
+                                            <i className={`fa-solid ${getWeatherIcon(weatherData.current_weather.weathercode)} text-xl`}></i>
+                                            <div className="text-lg font-bold text-white leading-none">{Math.round(weatherData.current_weather.temperature)}°</div>
+                                        </div>
+                                        <div className="text-[8px] text-slate-400 truncate max-w-[60px] leading-none mt-1">{getWeatherDesc(weatherData.current_weather.weathercode)}</div>
+                                        {!expandWeather && <div className="absolute top-1 right-1 w-2 h-2 bg-emerald-500 rounded-full animate-ping"></div>} 
+                                    </div>
+                                    
+                                    {expandWeather && (
+                                        <div className="flex gap-2 overflow-x-auto scrollbar-hide animate-slide-in-right">
+                                            {weatherData.daily.time.slice(1, 7).map((time, i) => (
+                                                <div key={i} className="flex flex-col items-center justify-between min-w-[24px]">
+                                                    <div className="text-[8px] text-slate-400">{getDayName(time)}</div>
+                                                    <i className={`fa-solid ${getWeatherIcon(weatherData.daily.weathercode[i+1])} text-[10px] my-0.5`}></i>
+                                                    <div className="text-[9px] font-bold text-white">{Math.round(weatherData.daily.temperature_2m_max[i+1])}°</div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            <div className="flex flex-col items-center"><div className="flex items-baseline gap-1"><i className="fa-solid fa-users text-blue-400 text-sm"></i><span className="text-sm font-bold text-white">{provinceStats?.totalPop?.val || '-'}</span><span className="text-[9px] text-slate-300">{provinceStats?.totalPop?.unit}</span></div><div className="text-[9px] text-blue-200 font-bold uppercase tracking-wider">ประชากร</div></div>
+                            <div className="flex flex-col items-center"><div className="flex items-baseline gap-1"><i className="fa-solid fa-address-card text-emerald-400 text-sm"></i><span className="text-sm font-bold text-white">{provinceStats?.farmers?.val || '-'}</span><span className="text-[9px] text-emerald-200/70">{provinceStats?.farmers?.unit}</span></div><div className="text-[9px] text-emerald-200 font-bold uppercase tracking-wider">เกษตรกร</div></div>
+                            
+                            <div className="w-px h-6 bg-white/20 hidden md:block"></div>
+                            
+                            <div className="flex flex-col items-center"><div className="flex items-baseline gap-1"><i className="fa-solid fa-flask text-purple-400 text-sm"></i><span className="text-sm font-bold text-white">{currentProvInfo?.ph || '-'}</span></div><div className="text-[9px] text-purple-200 font-bold uppercase tracking-wider">pH ดิน</div></div>
+                            <div className="flex flex-col items-center"><div className="flex items-baseline gap-1"><i className="fa-solid fa-droplet text-blue-400 text-sm"></i><span className="text-sm font-bold text-white">{currentProvInfo?.moisture || '-'}</span><span className="text-[9px] text-blue-200">%</span></div><div className="text-[9px] text-blue-200 font-bold uppercase tracking-wider">ความชื้น</div></div>
+                            
+                            <div className="flex flex-col items-center group relative cursor-help pointer-events-auto">
+                                <div className="flex items-baseline gap-1"><i className={`fa-solid fa-water text-sm ${floodColorClass}`}></i><span className="text-sm font-bold text-white">{activeFloodData.risk_level}</span></div>
+                                <div className={`text-[9px] font-bold uppercase tracking-wider ${floodColorClass.replace('text', 'bg').replace('400', '500/20')} px-1.5 rounded`}>เสี่ยงน้ำท่วม</div>
+                                <div className="absolute bottom-full mb-2 hidden group-hover:block w-64 bg-black/95 text-white text-xs p-3 rounded border border-white/20 backdrop-blur-md z-50 shadow-2xl origin-bottom-right right-0">
+                                    <div className={`font-bold mb-1 text-sm ${floodColorClass}`}>{activeFloodData.risk_level === 'High' ? 'เสี่ยงสูง (High)' : activeFloodData.risk_level === 'Medium' ? 'ปานกลาง (Medium)' : 'ต่ำ (Low)'}</div>
+                                    <div className="mb-2 text-[10px] text-slate-300">{activeFloodData.description}</div>
+                                    <div className="border-t border-white/20 pt-2 mt-2 bg-white/5 p-2 rounded">
+                                        <div className="text-[9px] font-bold text-cyan-400 mb-1 flex justify-between"><span>DEBUGGER:</span><span className={activeFloodData.debug?.matched ? 'text-green-400' : 'text-red-400'}>{activeFloodData.debug?.matched ? 'MATCHED' : 'NO MATCH'}</span></div>
+                                        <div className="grid grid-cols-[70px_1fr] gap-x-2 gap-y-1 text-[9px] text-slate-400">
+                                            <span className="text-slate-500">Source:</span> <span className="text-white truncate">{activeFloodData.source}</span>
+                                            <span className="text-orange-300 font-bold mt-1 col-span-2">1. Map Data (Nominatim):</span>
+                                            <span className="text-slate-500 pl-2">Raw Tambon:</span> <span className="truncate" title={activeFloodData.debug?.details?.mapNorm?.t}>{activeFloodData.debug?.details?.mapNorm?.t || '-'}</span>
+                                            <span className="text-slate-500 pl-2">Raw Amphoe:</span> <span className="truncate" title={activeFloodData.debug?.details?.mapNorm?.a}>{activeFloodData.debug?.details?.mapNorm?.a || '-'}</span>
+                                            <span className="text-green-300 font-bold mt-1 col-span-2">2. DB Match Candidate:</span>
+                                            {activeFloodData.debug?.record ? (
+                                                <>
+                                                    <span className="text-slate-500 pl-2">DB Tambon:</span> <span>{activeFloodData.debug.record.tambon || '-'}</span>
+                                                    <span className="text-slate-500 pl-2">DB Amphoe:</span> <span>{activeFloodData.debug.record.amphoe || '-'}</span>
+                                                    <span className="text-slate-500 pl-2">Risk:</span> <span className={floodColorClass}>{activeFloodData.debug.record.risk_level}</span>
+                                                </>
+                                            ) : ( <div className="col-span-2 text-red-400 italic pl-2">* ไม่พบข้อมูลตรงกันใน DB</div> )}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -488,7 +610,6 @@ const KasetCloudApp = ({ mapInstance, onTravelStart, onTravelEnd, onGoHome, isTr
                 )}
 
                 {/* CONTENT AREA: Results / Knowledge / Video / Simulation */}
-                {/* แก้ไข: เพิ่มเงื่อนไข simulatingItem เพื่อให้แสดงผลได้ทันทีเมื่อเปิดจากลิ๊งค์แชร์ โดยไม่ต้องเลือกจังหวัด */}
                 {(selectedProvince || simulatingItem || showKnowledgeCenter || videoCategory) && !isReadingBook && (
                     <div className={`w-full max-w-5xl mx-auto flex flex-col h-[80vh] animate-slide-down mt-2`}>
                         {showKnowledgeCenter ? (
@@ -577,7 +698,7 @@ const KasetCloudApp = ({ mapInstance, onTravelStart, onTravelEnd, onGoHome, isTr
     );
 };
 
-// ... (HomePage, App, and Root remain the same)
+// --- 2. HOME PAGE COMPONENT ---
 const HomePage = ({ onLocate, isTraveling }) => { 
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [locating, setLocating] = useState(false); 
@@ -713,14 +834,18 @@ const HomePage = ({ onLocate, isTraveling }) => {
     );
 };
 
+// --- 3. APP ROOT COMPONENT ---
 const App = () => {
     const [page, setPage] = useState('home');
     const [travel, setTravel] = useState({ active: false, msg: '', rotation: 0 }); 
     const mapRef = useRef(null);
     const rotationInterval = useRef(null);
     const [initialAction, setInitialAction] = useState(null);
-    const [initialConfig, setInitialConfig] = useState(null);
-    const appData = useRealtimeData ? useRealtimeData() : { provinceData: {} };
+    
+    // ตั้งค่าเริ่มต้นของ initialConfig ให้มี category เป็น 'rice_ministry' เสมอ
+    const [initialConfig, setInitialConfig] = useState({ category: 'rice_ministry' });
+    
+    const appData = useRealtimeData ? useRealtimeData() : { provinceData: {}, regions: {}, crops: [] };
 
     useEffect(() => {
         if (mapRef.current) return;
@@ -740,7 +865,11 @@ const App = () => {
             const prov = params.get('province');
             const cat = params.get('category');
             if (prov) {
-                setInitialConfig({ province: decodeURIComponent(prov), category: cat ? decodeURIComponent(cat) : 'all' });
+                // ถ้ามี category ใน URL ให้ใช้ค่านั้น ถ้าไม่มีให้ใช้ 'rice_ministry' เป็น default
+                setInitialConfig({ 
+                    province: decodeURIComponent(prov), 
+                    category: cat ? decodeURIComponent(cat) : 'rice_ministry' 
+                });
                 setPage('kaset');
             }
         }
@@ -763,7 +892,8 @@ const App = () => {
                 setInitialConfig({ 
                     simItem: name, 
                     area: area, 
-                    years: years 
+                    years: years,
+                    category: 'all' // ถ้ามาจากการแชร์โมเดล ให้แสดงทั้งหมด หรือตามประเภทของโมเดลนั้น
                 });
                 setPage('kaset');
                 map.setView(DON_MUEANG_COORDS, 6);

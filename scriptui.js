@@ -1,5 +1,5 @@
 // --- scriptui.js : UI Components (SimulationPanel, Overlay) ---
-// อัปเดตล่าสุด: ปรับปรุงปุ่มแชร์ใน SimulationPanel ให้ข้อมูลครบถ้วนและลิงก์ตรงจุด (Smart Link)
+// อัปเดตล่าสุด: แก้ไขขอบดำวีดีโอด้วยเทคนิค Aspect Ratio Lock + Scale Up (w-[300%] aspect-video)
 
 (function(global) {
     const { useState, useEffect, useRef, useMemo } = React;
@@ -16,6 +16,48 @@
             console.error('Failed to copy', err);
         }
         document.body.removeChild(textarea);
+    };
+
+    // --- HELPER: GET COVER IMAGE ---
+    // คัดเลือกภาพ Unsplash ที่สื่อความหมายดีที่สุดสำหรับแต่ละธุรกิจ
+    const getCoverImage = (name, category) => {
+        const n = name.toLowerCase();
+        
+        // *** FIX: Priority 1 - ตรวจสอบหมูปิ้งก่อนเสมอ ***
+        if (n.includes('หมูปิ้ง') || n.includes('moo ping')) return 'https://images.unsplash.com/photo-1593560708920-61dd98c46a4e?auto=format&fit=crop&w=800&q=80'; 
+
+        // --- 1. กลุ่มเกษตรหลัก (Agriculture) ---
+        if (n.includes('ข้าว') && !n.includes('โพด') && !n.includes('หมู')) return 'https://images.unsplash.com/photo-1535242208474-9a2793260ca8?auto=format&fit=crop&w=800&q=80'; // ทุ่งนา
+        if (n.includes('ยางพารา')) return 'https://images.unsplash.com/photo-1598064977473-b78f4b005c28?auto=format&fit=crop&w=800&q=80'; // สวนยาง
+        if (n.includes('ทุเรียน')) return 'https://images.unsplash.com/photo-1591347073229-79759c6c7689?auto=format&fit=crop&w=800&q=80'; // ทุเรียน
+        if (n.includes('มะพร้าว')) return 'https://images.unsplash.com/photo-1622396481328-9b1b9e879799?auto=format&fit=crop&w=800&q=80'; // มะพร้าว
+        if (n.includes('ข้าวโพด')) return 'https://images.unsplash.com/photo-1601648764658-ad77726985fa?auto=format&fit=crop&w=800&q=80'; // ข้าวโพด
+        if (n.includes('อินทผาลัม')) return 'https://images.unsplash.com/photo-1563426732357-19493952e85e?auto=format&fit=crop&w=800&q=80'; // อินทผาลัม
+        if (n.includes('โคก') || category === 'ผสมผสาน') return 'https://images.unsplash.com/photo-1592419044706-39796d40f98c?auto=format&fit=crop&w=800&q=80'; // ธรรมชาติ/เกษตรผสมผสาน
+        if (n.includes('หมู') || n.includes('สุกร')) {
+            return 'https://images.unsplash.com/photo-1604848698030-c434ba08ece1?auto=format&fit=crop&w=800&q=80'; // ฟาร์มหมู
+        }
+
+        // --- 2. กลุ่มธุรกิจ (Business Ministry) ---
+        if (n.includes('คาเฟ่')) return 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&w=800&q=80'; // ร้านกาแฟในสวน
+        if (n.includes('กาแฟ')) return 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=800&q=80'; // กาแฟดริป/โบราณ
+        if (n.includes('ชานม') || n.includes('ไข่มุก')) return 'https://images.unsplash.com/photo-1558160074-4d7d8bdf4256?auto=format&fit=crop&w=800&q=80'; // ชานมไข่มุก
+        if (n.includes('แซนด์วิช')) return 'https://images.unsplash.com/photo-1528735602780-2552fd46c7af?auto=format&fit=crop&w=800&q=80'; // แซนด์วิช
+        if (n.includes('หมูกระทะ') || n.includes('บุฟเฟต์')) return 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=800&q=80'; // ปิ้งย่าง
+        if (n.includes('ผู้สูงอายุ')) return 'https://images.unsplash.com/photo-1581579438747-104c53d7fbc4?auto=format&fit=crop&w=800&q=80'; // ดูแลผู้สูงอายุ
+        if (n.includes('กายภาพ')) return 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&fit=crop&w=800&q=80'; // กายภาพบำบัด
+        if (n.includes('สลัด')) return 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=800&q=80'; // ผักสลัด
+        if (n.includes('ลูกชิ้น')) return 'https://images.unsplash.com/photo-1529042410759-befb1204b468?auto=format&fit=crop&w=800&q=80'; // ลูกชิ้นปิ้ง
+        if (n.includes('ออนไลน์') || n.includes('affiliate') || n.includes('live')) return 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=800&q=80'; // การตลาดออนไลน์
+        if (n.includes('content') || n.includes('creator')) return 'https://images.unsplash.com/photo-1611162617474-5b21e879e113?auto=format&fit=crop&w=800&q=80'; // Content Creator
+        if (n.includes('dropship')) return 'https://images.unsplash.com/photo-1556742049-0cfed4f7a07d?auto=format&fit=crop&w=800&q=80'; // E-commerce
+        if (n.includes('รถพุ่มพวง') || n.includes('food truck')) return 'https://images.unsplash.com/photo-1565123409695-7b5ef63a2efb?auto=format&fit=crop&w=800&q=80'; // Food Truck
+        if (n.includes('ต้นไม้')) return 'https://images.unsplash.com/photo-1463320898484-cdee8141c787?auto=format&fit=crop&w=800&q=80'; // ร้านต้นไม้
+        if (n.includes('solar')) return 'https://images.unsplash.com/photo-1509391366360-2e959784a276?auto=format&fit=crop&w=800&q=80'; // แผงโซลาร์เซลล์
+        if (n.includes('โฮมสเตย์') || n.includes('เต็นท์')) return 'https://images.unsplash.com/photo-1496545672479-7f9462d5edd2?auto=format&fit=crop&w=800&q=80'; // แคมป์ปิ้ง/โฮมสเตย์
+        
+        // Default
+        return 'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&w=800&q=80'; // ธรรมชาติทั่วไป
     };
 
     // --- SUB-COMPONENT: HANDBOOK PANEL (Embedded) ---
@@ -94,7 +136,8 @@
             'factory_salad': 'โรงงานแปรรูปผักสลัด',
             'franchise_meatball': 'แฟรนไชส์ลูกชิ้นระเบิด',
             'affiliate': 'นายหน้า Affiliate (TikTok)',
-            'solar_farm': 'Solar Farm ขายไฟ'
+            'solar_farm': 'Solar Farm ขายไฟ',
+            'moo_ping': 'ข้าวเหนียวหมูปิ้งเงินล้าน'
         };
         
         const title = propTitle || titleMap[category] || category || 'วิดีโอแนะนำ';
@@ -243,9 +286,12 @@
         const [showHandbook, setShowHandbook] = useState(false);
         const [showVideo, setShowVideo] = useState(false);
         const [isCopied, setIsCopied] = useState(false);
+        
+        // --- NEW: VIDEO HEADER STATE ---
+        const [showVideoHeader, setShowVideoHeader] = useState(true);
 
         // --- CALCULATION LOGIC ---
-        const isRice = item.name.includes('ข้าว') && !item.name.includes('ข้าวโพด'); 
+        const isRice = item.name.includes('ข้าว') && !item.name.includes('ข้าวโพด') && !item.name.includes('หมูปิ้ง'); 
         const isRubber = item.name.includes('ยาง') && !item.name.includes('โพนยางคำ');
         const isCoconut = item.name.includes('มะพร้าว'); 
         const isDurian = item.name.includes('ทุเรียน');
@@ -467,7 +513,7 @@
         if (isRubber) availableBookKey = 'rubber_manual';
         if (isCoconut) availableBookKey = 'coconut_manual';
         if (itemName.includes('โพนยางคำ')) availableBookKey = 'phon_yang_kham_manual';
-        if (itemName.includes('หมู') || itemName.includes('สุกร')) availableBookKey = 'pig_manual';
+        if (itemName.includes('หมู') && !itemName.includes('หมูปิ้ง') && (itemName.includes('สุกร') || itemName.includes('ขุน'))) availableBookKey = 'pig_manual';
         if (itemName.includes('ข้าวโพด')) availableBookKey = 'maize_manual';
         if (itemName.includes('อินทผาลัม')) availableBookKey = 'date_palm_research';
 
@@ -489,10 +535,15 @@
         else if (itemName.includes('ต้นไม้') || itemName.includes('plant')) availableBookKey = 'biz_plant_shop';
         else if (itemName.includes('solar') || itemName.includes('ขายไฟ')) availableBookKey = 'biz_solar_farm';
         else if (itemName.includes('โฮมสเตย์') || itemName.includes('กางเต็นท์')) availableBookKey = 'biz_homestay';
+        
+        // --- เพิ่ม Mapping หมูปิ้ง ---
+        else if (itemName.includes('หมูปิ้ง') || itemName.includes('moo ping')) availableBookKey = 'biz_moo_ping';
 
+        // --- PREPARE VIDEO HEADER ---
         const currentVideoKey = window.AppVideo ? window.AppVideo.getVideoKey(item, { variety: riceConfig.variety }) : null;
         const currentVideos = currentVideoKey ? window.AppVideo.getVideos(currentVideoKey) : [];
-        
+        const firstVideoId = currentVideos.length > 0 ? currentVideos[0].id : null; // Get first video for header
+
         const finalYearData = simulationData[simulationData.length - 1];
         const totalAccumulatedProfit = finalYearData ? finalYearData.accumulatedProfit : 0;
         const averageProfitPerYear = globalYears > 0 ? (totalAccumulatedProfit / globalYears) : 0;
@@ -505,7 +556,6 @@
             
             // Construct Smart Link (Direct to Simulation)
             const baseUrl = window.location.href.split('#')[0];
-            // สร้าง Deep Link โดยระบุชื่อรายการ, พื้นที่, และระยะเวลา
             const shareUrl = `${baseUrl}#sim_item=${encodeURIComponent(item.name)}&sim_area=${globalArea}&sim_years=${globalYears}`;
 
             const summary = `
@@ -544,17 +594,56 @@ ${shareUrl}
             );
         }
 
+        const coverImg = getCoverImage(item.name, item.category);
+
         // Main Simulation View
         return (
             <div className={`flex flex-col h-full w-full animate-slide-down rounded-b-3xl overflow-hidden shadow-2xl border-t-0 glass-panel-clear`}>
                 <div className="flex-1 overflow-y-auto p-4 space-y-4 pb-20 pt-6">
+                    
+                    {/* --- ADDED: Cover Image/Video Banner (UPDATED) --- */}
+                    {/* ปรับขนาดส่วนหัวให้เล็กลง (Compact Header) */}
+                    <div className="w-full h-28 md:h-44 rounded-xl mb-4 shadow-lg overflow-hidden relative group bg-black">
+                        {firstVideoId && showVideoHeader ? (
+                            <div className="absolute inset-0 w-full h-full pointer-events-none overflow-hidden">
+                                <iframe 
+                                    // *** FIX: ใช้เทคนิค Scale 300% + Aspect-Video เพื่อบังคับสัดส่วน 16:9 และ Crop ส่วนเกินออก (แก้ขอบดำ) ***
+                                    src={`https://www.youtube.com/embed/${firstVideoId}?autoplay=1&mute=1&controls=0&loop=1&playlist=${firstVideoId}&showinfo=0&modestbranding=1&iv_load_policy=3&disablekb=1&rel=0&playsinline=1&vq=tiny`}
+                                    className="absolute top-1/2 left-1/2 w-[300%] aspect-video -translate-x-1/2 -translate-y-1/2 object-cover opacity-60 pointer-events-none"
+                                    allow="autoplay; encrypted-media"
+                                    frameBorder="0"
+                                ></iframe>
+                            </div>
+                        ) : (
+                            <div 
+                                className="w-full h-full bg-cover bg-center transition-transform duration-700 group-hover:scale-110" 
+                                style={{ backgroundImage: `url(${coverImg})` }}
+                            ></div>
+                        )}
+                        
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent"></div>
+                        
+                        {/* Toggle Video Header Button */}
+                        {firstVideoId && (
+                             <button 
+                                onClick={() => setShowVideoHeader(!showVideoHeader)}
+                                className={`absolute top-2 right-2 z-20 w-8 h-8 rounded-full flex items-center justify-center transition backdrop-blur-md border border-white/10 ${showVideoHeader ? 'bg-red-600/80 text-white animate-pulse' : 'bg-black/50 text-slate-300 hover:text-white'}`}
+                                title={showVideoHeader ? "ปิดวิดีโอหน้าปก" : "เล่นวิดีโอหน้าปก"}
+                            >
+                                <i className={`fa-solid ${showVideoHeader ? 'fa-pause' : 'fa-play'}`}></i>
+                            </button>
+                        )}
+
+                        <div className="absolute bottom-3 left-4 text-white z-10">
+                            <h2 className="text-xl md:text-2xl font-bold shadow-black drop-shadow-md">{item.name}</h2>
+                            <div className="text-xs text-emerald-300 font-light tracking-wide">{isIntegrated ? 'กระทรวงเกษตรผสมผสาน' : item.category === 'ธุรกิจ' ? 'กระทรวงพี่เลี้ยงธุรกิจ' : 'ข้อมูลพืชเศรษฐกิจ'}</div>
+                        </div>
+                    </div>
+
                     <div className="flex justify-between items-start mb-2">
-                        <div>
-                            <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                                {isIntegrated ? <i className="fa-solid fa-layer-group text-emerald-300"></i> : item.category === 'ธุรกิจ' ? <i className="fa-solid fa-briefcase text-purple-400"></i> : <i className="fa-solid fa-seedling text-emerald-400"></i>}
-                                {item.name}
-                            </h2>
-                            <div className="text-xs text-slate-400 mt-1">{isIntegrated ? 'กระทรวงเกษตรผสมผสาน' : item.category === 'ธุรกิจ' ? 'กระทรวงพี่เลี้ยงธุรกิจ' : 'ข้อมูลทั่วไป'}</div>
+                        {/* Title removed here as it's now in the banner, keeping controls only */}
+                        <div className="flex-1">
+                             {/* Placeholder for layout balance */}
                         </div>
                         <div className="flex gap-2">
                              {/* Share Button for Simulation */}
