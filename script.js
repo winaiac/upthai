@@ -1,5 +1,5 @@
 // --- script.js : Main Entry Point & Map Logic ---
-// อัปเดตล่าสุด: เพิ่มรองรับ Deep Link (#sim_item) เพื่อเปิดหน้าคำนวณกำไรจากการแชร์ได้ทันที
+// อัปเดตล่าสุด: เพิ่ม Transition Effect (Cloud/Matrix) เมื่อเข้าใช้งานผ่านลิงก์แชร์ (#sim_item)
 
 const { useState, useEffect, useRef, useMemo, useCallback } = React;
 
@@ -488,7 +488,8 @@ const KasetCloudApp = ({ mapInstance, onTravelStart, onTravelEnd, onGoHome, isTr
                 )}
 
                 {/* CONTENT AREA: Results / Knowledge / Video / Simulation */}
-                {(selectedProvince || showKnowledgeCenter || videoCategory) && !isReadingBook && (
+                {/* แก้ไข: เพิ่มเงื่อนไข simulatingItem เพื่อให้แสดงผลได้ทันทีเมื่อเปิดจากลิ๊งค์แชร์ โดยไม่ต้องเลือกจังหวัด */}
+                {(selectedProvince || simulatingItem || showKnowledgeCenter || videoCategory) && !isReadingBook && (
                     <div className={`w-full max-w-5xl mx-auto flex flex-col h-[80vh] animate-slide-down mt-2`}>
                         {showKnowledgeCenter ? (
                             <KnowledgeCenterModal onClose={() => setShowKnowledgeCenter(false)} />
@@ -747,20 +748,31 @@ const App = () => {
             setPage('kaset');
             map.setView(DON_MUEANG_COORDS, 6);
         }
-        // --- NEW: Handle Simulation Deep Link ---
+        // --- NEW: Handle Simulation Deep Link with Cloud Transition ---
         else if (hash.includes('sim_item=')) {
             const params = new URLSearchParams(hash.substring(1));
             const name = decodeURIComponent(params.get('sim_item'));
             const area = parseFloat(params.get('sim_area')) || 1;
             const years = parseFloat(params.get('sim_years')) || 10;
             
-            setInitialConfig({ 
-                simItem: name, 
-                area: area, 
-                years: years 
-            });
-            setPage('kaset');
-            map.setView(DON_MUEANG_COORDS, 6);
+            // Trigger Matrix Cloud Transition
+            setTravel({ active: true, msg: `กำลังดึงข้อมูล: ${name}...`, rotation: 0 });
+
+            // Wait for animation to cover screen
+            setTimeout(() => {
+                setInitialConfig({ 
+                    simItem: name, 
+                    area: area, 
+                    years: years 
+                });
+                setPage('kaset');
+                map.setView(DON_MUEANG_COORDS, 6);
+                
+                // End animation (fade out)
+                setTimeout(() => {
+                    setTravel({ active: false, msg: '', rotation: 0 });
+                }, 1500);
+            }, 2500);
         }
 
         return () => { if (map) map.remove(); mapRef.current = null; };
