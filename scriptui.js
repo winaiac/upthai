@@ -1,5 +1,5 @@
 // --- scriptui.js : UI Components (SimulationPanel, Overlay) ---
-// อัปเดตล่าสุด: แก้ไขขอบดำวีดีโอด้วยเทคนิค Aspect Ratio Lock + Scale Up (w-[300%] aspect-video)
+// อัปเดตล่าสุด: ขยายส่วนหัว (Immersive Header) และย้ายปุ่มควบคุมทั้งหมดไปไว้บนวิดีโอ (Overlay Controls)
 
 (function(global) {
     const { useState, useEffect, useRef, useMemo } = React;
@@ -601,9 +601,9 @@ ${shareUrl}
             <div className={`flex flex-col h-full w-full animate-slide-down rounded-b-3xl overflow-hidden shadow-2xl border-t-0 glass-panel-clear`}>
                 <div className="flex-1 overflow-y-auto p-4 space-y-4 pb-20 pt-6">
                     
-                    {/* --- ADDED: Cover Image/Video Banner (UPDATED) --- */}
-                    {/* ปรับขนาดส่วนหัวให้เล็กลง (Compact Header) */}
-                    <div className="w-full h-28 md:h-44 rounded-xl mb-4 shadow-lg overflow-hidden relative group bg-black">
+                    {/* --- ADDED: Cover Image/Video Banner (UPDATED: Immersive Controls) --- */}
+                    {/* ขยายความสูงของส่วนหัวเป็น h-56/h-80 และรวมปุ่มควบคุมเข้าไปข้างใน */}
+                    <div className="w-full h-56 md:h-80 rounded-xl mb-4 shadow-lg overflow-hidden relative group bg-black">
                         {firstVideoId && showVideoHeader ? (
                             <div className="absolute inset-0 w-full h-full pointer-events-none overflow-hidden">
                                 <iframe 
@@ -623,50 +623,54 @@ ${shareUrl}
                         
                         <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent"></div>
                         
-                        {/* Toggle Video Header Button */}
-                        {firstVideoId && (
-                             <button 
-                                onClick={() => setShowVideoHeader(!showVideoHeader)}
-                                className={`absolute top-2 right-2 z-20 w-8 h-8 rounded-full flex items-center justify-center transition backdrop-blur-md border border-white/10 ${showVideoHeader ? 'bg-red-600/80 text-white animate-pulse' : 'bg-black/50 text-slate-300 hover:text-white'}`}
-                                title={showVideoHeader ? "ปิดวิดีโอหน้าปก" : "เล่นวิดีโอหน้าปก"}
-                            >
-                                <i className={`fa-solid ${showVideoHeader ? 'fa-pause' : 'fa-play'}`}></i>
-                            </button>
-                        )}
+                        {/* --- TOP RIGHT CONTROLS (OVERLAY) --- */}
+                        {/* รวมปุ่มทั้งหมดไว้ที่มุมขวาบนของวิดีโอ */}
+                        <div className="absolute top-3 right-3 z-20 flex gap-2 items-center">
+                            
+                            {/* 1. ปุ่มเล่น/หยุดวิดีโอปก (ถ้ามี) */}
+                            {firstVideoId && (
+                                <button 
+                                    onClick={() => setShowVideoHeader(!showVideoHeader)}
+                                    className={`w-9 h-9 rounded-full flex items-center justify-center transition backdrop-blur-md border border-white/10 shadow-lg ${showVideoHeader ? 'bg-red-600/80 text-white animate-pulse' : 'bg-black/40 text-slate-300 hover:text-white hover:bg-black/60'}`}
+                                    title={showVideoHeader ? "ปิดวิดีโอหน้าปก" : "เล่นวิดีโอหน้าปก"}
+                                >
+                                    <i className={`fa-solid ${showVideoHeader ? 'fa-pause' : 'fa-play'}`}></i>
+                                </button>
+                            )}
 
-                        <div className="absolute bottom-3 left-4 text-white z-10">
-                            <h2 className="text-xl md:text-2xl font-bold shadow-black drop-shadow-md">{item.name}</h2>
-                            <div className="text-xs text-emerald-300 font-light tracking-wide">{isIntegrated ? 'กระทรวงเกษตรผสมผสาน' : item.category === 'ธุรกิจ' ? 'กระทรวงพี่เลี้ยงธุรกิจ' : 'ข้อมูลพืชเศรษฐกิจ'}</div>
-                        </div>
-                    </div>
-
-                    <div className="flex justify-between items-start mb-2">
-                        {/* Title removed here as it's now in the banner, keeping controls only */}
-                        <div className="flex-1">
-                             {/* Placeholder for layout balance */}
-                        </div>
-                        <div className="flex gap-2">
-                             {/* Share Button for Simulation */}
+                             {/* 2. ปุ่มแชร์ */}
                              <button 
                                 onClick={handleShareSimulation} 
-                                className={`w-8 h-8 rounded-full transition flex items-center justify-center shadow-lg ${isCopied ? 'bg-emerald-500 text-white' : 'bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white'}`}
+                                className={`w-9 h-9 rounded-full transition flex items-center justify-center shadow-lg backdrop-blur-md border border-white/10 ${isCopied ? 'bg-emerald-500 text-white' : 'bg-black/40 text-slate-300 hover:text-white hover:bg-black/60'}`}
                                 title="แชร์สรุปผลลัพธ์"
                             >
                                 <i className={`fa-solid ${isCopied ? 'fa-check' : 'fa-share-nodes'}`}></i>
                             </button>
 
+                            {/* 3. ปุ่มคลังวิดีโอ YouTube */}
                             {currentVideos.length > 0 && (
                                 <button 
                                     onClick={() => setShowVideo(true)} 
-                                    className="w-8 h-8 rounded-full bg-red-600 hover:bg-red-500 text-white flex items-center justify-center transition shadow-lg animate-pulse"
+                                    className="w-9 h-9 rounded-full bg-red-600/90 hover:bg-red-500 text-white flex items-center justify-center transition shadow-lg backdrop-blur-md border border-white/10 animate-pulse"
                                     title="ดูวิดีโอแนะนำ"
                                 >
                                     <i className="fa-brands fa-youtube"></i>
                                 </button>
                             )}
-                            <button onClick={onClose}><i className="fa-solid fa-times text-slate-400 hover:text-white text-xl"></i></button>
+
+                            {/* 4. ปุ่มปิด (กากบาท) */}
+                            <button onClick={onClose} className="w-9 h-9 rounded-full bg-black/40 hover:bg-red-500/80 flex items-center justify-center text-slate-300 hover:text-white transition backdrop-blur-md border border-white/10 shadow-lg">
+                                <i className="fa-solid fa-times text-lg"></i>
+                            </button>
+                        </div>
+
+                        <div className="absolute bottom-4 left-4 text-white z-10">
+                            <h2 className="text-2xl md:text-3xl font-bold shadow-black drop-shadow-md">{item.name}</h2>
+                            <div className="text-sm text-emerald-300 font-light tracking-wide">{isIntegrated ? 'กระทรวงเกษตรผสมผสาน' : item.category === 'ธุรกิจ' ? 'กระทรวงพี่เลี้ยงธุรกิจ' : 'ข้อมูลพืชเศรษฐกิจ'}</div>
                         </div>
                     </div>
+
+                    {/* Previous control bar removed - integrated into header */}
 
                     <div className="flex items-center gap-2 bg-white/5 rounded-lg p-2 border border-white/10 mb-4">
                         <div className="flex-1 flex flex-col px-2 border-r border-white/10">
