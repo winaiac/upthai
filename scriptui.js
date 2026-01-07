@@ -1,5 +1,5 @@
 // --- scriptui.js : UI Components (SimulationPanel, Overlay) ---
-// อัปเดตล่าสุด: เปลี่ยน Modal ทั้งหมดให้เป็น Panel ฝังใน Dashboard (Non-popup)
+// อัปเดตล่าสุด: ปรับปรุงปุ่มแชร์ใน SimulationPanel ให้ข้อมูลครบถ้วนและลิงก์ตรงจุด (Smart Link)
 
 (function(global) {
     const { useState, useEffect, useRef, useMemo } = React;
@@ -19,7 +19,6 @@
     };
 
     // --- SUB-COMPONENT: HANDBOOK PANEL (Embedded) ---
-    // เปลี่ยนจาก Modal เป็น Panel เต็มพื้นที่
     const HandbookPanel = ({ bookData, onClose }) => {
         if (!bookData) return null;
         
@@ -78,7 +77,6 @@
     };
 
     // --- SUB-COMPONENT: VIDEO GALLERY PANEL (Embedded) ---
-    // เปลี่ยนจาก Modal เป็น Panel เต็มพื้นที่
     const VideoGalleryPanel = ({ category, videos: propVideos, title: propTitle, onClose }) => {
         const videos = category && window.AppVideo ? window.AppVideo.getVideos(category) : (propVideos || []);
         
@@ -176,7 +174,6 @@
     };
 
     // --- COMPONENT: KNOWLEDGE CENTER PANEL (Embedded) ---
-    // เปลี่ยนจาก Modal เป็น Panel เต็มพื้นที่ และจัดการ State ภายในเพื่อสลับระหว่างรายการและเนื้อหาหนังสือ
     const KnowledgeCenterPanel = ({ onClose, onReadMode }) => {
         const [selectedBook, setSelectedBook] = useState(null);
         const [isCopied, setIsCopied] = useState(false);
@@ -193,7 +190,6 @@
             setTimeout(() => setIsCopied(false), 2000);
         };
 
-        // ถ้ามีการเลือกหนังสือ ให้แสดง HandbookPanel แทน
         if (selectedBook) {
             return (
                 <HandbookPanel 
@@ -203,13 +199,12 @@
             );
         }
 
-        // แสดงรายการหนังสือ
         return (
             <div className="w-full h-full flex flex-col bg-slate-900 rounded-b-3xl overflow-hidden border-t-0 border border-blue-500/30 shadow-2xl animate-fade-in">
                 <div className="p-5 border-b border-white/10 bg-gradient-to-r from-blue-900/40 to-slate-900 flex justify-between items-center shrink-0">
                     <div className="flex items-center gap-3">
                         <i className="fa-solid fa-book-journal-whills text-2xl text-blue-400"></i>
-                        <h2 className="text-xl font-bold text-white">ศูนย์ความรู้การเกษตร</h2>
+                        <h2 className="text-xl font-bold text-white">ศูนย์ความรู้การเกษตร & ธุรกิจ</h2>
                     </div>
                     <div className="flex items-center gap-2">
                         <button onClick={handleCopyLink} className={`px-3 py-1.5 rounded-full flex items-center gap-2 text-xs font-bold transition border border-white/10 ${isCopied ? 'bg-emerald-600 text-white' : 'bg-white/10 hover:bg-blue-600 text-slate-300 hover:text-white'}`}>
@@ -225,13 +220,13 @@
                     {Object.entries(library).map(([key, book]) => (
                         <div key={key} onClick={() => setSelectedBook({...book, id: key})} className="bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl p-4 cursor-pointer transition group hover:border-emerald-500/50 flex flex-col">
                             <div className="flex items-start gap-3">
-                                <div className="w-12 h-12 rounded-lg bg-emerald-900/50 flex items-center justify-center text-emerald-400 text-2xl group-hover:scale-110 transition shrink-0">
-                                    <i className="fa-solid fa-book"></i>
+                                <div className={`w-12 h-12 rounded-lg flex items-center justify-center text-2xl group-hover:scale-110 transition shrink-0 ${book.type === 'Business Manual' ? 'bg-purple-900/50 text-purple-400' : 'bg-emerald-900/50 text-emerald-400'}`}>
+                                    <i className={`fa-solid ${book.type === 'Business Manual' || book.type === 'SME Starter' ? 'fa-briefcase' : 'fa-book'}`}></i>
                                 </div>
                                 <div>
                                     <h3 className="font-bold text-white group-hover:text-emerald-300 transition line-clamp-1">{book.title}</h3>
                                     <div className="text-xs text-slate-400 mt-1 line-clamp-2">{book.subtitle}</div>
-                                    <span className="inline-block mt-2 text-[10px] bg-slate-800 px-2 py-0.5 rounded text-slate-300 border border-slate-700">{book.type || 'General'}</span>
+                                    <span className={`inline-block mt-2 text-[10px] px-2 py-0.5 rounded text-slate-300 border ${book.type === 'Business Manual' ? 'bg-purple-900/30 border-purple-500/30' : 'bg-slate-800 border-slate-700'}`}>{book.type || 'General'}</span>
                                 </div>
                             </div>
                         </div>
@@ -245,11 +240,11 @@
     const SimulationPanel = ({ item, onClose, globalArea, setGlobalArea, globalYears, setGlobalYears, floodData, soilInfo, provinceStats }) => {
         const [panelTab, setPanelTab] = useState('financial');
         const [customCosts, setCustomCosts] = useState(null);
-        // State for switching views WITHIN the panel
         const [showHandbook, setShowHandbook] = useState(false);
         const [showVideo, setShowVideo] = useState(false);
+        const [isCopied, setIsCopied] = useState(false);
 
-        // ... (Logic for calculating costs/profits remains the same)
+        // --- CALCULATION LOGIC ---
         const isRice = item.name.includes('ข้าว') && !item.name.includes('ข้าวโพด'); 
         const isRubber = item.name.includes('ยาง') && !item.name.includes('โพนยางคำ');
         const isCoconut = item.name.includes('มะพร้าว'); 
@@ -258,10 +253,6 @@
         const isDatePalm = item.name.includes('อินทผาลัม'); 
         
         const RICE_PRESETS = (typeof window !== 'undefined' && window.RICE_PRESETS) ? window.RICE_PRESETS : {};
-        const RUBBER_PRESETS = (typeof window !== 'undefined' && window.RUBBER_PRESETS) ? window.RUBBER_PRESETS : {};
-        const COCONUT_PRESETS = (typeof window !== 'undefined' && window.COCONUT_PRESETS) ? window.COCONUT_PRESETS : {};
-        const DURIAN_PRESETS = (typeof window !== 'undefined' && window.DURIAN_PRESETS) ? window.DURIAN_PRESETS : {};
-        const KASET_PRESETS = (typeof window !== 'undefined' && window.KASET_PRESETS) ? window.KASET_PRESETS : {};
         const INTEGRATED_PRESETS = (typeof window !== 'undefined' && window.INTEGRATED_PRESETS) ? window.INTEGRATED_PRESETS : {};
 
         const calculateRubberEconomics = (typeof window !== 'undefined' && window.calculateRubberEconomics) ? window.calculateRubberEconomics : null;
@@ -281,7 +272,6 @@
         const [durianConfig, setDurianConfig] = useState({ variety: 'monthong' }); 
         const [integratedConfig, setIntegratedConfig] = useState({ model: 'khoknongna_general' });
         const [kasetConfig, setKasetConfig] = useState({ cycles: kasetPreset ? kasetPreset.cycles_per_year : 1 });
-
         const [kasetSteps, setKasetSteps] = useState([]);
         const lineCanvasRef = useRef(null);
         const lineChartRef = useRef(null);
@@ -297,7 +287,6 @@
             if (isRice) { setRiceConfig(prev => ({ ...prev, variety: getInitialVariety(item.name) })); }
         }, [item, isRice]);
 
-        // ... (Effect for cost calculation remains the same)
         useEffect(() => {
             if (isIntegrated && calculateIntegratedEconomics) {
                 const eco = calculateIntegratedEconomics(integratedConfig.model, globalArea, globalYears);
@@ -324,8 +313,6 @@
         }, [isRice, isRubber, isCoconut, isDurian, isIntegrated, rubberConfig, coconutConfig, durianConfig, integratedConfig, kasetConfig, kasetPreset, globalArea, globalYears, item]);
 
         const simulationData = useMemo(() => {
-             // ... (Simulation calculation logic remains exactly same as before)
-             // Copying logic for brevity - essential for charts
             const data = [];
             let cumulative = 0;
             const currentYearBE = new Date().getFullYear() + 543;
@@ -462,12 +449,15 @@
                 },
                 options: { responsive: true, maintainAspectRatio: false, scales: { x: { display: false }, y: { ticks: { color: '#94a3b8' } } } }
             });
-        }, [simulationData, panelTab, customCosts, showHandbook, showVideo]); // Re-render when switching back from handbook/video
+        }, [simulationData, panelTab, customCosts, showHandbook, showVideo]);
 
         if (!customCosts) return <div className="p-10 text-center text-slate-400">กำลังคำนวณโมเดล...</div>;
         
-        // --- PREPARE DATA FOR HANDBOOK/VIDEO ---
+        // --- 1. DETERMINE AVAILABLE HANDBOOK (MAPPING LOGIC) ---
         let availableBookKey = null;
+        const itemName = item.name.toLowerCase();
+
+        // 1.1 เกษตรหลัก
         if (isIntegrated) availableBookKey = 'integrated_research_full';
         if (isDurian) availableBookKey = 'durian_manual'; 
         if (isRice) {
@@ -476,14 +466,63 @@
         }
         if (isRubber) availableBookKey = 'rubber_manual';
         if (isCoconut) availableBookKey = 'coconut_manual';
-        if (item.name.includes('โพนยางคำ')) availableBookKey = 'phon_yang_kham_manual';
-        if (item.name.includes('หมู') || item.name.includes('สุกร')) availableBookKey = 'pig_manual';
-        if (item.name.includes('ข้าวโพด')) availableBookKey = 'maize_manual';
-        if (item.name.includes('อินทผาลัม')) availableBookKey = 'date_palm_research';
+        if (itemName.includes('โพนยางคำ')) availableBookKey = 'phon_yang_kham_manual';
+        if (itemName.includes('หมู') || itemName.includes('สุกร')) availableBookKey = 'pig_manual';
+        if (itemName.includes('ข้าวโพด')) availableBookKey = 'maize_manual';
+        if (itemName.includes('อินทผาลัม')) availableBookKey = 'date_palm_research';
+
+        // 1.2 ธุรกิจ (Business Ministry) - Mapping Logic
+        if (itemName.includes('ฟาร์มคาเฟ่')) availableBookKey = 'biz_farm_cafe';
+        else if (itemName.includes('กาแฟ') && (itemName.includes('โบราณ') || itemName.includes('slow'))) availableBookKey = 'biz_street_coffee';
+        else if (itemName.includes('ชานม') || itemName.includes('ไข่มุก')) availableBookKey = 'biz_bubble_tea';
+        else if (itemName.includes('แซนด์วิช')) availableBookKey = 'biz_sandwich';
+        else if (itemName.includes('หมูกระทะ') || itemName.includes('บุฟเฟต์')) availableBookKey = 'biz_buffet';
+        else if (itemName.includes('ผู้สูงอายุ') || itemName.includes('day care')) availableBookKey = 'biz_elderly_care';
+        else if (itemName.includes('กายภาพ')) availableBookKey = 'biz_physio_clinic';
+        else if (itemName.includes('ผักสลัด') || itemName.includes('salad')) availableBookKey = 'biz_salad_factory';
+        else if (itemName.includes('ลูกชิ้น')) availableBookKey = 'biz_meatball';
+        else if (itemName.includes('affiliate')) availableBookKey = 'biz_affiliate';
+        else if (itemName.includes('live') && itemName.includes('ขาย')) availableBookKey = 'biz_live_commerce';
+        else if (itemName.includes('content') || itemName.includes('creator')) availableBookKey = 'biz_content_creator';
+        else if (itemName.includes('dropship')) availableBookKey = 'biz_dropship';
+        else if (itemName.includes('รถพุ่มพวง') || itemName.includes('food truck')) availableBookKey = 'biz_mobile_truck';
+        else if (itemName.includes('ต้นไม้') || itemName.includes('plant')) availableBookKey = 'biz_plant_shop';
+        else if (itemName.includes('solar') || itemName.includes('ขายไฟ')) availableBookKey = 'biz_solar_farm';
+        else if (itemName.includes('โฮมสเตย์') || itemName.includes('กางเต็นท์')) availableBookKey = 'biz_homestay';
 
         const currentVideoKey = window.AppVideo ? window.AppVideo.getVideoKey(item, { variety: riceConfig.variety }) : null;
         const currentVideos = currentVideoKey ? window.AppVideo.getVideos(currentVideoKey) : [];
         
+        const finalYearData = simulationData[simulationData.length - 1];
+        const totalAccumulatedProfit = finalYearData ? finalYearData.accumulatedProfit : 0;
+        const averageProfitPerYear = globalYears > 0 ? (totalAccumulatedProfit / globalYears) : 0;
+        const breakEvenYearData = simulationData.find(d => d.breakEven);
+        const breakEvenText = breakEvenYearData ? breakEvenYearData.breakEven : (totalAccumulatedProfit > 0 ? 'คืนทุนแล้ว (ตั้งแต่เริ่ม)' : 'ยังไม่คืนทุน');
+
+        // Share Function for Main Simulation Panel (Updated Logic)
+        const handleShareSimulation = () => {
+            const areaUnit = (item.category === 'ธุรกิจ' || (item.category && item.category.includes('business'))) ? 'สาขา' : 'ไร่';
+            
+            // Construct Smart Link (Direct to Simulation)
+            const baseUrl = window.location.href.split('#')[0];
+            // สร้าง Deep Link โดยระบุชื่อรายการ, พื้นที่, และระยะเวลา
+            const shareUrl = `${baseUrl}#sim_item=${encodeURIComponent(item.name)}&sim_area=${globalArea}&sim_years=${globalYears}`;
+
+            const summary = `
+📊 สรุปโมเดล: ${item.name}
+📍 พื้นที่: ${globalArea.toLocaleString()} ${areaUnit}
+⏳ ระยะเวลา: ${globalYears} ปี
+💰 กำไรสุทธิรวม: ${totalAccumulatedProfit.toLocaleString()} บาท
+💸 กำไรเฉลี่ย/ปี: ${averageProfitPerYear.toLocaleString()} บาท
+
+สร้างโดย: Winai Innovation
+${shareUrl}
+            `.trim();
+            copyToClipboard(summary);
+            setIsCopied(true);
+            setTimeout(() => setIsCopied(false), 2000);
+        };
+
         // --- RENDER LOGIC: SWAP CONTENT IN PLACE ---
         if (showHandbook && availableBookKey && window.AppKnowledge) {
             return (
@@ -497,18 +536,13 @@
         if (showVideo && currentVideos.length > 0) {
             return (
                 <VideoGalleryPanel 
+                    category={currentVideoKey}
                     videos={currentVideos}
                     title={item.name}
                     onClose={() => setShowVideo(false)}
                 />
             );
         }
-
-        const finalYearData = simulationData[simulationData.length - 1];
-        const totalAccumulatedProfit = finalYearData ? finalYearData.accumulatedProfit : 0;
-        const averageProfitPerYear = globalYears > 0 ? (totalAccumulatedProfit / globalYears) : 0;
-        const breakEvenYearData = simulationData.find(d => d.breakEven);
-        const breakEvenText = breakEvenYearData ? breakEvenYearData.breakEven : (totalAccumulatedProfit > 0 ? 'คืนทุนแล้ว (ตั้งแต่เริ่ม)' : 'ยังไม่คืนทุน');
 
         // Main Simulation View
         return (
@@ -517,12 +551,21 @@
                     <div className="flex justify-between items-start mb-2">
                         <div>
                             <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                                {isIntegrated ? <i className="fa-solid fa-layer-group text-emerald-300"></i> : <i className="fa-solid fa-seedling text-emerald-400"></i>}
+                                {isIntegrated ? <i className="fa-solid fa-layer-group text-emerald-300"></i> : item.category === 'ธุรกิจ' ? <i className="fa-solid fa-briefcase text-purple-400"></i> : <i className="fa-solid fa-seedling text-emerald-400"></i>}
                                 {item.name}
                             </h2>
-                            <div className="text-xs text-slate-400 mt-1">{isIntegrated ? 'กระทรวงเกษตรผสมผสาน' : 'ข้อมูลทั่วไป'}</div>
+                            <div className="text-xs text-slate-400 mt-1">{isIntegrated ? 'กระทรวงเกษตรผสมผสาน' : item.category === 'ธุรกิจ' ? 'กระทรวงพี่เลี้ยงธุรกิจ' : 'ข้อมูลทั่วไป'}</div>
                         </div>
                         <div className="flex gap-2">
+                             {/* Share Button for Simulation */}
+                             <button 
+                                onClick={handleShareSimulation} 
+                                className={`w-8 h-8 rounded-full transition flex items-center justify-center shadow-lg ${isCopied ? 'bg-emerald-500 text-white' : 'bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white'}`}
+                                title="แชร์สรุปผลลัพธ์"
+                            >
+                                <i className={`fa-solid ${isCopied ? 'fa-check' : 'fa-share-nodes'}`}></i>
+                            </button>
+
                             {currentVideos.length > 0 && (
                                 <button 
                                     onClick={() => setShowVideo(true)} 
@@ -538,7 +581,7 @@
 
                     <div className="flex items-center gap-2 bg-white/5 rounded-lg p-2 border border-white/10 mb-4">
                         <div className="flex-1 flex flex-col px-2 border-r border-white/10">
-                            <span className="text-[10px] text-slate-400 uppercase">ขนาดพื้นที่ (ไร่)</span>
+                            <span className="text-[10px] text-slate-400 uppercase">ขนาดพื้นที่/สาขา</span>
                             <input type="number" value={globalArea} onChange={e => setGlobalArea(parseFloat(e.target.value)||0)} className="bg-transparent font-bold text-emerald-400 focus:outline-none" />
                         </div>
                         <div className="flex-1 flex flex-col px-2">
@@ -549,12 +592,13 @@
 
                     <div className="flex gap-2 mb-4 bg-black/20 p-1 rounded-xl">
                         <button onClick={() => setPanelTab('financial')} className={`flex-1 py-2 rounded-lg text-xs font-bold transition ${panelTab === 'financial' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:bg-white/5'}`}><i className="fa-solid fa-calculator mr-1"></i> โมเดล & กำไร</button>
-                        <button onClick={() => setPanelTab('market')} className={`flex-1 py-2 rounded-lg text-xs font-bold transition ${panelTab === 'market' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:bg-white/5'}`}><i className="fa-solid fa-tree mr-1"></i> ประโยชน์ระบบนิเวศ</button>
+                        <button onClick={() => setPanelTab('market')} className={`flex-1 py-2 rounded-lg text-xs font-bold transition ${panelTab === 'market' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:bg-white/5'}`}><i className="fa-solid fa-tree mr-1"></i> ประโยชน์/ความเสี่ยง</button>
                     </div>
 
                     {panelTab === 'financial' ? (
                         <div className="space-y-4 animate-fade-in-up">
                             
+                            {/* RICE PRESETS (เดิม) */}
                             {isRice && (
                                 <div className="bg-indigo-900/20 border border-indigo-500/30 rounded-xl p-4">
                                     <h3 className="text-sm font-bold text-indigo-300 mb-3 border-b border-indigo-500/20 pb-2"><i className="fa-solid fa-sliders mr-2"></i>ปรับสูตรการปลูก</h3>
@@ -566,40 +610,21 @@
                                             </button>
                                         ))}
                                     </div>
-                                    
-                                    {availableBookKey && (
-                                        <button onClick={() => setShowHandbook(true)} className="w-full mt-1 py-2.5 rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold text-xs shadow-lg hover:shadow-purple-500/30 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2 border border-purple-400/30">
-                                            <i className="fa-solid fa-book-open animate-pulse"></i> 
-                                            {availableBookKey === 'riceberry_organic_research' ? 'อ่านยุทธศาสตร์ข้าวไรซ์เบอร์รี่ (วิจัย)' : 'อ่านคู่มือชาวนามืออาชีพ (วิถีใหม่)'}
-                                        </button>
-                                    )}
                                 </div>
                             )}
 
-                            {/* General Handbook Button */}
-                            {!isIntegrated && !isRice && availableBookKey && (
+                            {/* --- BUTTON TO OPEN HANDBOOK --- */}
+                            {availableBookKey && (
                                 <div className="mb-4">
-                                    <button onClick={() => setShowHandbook(true)} className="w-full py-2.5 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold text-xs shadow-lg hover:shadow-blue-500/30 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2 border border-blue-400/30">
-                                        <i className="fa-solid fa-book-open animate-pulse"></i> 
-                                        {availableBookKey === 'maize_manual' ? 'อ่านยุทธศาสตร์ข้าวโพดเลี้ยงสัตว์' : 
-                                            availableBookKey === 'date_palm_research' ? 'อ่านวิจัยยุทธศาสตร์อินทผลัม' :
-                                            'อ่านคู่มือการจัดการ'}
+                                    <button onClick={() => setShowHandbook(true)} className={`w-full py-3 rounded-lg text-white font-bold text-xs shadow-lg hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2 border ${availableBookKey.startsWith('biz_') ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:shadow-purple-500/30 border-purple-400/30' : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:shadow-blue-500/30 border-blue-400/30'}`}>
+                                        <i className="fa-solid fa-book-open animate-pulse text-lg"></i> 
+                                        <span>
+                                            {availableBookKey.startsWith('biz_') ? 'อ่านคู่มือเริ่มต้นธุรกิจนี้ (ฉบับจับมือทำ)' : 
+                                             availableBookKey === 'maize_manual' ? 'อ่านยุทธศาสตร์ข้าวโพดเลี้ยงสัตว์' : 
+                                             availableBookKey === 'date_palm_research' ? 'อ่านวิจัยยุทธศาสตร์อินทผลัม' :
+                                             'อ่านคู่มือการจัดการมืออาชีพ'}
+                                        </span>
                                     </button>
-                                </div>
-                            )}
-
-                            {kasetPreset && !isRice && !isRubber && !isCoconut && !isDurian && !isIntegrated && (
-                                <div className="bg-emerald-900/20 border border-emerald-500/30 rounded-xl p-4">
-                                    <h3 className="text-sm font-bold text-emerald-300 mb-2 border-b border-emerald-500/20 pb-2"><i className="fa-solid fa-list-check mr-2"></i>รายการต้นทุน (โดยประมาณ)</h3>
-                                    <div className="space-y-2">
-                                        {kasetSteps.map((step, idx) => (
-                                            <div key={idx} className="flex justify-between text-xs border-b border-white/5 pb-1">
-                                                <div><div className="text-slate-200">{step.label}</div><div className="text-[9px] text-slate-500">{step.desc}</div></div>
-                                                <div className="text-emerald-400">{step.val.toLocaleString()} ฿</div>
-                                            </div>
-                                        ))}
-                                        <div className="flex justify-between text-xs font-bold pt-1 text-white"><span>รวมต้นทุนตั้งต้น:</span><span>{kasetSteps.reduce((s, x) => s+x.val, 0).toLocaleString()} ฿</span></div>
-                                    </div>
                                 </div>
                             )}
 
@@ -633,7 +658,6 @@
     };
 
     const CloudOverlay = ({ isActive, message, rotation = 0 }) => {
-        // ... (Original cloud overlay logic remains unchanged)
         const canvasRef = useRef(null);
         useEffect(() => {
             if (!isActive || !canvasRef.current) return;

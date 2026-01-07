@@ -1,5 +1,5 @@
 // --- script.js : Main Entry Point & Map Logic ---
-// อัปเดตล่าสุด: แก้ไข App is not defined และปรับ Footer ให้ขนาดเท่าเมนูกระทรวง (ไม่ใช้ Scale)
+// อัปเดตล่าสุด: เพิ่มรองรับ Deep Link (#sim_item) เพื่อเปิดหน้าคำนวณกำไรจากการแชร์ได้ทันที
 
 const { useState, useEffect, useRef, useMemo, useCallback } = React;
 
@@ -16,8 +16,8 @@ const KasetCloudApp = ({ mapInstance, onTravelStart, onTravelEnd, onGoHome, isTr
     // ... (State definitions)
     const [selectedRegion, setSelectedRegion] = useState(null);
     const [selectedProvince, setSelectedProvince] = useState(initialConfig?.province || null);
-    const [area, setArea] = useState(1);
-    const [years, setYears] = useState(25);
+    const [area, setArea] = useState(initialConfig?.area || 1); // รับค่า area เริ่มต้น
+    const [years, setYears] = useState(initialConfig?.years || 25); // รับค่า years เริ่มต้น
     const [results, setResults] = useState(null);
     const [simulatingItem, setSimulatingItem] = useState(null);
     const [isFullscreen, setIsFullscreen] = useState(false);
@@ -54,10 +54,13 @@ const KasetCloudApp = ({ mapInstance, onTravelStart, onTravelEnd, onGoHome, isTr
                 const cat = hash.split('video_cat=')[1];
                 if (cat) {
                     setVideoCategory(cat);
-                    // Close other panels to focus on video
                     setSimulatingItem(null);
                     setShowKnowledgeCenter(false);
                 }
+            }
+            // เพิ่มการดักจับ #sim_item (ถ้ามีการเปลี่ยน hash ในหน้าเดิม)
+            else if (hash.includes('sim_item=')) {
+                // Logic นี้จะถูกจัดการหลักๆ ใน App component แต่ใส่ไว้เผื่อ reload
             }
             else if (!hash) {
                 setVideoCategory(null);
@@ -116,7 +119,7 @@ const KasetCloudApp = ({ mapInstance, onTravelStart, onTravelEnd, onGoHome, isTr
         return () => { if (tileLayerRef.current) mapInstance.removeLayer(tileLayerRef.current); if (labelLayerRef.current) mapInstance.removeLayer(labelLayerRef.current); };
     }, [mapType, mapInstance]);
 
-    // ... (Marker Logic - Simplified for brevity, same as before)
+    // ... (Marker Logic - Simplified for brevity)
     useEffect(() => {
         if (!mapInstance) return;
         let topPane = mapInstance.getPane('top-pane');
@@ -216,6 +219,9 @@ const KasetCloudApp = ({ mapInstance, onTravelStart, onTravelEnd, onGoHome, isTr
             return { ...c, cost: totalCostVal, avgProfitYear: avgProfitPerYear, source: c.source || 'Mock' };
         });
 
+        // Filter for specific categories is intentionally removed when searching for a specific simulation item via Deep Link
+        // But for general list, we apply filter.
+        
         if (categoryFilter !== 'all') {
             if (categoryFilter === 'plant') processed = processed.filter(c => c.category === 'พืชไร่' || c.category === 'พืชสวน' || !c.category);
             else if (categoryFilter === 'animal') processed = processed.filter(c => c.category === 'ปศุสัตว์');
@@ -236,6 +242,41 @@ const KasetCloudApp = ({ mapInstance, onTravelStart, onTravelEnd, onGoHome, isTr
     }, [appData.crops, appData.isOnline, sortType, categoryFilter, years]); 
 
     useEffect(() => { if (selectedProvince) { setResults(calculateEconomics(area)); } }, [calculateEconomics, area, selectedProvince]);
+
+    // --- NEW: Trigger Simulation from Deep Link ---
+    useEffect(() => {
+        if (initialConfig?.simItem) {
+            // Need to calculate economics to get the full item object (costs, yield, etc.)
+            // We temporarily bypass the category filter by calculating with 'all' or finding in full mock
+            
+            // Note: calculateEconomics depends on categoryFilter. We might miss the item if it's filtered out.
+            // So we'll try to find it in the raw list first via a direct helper or temporarily ignoring filter
+            
+            // Best approach: Force find in the full generated list
+            const allItems = calculateEconomics(initialConfig.area || area);
+            // Re-calculate might filter based on 'categoryFilter' state which defaults to 'all' or initialConfig.category
+            // If the shared link doesn't have category, we might default to 'all'.
+            
+            // Better: find in MOCK_CROPS directly if needed, or rely on 'all'
+            // Let's rely on 'calculateEconomics' returning it if category is 'all'.
+            
+            const found = allItems.find(c => c.name === initialConfig.simItem);
+            
+            if (found) {
+                setSimulatingItem(found);
+                if (initialConfig.area) setArea(initialConfig.area);
+                if (initialConfig.years) setYears(initialConfig.years);
+            } else {
+                // If not found (maybe filtered), try to find in MOCK directly to show *something*
+                const rawMock = window.AppCore.MOCK_CROPS || [];
+                const mockFound = rawMock.find(c => c.name === initialConfig.simItem);
+                if (mockFound) {
+                     setSimulatingItem({ ...mockFound, cost: mockFound.cost * (initialConfig.area || 1), avgProfitYear: 0 }); // Rough fallback
+                     setArea(initialConfig.area || 1);
+                }
+            }
+        }
+    }, [initialConfig, calculateEconomics]); // Run when initialConfig is set from App component
 
     const handleProvinceSelect = (p) => { 
         if (p === selectedProvince) return; 
@@ -703,6 +744,21 @@ const App = () => {
             }
         }
         else if (hash.includes('video_cat=')) {
+            setPage('kaset');
+            map.setView(DON_MUEANG_COORDS, 6);
+        }
+        // --- NEW: Handle Simulation Deep Link ---
+        else if (hash.includes('sim_item=')) {
+            const params = new URLSearchParams(hash.substring(1));
+            const name = decodeURIComponent(params.get('sim_item'));
+            const area = parseFloat(params.get('sim_area')) || 1;
+            const years = parseFloat(params.get('sim_years')) || 10;
+            
+            setInitialConfig({ 
+                simItem: name, 
+                area: area, 
+                years: years 
+            });
             setPage('kaset');
             map.setView(DON_MUEANG_COORDS, 6);
         }
